@@ -41,15 +41,22 @@ class FontSizeProvider extends ChangeNotifier {
   /// Initialize the provider by loading saved font size from SharedPreferences.
   Future<void> initialize() async {
     if (_initialized) return;
-    _prefs = await SharedPreferences.getInstance();
-    final savedSize = _prefs.getString(_fontSizeKey);
-    if (savedSize != null) {
-      _fontSize = FontSize.values.firstWhere(
-        (fs) => fs.name == savedSize,
-        orElse: () => FontSize.medium,
-      );
+    try {
+      _prefs = await SharedPreferences.getInstance();
+      final savedSize = _prefs.getString(_fontSizeKey);
+      if (savedSize != null) {
+        _fontSize = FontSize.values.firstWhere(
+          (fs) => fs.name == savedSize,
+          orElse: () => FontSize.medium,
+        );
+      }
+      _initialized = true;
+      debugPrint('FontSizeProvider initialized successfully: ${_fontSize.name}');
+    } catch (e) {
+      debugPrint('Error initializing FontSizeProvider: $e. Using default size.');
+      _fontSize = FontSize.medium; // Fallback to default
+      _initialized = true;
     }
-    _initialized = true;
     notifyListeners();
   }
 

@@ -1,4 +1,4 @@
-package com.green.green_app
+package com.green.green
 
 import io.flutter.embedding.android.FlutterActivity
 

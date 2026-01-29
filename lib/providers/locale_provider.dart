@@ -15,9 +15,16 @@ class LocaleProvider extends ChangeNotifier {
   /// Initialize the provider by loading saved locale from SharedPreferences.
   Future<void> initialize() async {
     if (_initialized) return;
-    _prefs = await SharedPreferences.getInstance();
-    _locale = _prefs.getString(_localeKey) ?? 'fr';
-    _initialized = true;
+    try {
+      _prefs = await SharedPreferences.getInstance();
+      _locale = _prefs.getString(_localeKey) ?? 'fr';
+      _initialized = true;
+      debugPrint('LocaleProvider initialized successfully: $_locale');
+    } catch (e) {
+      debugPrint('Error initializing LocaleProvider: $e. Using default locale.');
+      _locale = 'fr'; // Fallback to default
+      _initialized = true;
+    }
     notifyListeners();
   }
 

@@ -108,7 +108,7 @@ class AuthProvider with ChangeNotifier {
       name: svcUser.name,
       username: svcUser.email.contains('@')
           ? svcUser.email.split('@').first
-          : svcUser.phone ?? svcUser.id,
+          : (svcUser.phone.isNotEmpty ? svcUser.phone : svcUser.id),
       email: svcUser.email,
       phone: svcUser.phone.isNotEmpty ? svcUser.phone : null,
       profession: null,

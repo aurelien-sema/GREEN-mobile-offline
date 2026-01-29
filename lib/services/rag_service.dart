@@ -39,27 +39,79 @@ class RagService {
   int? vectorDim;
 
   bool _initialized = false;
+  bool _initializationFailed = false;
+
+  bool get isInitialized => _initialized;
+  bool get hasFailedInitialization => _initializationFailed;
 
   /// Load chunks.json and embeddings float32 binary from assets.
   Future<void> initFromAssets({String chunksAsset = 'assets/rag/chunks.json', String embeddingsAsset = 'assets/rag/embeddings_f32.bin'}) async {
-    if (_initialized) return;
-    final chunksJson = await rootBundle.loadString(chunksAsset);
-    final List<dynamic> parsed = json.decode(chunksJson) as List<dynamic>;
-    chunks = parsed.map((e) => RagChunk.fromJson(e as Map<String, dynamic>)).toList();
-
-    final ByteData bd = await rootBundle.load(embeddingsAsset);
-    final Uint8List bytes = bd.buffer.asUint8List();
-    // Create Float32List view over the bytes
-    final f32 = bytes.buffer.asFloat32List();
-    embeddings = Float32List.fromList(f32);
-
-    if (chunks.isNotEmpty) {
-      vectorDim = embeddings!.length ~/ chunks.length;
-    } else {
-      vectorDim = 0;
+    if (_initialized) {
+      debugPrint('RAG Service already initialized');
+      return;
+    }
+    if (_initializationFailed) {
+      debugPrint('RAG Service initialization previously failed, skipping retry');
+      return;
     }
 
-    _initialized = true;
+    try {
+      debugPrint('RAG Service: Starting initialization...');
+      
+      // Load chunks.json
+      debugPrint('RAG Service: Loading chunks from $chunksAsset...');
+      final chunksJson = await rootBundle.loadString(chunksAsset);
+      final List<dynamic> parsed = json.decode(chunksJson) as List<dynamic>;
+      chunks = parsed.map((e) => RagChunk.fromJson(e as Map<String, dynamic>)).toList();
+      debugPrint('RAG Service: Loaded ${chunks.length} chunks');
+
+      // Validate chunks
+      if (chunks.isEmpty) {
+        throw StateError('No chunks loaded from $chunksAsset');
+      }
+
+      // Load embeddings
+      debugPrint('RAG Service: Loading embeddings from $embeddingsAsset...');
+      final ByteData bd = await rootBundle.load(embeddingsAsset);
+      final Uint8List bytes = bd.buffer.asUint8List();
+      
+      // Validate embeddings size
+      if (bytes.isEmpty) {
+        throw StateError('Embeddings file is empty');
+      }
+      
+      // Create Float32List view over the bytes
+      final f32 = bytes.buffer.asFloat32List();
+      embeddings = Float32List.fromList(f32);
+      debugPrint('RAG Service: Loaded ${embeddings!.length} embedding values');
+
+      if (chunks.isNotEmpty) {
+        vectorDim = embeddings!.length ~/ chunks.length;
+        debugPrint('RAG Service: Vector dimension = $vectorDim');
+        
+        // Validate dimension
+        if (vectorDim != null && (vectorDim! <= 0 || embeddings!.length % chunks.length != 0)) {
+          throw StateError('Invalid embeddings dimension: ${embeddings!.length} values for ${chunks.length} chunks');
+        }
+      } else {
+        vectorDim = 0;
+      }
+
+      _initialized = true;
+      debugPrint('RAG Service: Initialization completed successfully');
+    } catch (e, stackTrace) {
+      _initializationFailed = true;
+      debugPrint('RAG Service: Initialization FAILED: $e');
+      debugPrint('Stack trace: $stackTrace');
+      
+      // Clear partial data
+      chunks = [];
+      embeddings = null;
+      vectorDim = null;
+      
+      // Don't rethrow - allow app to continue without RAG
+      debugPrint('RAG Service: App will continue without RAG functionality');
+    }
   }
 
   /// Compute top-k matches given a query embedding (List<double> or Float32List).
