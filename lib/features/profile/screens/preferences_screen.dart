@@ -8,7 +8,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/locale_provider.dart';
 import '../../../providers/font_size_provider.dart';
-import '../../../l10n/app_strings.dart';
+
 import '../../../shared/widgets/custom_app_bar.dart';
 
 class PreferencesScreen extends StatefulWidget {
@@ -21,23 +21,23 @@ class PreferencesScreen extends StatefulWidget {
 }
 
 class _PreferencesScreenState extends State<PreferencesScreen> {
-  late String _language;
+
   String _frequency = 'daily';
-  bool _pushNotifications = true;
-  bool _emailNotifications = false;
-  final double _fontSize = 14.0;
+
+
+
 
   @override
   void initState() {
     super.initState();
-    _language = context.read<LocaleProvider>().locale;
+
   }
 
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
     final localeProvider = context.watch<LocaleProvider>();
-    _language = localeProvider.locale;
+
 
     return AppPopScope(
       onWillPop: () async {
@@ -63,29 +63,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                 _buildLanguageSelector(context, isDarkMode, localeProvider),
                 const SizedBox(height: AppConstants.paddingLarge),
 
-                _buildSectionTitle(context, localeProvider.t('notifications')),
-                _buildCheckboxItem(
-                  context: context,
-                  title: localeProvider.t('pushNotifications'),
-                  description: localeProvider.t('pushNotifications'),
-                  value: _pushNotifications,
-                  onChanged: (value) =>
-                      setState(() => _pushNotifications = value ?? false),
-                  isDarkMode: isDarkMode,
-                  delay: 150,
-                ),
-                const SizedBox(height: AppConstants.paddingSmall),
-                _buildCheckboxItem(
-                  context: context,
-                  title: localeProvider.t('emailNotifications'),
-                  description: localeProvider.t('emailNotifications'),
-                  value: _emailNotifications,
-                  onChanged: (value) =>
-                      setState(() => _emailNotifications = value ?? false),
-                  isDarkMode: isDarkMode,
-                  delay: 200,
-                ),
-                const SizedBox(height: AppConstants.paddingLarge),
+
 
                 _buildSectionTitle(context, localeProvider.t('frequencyOfAdvice')),
                 _buildDropdown(
@@ -262,44 +240,5 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
     );
   }
 
-  Widget _buildCheckboxItem({
-    required BuildContext context,
-    required String title,
-    required String description,
-    required bool value,
-    required Function(bool?) onChanged,
-    required bool isDarkMode,
-    required int delay,
-  }) {
-    return Card(
-          elevation: 0,
-          color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-            side: BorderSide(
-              color: isDarkMode
-                  ? const Color.fromRGBO(66, 66, 66, 0.3)
-                  : const Color.fromRGBO(224, 224, 224, 0.5),
-              width: 1,
-            ),
-          ),
-          child: CheckboxListTile(
-            title: Text(title, style: Theme.of(context).textTheme.titleSmall),
-            subtitle: Text(
-              description,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-              ),
-            ),
-            value: value,
-            onChanged: onChanged,
-            activeColor: isDarkMode
-                ? AppColors.darkPrimary
-                : AppColors.lightPrimary,
-          ),
-        )
-        .animate(delay: Duration(milliseconds: delay))
-        .fadeIn(duration: AppConstants.animationNormal)
-        .slideY(begin: 10, end: 0);
-  }
+
 }

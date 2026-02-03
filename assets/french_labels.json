@@ -1,0 +1,192 @@
+[
+  {
+    "label_original": "Apple___Apple_scab",
+    "plante": "Pommier",
+    "maladie": "Tavelure du pommier"
+  },
+  {
+    "label_original": "Apple___Black_rot",
+    "plante": "Pommier",
+    "maladie": "Pourriture noire"
+  },
+  {
+    "label_original": "Apple___Cedar_apple_rust",
+    "plante": "Pommier",
+    "maladie": "Rouille de Virginie"
+  },
+  {
+    "label_original": "Apple___healthy",
+    "plante": "Pommier",
+    "maladie": "Sain"
+  },
+  {
+    "label_original": "Blueberry___healthy",
+    "plante": "Myrtille",
+    "maladie": "Sain"
+  },
+  {
+    "label_original": "Cherry_(including_sour)__Powedery_mildew",
+    "plante": "Cerisier (y compris griottier)",
+    "maladie": "Oïdium"
+  },
+  {
+    "label_original": "Cherry_(including_sour)__healthy",
+    "plante": "Cerisier (y compris griottier)",
+    "maladie": "Sain"
+  },
+  {
+    "label_original": "Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot",
+    "plante": "Maïs",
+    "maladie": "Cercosporiose (tache grise)"
+  },
+  {
+    "label_original": "Corn_(maize)___Common_rust_",
+    "plante": "Maïs",
+    "maladie": "Rouille commune"
+  },
+  {
+    "label_original": "Corn_(maize)___Northern_Leaf_Blight",
+    "plante": "Maïs",
+    "maladie": "Helminthosporiose du Nord"
+  },
+  {
+    "label_original": "Corn_(maize)___healthy",
+    "plante": "Maïs",
+    "maladie": "Sain"
+  },
+  {
+    "label_original": "Grape___Black_rot",
+    "plante": "Vigne",
+    "maladie": "Pourriture noire"
+  },
+  {
+    "label_original": "Grape___Esca_(Black_Measles)",
+    "plante": "Vigne",
+    "maladie": "Esca"
+  },
+  {
+    "label_original": "Grape___Leaf_blight_(Isariopsis_Leaf_Spot)",
+    "plante": "Vigne",
+    "maladie": "Isariopsis (tache foliaire)"
+  },
+  {
+    "label_original": "Grape___healthy",
+    "plante": "Vigne",
+    "maladie": "Sain"
+  },
+  {
+    "label_original": "Orange___Haunglongbing_(Citrus_greening)",
+    "plante": "Oranger",
+    "maladie": "Huanglongbing (verdissement des agrumes)"
+  },
+  {
+    "label_original": "Peach___Bacterial_spot",
+    "plante": "Pêcher",
+    "maladie": "Tache bactérienne"
+  },
+  {
+    "label_original": "Peach___healthy",
+    "plante": "Pêcher",
+    "maladie": "Sain"
+  },
+  {
+    "label_original": "Pepper_bell___Bacterial_spot",
+    "plante": "Poivron",
+    "maladie": "Tache bactérienne"
+  },
+  {
+    "label_original": "Pepper_bell___healthy",
+    "plante": "Poivron",
+    "maladie": "Sain"
+  },
+  {
+    "label_original": "Potato___Early_blight",
+    "plante": "Pomme de terre",
+    "maladie": "Alternariose (brûlure hâtive)"
+  },
+  {
+    "label_original": "Potato___Late_blight",
+    "plante": "Pomme de terre",
+    "maladie": "Mildiou"
+  },
+  {
+    "label_original": "Potato___healthy",
+    "plante": "Pomme de terre",
+    "maladie": "Sain"
+  },
+  {
+    "label_original": "Raspberry___healthy",
+    "plante": "Framboisier",
+    "maladie": "Sain"
+  },
+  {
+    "label_original": "Soybean___healthy",
+    "plante": "Soja",
+    "maladie": "Sain"
+  },
+  {
+    "label_original": "Squash___Powdery_mildew",
+    "plante": "Courge",
+    "maladie": "Oïdium"
+  },
+  {
+    "label_original": "Strawberry___Leaf_scorch",
+    "plante": "Fraisier",
+    "maladie": "Tache pourpre (brûlure des feuilles)"
+  },
+  {
+    "label_original": "Strawberry___Healthy",
+    "plante": "Fraisier",
+    "maladie": "Sain"
+  },
+  {
+    "label_original": "Tomato___Bacterial_spot",
+    "plante": "Tomate",
+    "maladie": "Tache bactérienne"
+  },
+  {
+    "label_original": "Tomato___Early_blight",
+    "plante": "Tomate",
+    "maladie": "Alternariose (brûlure hâtive)"
+  },
+  {
+    "label_original": "Tomato___Late_blight",
+    "plante": "Tomate",
+    "maladie": "Mildiou"
+  },
+  {
+    "label_original": "Tomato___Leaf_Mold",
+    "plante": "Tomate",
+    "maladie": "Moisissure fuligineuse"
+  },
+  {
+    "label_original": "Tomato___Septoria_leaf_spot",
+    "plante": "Tomate",
+    "maladie": "Septoriose"
+  },
+  {
+    "label_original": "Tomato___Spider_mites Two-spotted_spider_mite",
+    "plante": "Tomate",
+    "maladie": "Tétranyque tisserand (Acarien à deux points)"
+  },
+  {
+    "label_original": "Tomato___Target_Spot",
+    "plante": "Tomate",
+    "maladie": "Corynesporiose (tache cible)"
+  },
+  {
+    "label_original": "Tomato_Yellow_Leaf_Curl_Virus",
+    "plante": "Tomate",
+    "maladie": "Virus des feuilles jaunes en cuillère"
+  },
+  {
+    "label_original": "Tomato_mosaic_virus",
+    "plante": "Tomate",
+    "maladie": "Virus de la mosaïque de la tomate"
+  },
+  {
+    "label_original": "Tomato___healthy",
+    "plante": "Tomate",
+    "maladie": "Sain"
+  }
+]

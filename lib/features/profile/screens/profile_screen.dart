@@ -9,7 +9,10 @@ import '../../../services/history_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
+
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import '../../../services/profile_image_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -21,6 +24,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   Map<String, dynamic>? _stats;
   late StreamSubscription<void> _histSub;
+  
   @override
   void initState() {
     super.initState();
@@ -39,6 +43,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _showImagePickerOptions(BuildContext context) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Galerie'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Appareil photo'),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await _pickImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final path = await profileImageService.pickAndSaveImage(source);
+      if (path != null && mounted) {
+        final auth = context.read<AuthProvider>();
+        final currentUser = auth.currentUser;
+        if (currentUser != null) {
+          final updatedUser = currentUser.copyWith(avatarUrl: path);
+          await auth.updateProfile(updatedUser);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in profile screen pick image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Erreur lors de la sélection de l\'image')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
@@ -53,14 +106,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: isDarkMode
           ? AppColors.darkBackground
           : AppColors.lightBackground,
-      appBar: CustomAppBar(title: 'Profil', isDarkMode: isDarkMode),
+      appBar: AppBar(
+        title: const Text('Profil'),
+        elevation: 0,
+        backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home'),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.paddingMedium),
           child: Column(
             children: [
-              // Profile Header
-              Container(
+                  // Profile Header
+                  Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
                       gradient: isDarkMode
@@ -73,19 +134,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.all(AppConstants.paddingLarge),
                     child: Column(
                       children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color.fromRGBO(255, 255, 255, 0.2),
-                            border: Border.all(color: Colors.white, width: 3),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 50,
-                          ),
+                        Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: () => _showImagePickerOptions(context),
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: const Color.fromRGBO(255, 255, 255, 0.2),
+                                  border: Border.all(color: Colors.white, width: 3),
+                                  image: user?.avatarUrl != null
+                                      ? DecorationImage(
+                                          image: FileImage(File(user!.avatarUrl!)),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                                ),
+                                child: user?.avatarUrl == null
+                                    ? const Icon(
+                                        Icons.person,
+                                        color: Colors.white,
+                                        size: 50,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: () => _showImagePickerOptions(context),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.edit,
+                                    size: 16,
+                                    color: AppColors.lightPrimary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ).animate().scale(
                           duration: AppConstants.animationNormal,
                         ),
@@ -158,6 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
+
     );
   }
 
@@ -211,9 +307,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildMenuSection(BuildContext context, bool isDarkMode) {
     final menuItems = [
       ('Paramètres', Icons.settings, '/settings'),
-      ('Notifications', Icons.notifications, '/notifications'),
+
       ('Préférences', Icons.tune, '/preferences'),
-      ('À propos', Icons.info, null),
+      ('À propos', Icons.info, '/about'),
       ('Se déconnecter', Icons.logout, '/login'),
     ];
 

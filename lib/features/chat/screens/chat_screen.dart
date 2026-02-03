@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../services/gemini/gemini_service.dart';
 import '../../../services/chat_history_service.dart';
 import '../../../core/constants/app_colors.dart';
@@ -11,9 +13,13 @@ import '../../../shared/widgets/animated_chat_message.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/animation_effects.dart';
 import '../../../shared/widgets/custom_scroll_physics.dart';
+import '../../../shared/widgets/custom_app_bar.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final String? initialMessage;
+  final String? cacheKey;
+  final bool autoSend;
+  const ChatScreen({super.key, this.initialMessage, this.cacheKey, this.autoSend = true});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -32,7 +38,17 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController = TextEditingController();
     _scrollController = ScrollController();
     _loadSessions();
-    _fetchInitialGreeting();
+    
+    if (widget.initialMessage != null && widget.initialMessage!.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _messageController.text = widget.initialMessage!;
+        if (widget.autoSend) {
+          _sendMessage(cacheKey: widget.cacheKey);
+        }
+      });
+    } else {
+      _fetchInitialGreeting();
+    }
   }
 
   @override
@@ -50,6 +66,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _startNewChat() async {
+    // ignore: unused_local_variable
     final session = await chatHistoryService.createNewSession();
     if (mounted) {
       setState(() {
@@ -104,7 +121,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _sendMessage() {
+  void _sendMessage({String? cacheKey}) {
     if (_messageController.text.isEmpty) return;
 
     final userMessage = Message(
@@ -153,9 +170,26 @@ class _ChatScreenState extends State<ChatScreen> {
           return;
         }
 
-        final response = await geminiService.generateResponse(
-          userMessage.content,
-        );
+        String response;
+        if (cacheKey != null) {
+          response = await geminiService.getAdviceWithCache(
+            userMessage.content,
+            cacheKey,
+          );
+        } else {
+          // Préparer l'historique du chat pour le contexte
+          final chatHistoryForContext = _messages
+              .map((msg) => {
+                    'role': msg.isUser ? 'user' : 'assistant',
+                    'content': msg.content,
+                  })
+              .toList();
+          
+          response = await geminiService.generateResponseWithContext(
+            userMessage.content,
+            chatHistoryForContext,
+          );
+        }
         final aiResponse = Message(
           id: DateTime.now().toString(),
           content: response,
@@ -233,12 +267,10 @@ class _ChatScreenState extends State<ChatScreen> {
       backgroundColor: isDarkMode
           ? AppColors.darkBackground
           : AppColors.lightBackground,
-      appBar: AppBar(
-        title: const Text('Green Bot'),
-        backgroundColor: isDarkMode
-            ? AppColors.darkSurface
-            : AppColors.lightSurface,
-        elevation: 0,
+      appBar: CustomAppBar(
+        title: 'Green Bot',
+        isDarkMode: isDarkMode,
+        showProfileIcon: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -254,21 +286,28 @@ class _ChatScreenState extends State<ChatScreen> {
               : AppColors.lightBackground,
           child: Column(
             children: [
-              DrawerHeader(
+              Container(
+                height: 120,
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppConstants.paddingLarge),
                 decoration: BoxDecoration(
                   gradient: isDarkMode
                       ? AppColors.darkGradient
                       : AppColors.lightGradient,
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.history, color: Colors.white, size: 32),
-                    SizedBox(height: 8),
-                    Text(
-                      'Historique des discussions',
-                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    const Icon(Icons.history, color: Colors.white, size: 28),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Historique',
+                      style: TextStyle(
+                        color: Colors.white, 
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -362,39 +401,24 @@ class _ChatScreenState extends State<ChatScreen> {
                                 padding: const EdgeInsets.only(
                                   left: AppConstants.paddingMedium,
                                   top: AppConstants.paddingSmall,
+                                  bottom: AppConstants.paddingSmall,
                                 ),
-                                child: ShimmerLoading(
-                                  child: Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: isDarkMode
-                                          ? AppColors.darkSurface
-                                          : AppColors.lightSurface,
-                                      border: Border.all(
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'Green Bot écrit...',
+                                      style: TextStyle(
                                         color: isDarkMode
-                                            ? AppColors.darkPrimary
-                                            : AppColors.lightPrimary,
-                                        width: 2,
+                                            ? AppColors.darkHint
+                                            : AppColors.lightHint,
+                                        fontStyle: FontStyle.italic,
+                                        fontSize: 12,
                                       ),
-                                    ),
-                                    child: Center(
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                isDarkMode
-                                                    ? AppColors.darkPrimary
-                                                    : AppColors.lightPrimary,
-                                              ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                    ).animate(onPlay: (c) => c.repeat())
+                                     .fadeIn(duration: 500.ms)
+                                     .then()
+                                     .fadeOut(duration: 500.ms),
+                                  ],
                                 ),
                               ),
                             );
@@ -405,6 +429,9 @@ class _ChatScreenState extends State<ChatScreen> {
                             isUser: _messages[index].isUser,
                             index: index,
                             imageUrl: _messages[index].imageUrl,
+                            avatarUrl: _messages[index].isUser 
+                                ? context.read<AuthProvider>().currentUser?.avatarUrl 
+                                : null,
                           ).slideUpIn(delayMs: index * 50);
                         },
                       ),

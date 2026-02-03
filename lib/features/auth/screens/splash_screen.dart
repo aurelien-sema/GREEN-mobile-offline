@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/widgets/animation_effects.dart';
@@ -20,9 +22,15 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _navigateToHome() {
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 3), () async {
       if (mounted) {
-        context.go('/login');
+        final authProvider = context.read<AuthProvider>();
+        // Wait for auth to be fully restored if needed, though main.dart calls restoreFromCache already.
+        if (authProvider.isAuthenticated) {
+          context.go('/home');
+        } else {
+          context.go('/login');
+        }
       }
     });
   }
@@ -67,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   .slideY(begin: 20, end: 0),
               const SizedBox(height: 12),
               Text(
-                    'Naturellement Intelligent',
+                    'L\'expert de poche agronome',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: const Color.fromRGBO(255, 255, 255, 0.9),
                       fontSize: AppConstants.fontSizeMedium,

@@ -27,19 +27,19 @@ class AppColors {
 
   // Gradients
   static const LinearGradient lightGradient = LinearGradient(
-    colors: [Color(0xFF2E8B57), Color(0xFF90EE90)],
+    colors: [Color(0xFF2E8B57), Color(0xFF90EE90)], // Green -> Light Green
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient darkGradient = LinearGradient(
-    colors: [Color(0xFF1B5E20), Color(0xFF4CAF50)],
+    colors: [Color(0xFF1B5E20), Color(0xFF4CAF50)], // Dark Green -> Lighter Green
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient buttonGradient = LinearGradient(
-    colors: [Color(0xFF2E8B57), Color(0xFF1B5E20)],
+    colors: [Color(0xFF2E8B57), Color(0xFF1B5E20)], // Green -> Dark Green
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

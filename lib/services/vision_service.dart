@@ -3,63 +3,79 @@ import 'dart:convert';
 import 'package:green_app/config/api_config.dart';
 import 'package:green_app/models/scan_result_model.dart';
 import 'package:http/http.dart' as http;
+import 'package:green_app/services/tflite_service.dart';
+import 'package:green_app/utils/french_translator.dart';
 import 'package:uuid/uuid.dart';
 
 /// Service pour l'intégration du modèle de vision par ordinateur Python
 class VisionService {
   final Uuid _uuid = const Uuid();
 
-  /// Analyser une image de plante avec le modèle de vision
+  static const double confidenceThreshold = 0.75;
+
+  /// Analyser une image de plante avec le modèle de vision (TFLite Offline)
   Future<ScanResultModel> analyzePlantImage(File imageFile) async {
     try {
-      // Lire l'image et la convertir en base64
-      final bytes = await imageFile.readAsBytes();
-      final base64Image = base64Encode(bytes);
+      final tfliteResult = await tfliteService.classifyImage(imageFile);
 
-      // Préparer la requête
-      final url = Uri.parse(ApiConfig.getVisionUrl(ApiConfig.visionAnalyze));
+      if (tfliteResult != null) {
+        final String label = tfliteResult['label'] as String;
+        final double confidence = tfliteResult['confidence'] as double;
+        
+        // Check if confidence meets threshold
+        if (confidence < confidenceThreshold) {
+          return ScanResultModel(
+            id: _uuid.v4(),
+            diseaseId: 'unknown',
+            diseaseName: 'Image non reconnue',
+            confidence: confidence,
+            treatment: 'L\'image n\'est pas assez claire ou ne correspond pas à une plante connue.',
+            imageUrl: imageFile.path,
+            scannedAt: DateTime.now(),
+            affectedPlants: [],
+          );
+        }
 
-      final response = await http
-          .post(
-            url,
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'image': base64Image,
-              'timestamp': DateTime.now().toIso8601String(),
-            }),
-          )
-          .timeout(ApiConfig.connectionTimeout);
+        // Get French translation from translator
+        final translation = frenchTranslator.getTranslation(label);
+        String plantName = 'Inconnu';
+        String diseaseName = 'Inconnu';
+        
+        if (translation != null) {
+          plantName = translation['plante'] ?? 'Inconnu';
+          diseaseName = translation['maladie'] ?? 'Inconnu';
+        } else {
+          // Fallback: Parse "Plant___Disease" format
+          final parts = label.split('___');
+          plantName = parts.isNotEmpty ? parts[0].replaceAll('_', ' ') : 'Inconnu';
+          diseaseName = parts.length > 1 ? parts[1].replaceAll('_', ' ') : 'Inconnu';
+        }
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-
-        // Parser la réponse du modèle Python
         return ScanResultModel(
           id: _uuid.v4(),
-          diseaseId: data['disease_id'] as String? ?? _uuid.v4(),
-          diseaseName: data['disease_name'] as String? ?? 'Maladie inconnue',
-          confidence: (data['confidence'] as num?)?.toDouble() ?? 0.0,
-          treatment:
-              data['treatment'] as String? ?? 'Traitement non disponible',
+          diseaseId: label, // Use full label as ID
+          diseaseName: diseaseName,
+          confidence: confidence,
+          treatment: 'Consultez Green Bot pour des recommandations précises.',
           imageUrl: imageFile.path,
           scannedAt: DateTime.now(),
-          affectedPlants:
-              (data['affected_plants'] as List<dynamic>?)
-                  ?.map((e) => e as String)
-                  .toList() ??
-              [],
+          affectedPlants: [plantName],
         );
       } else {
-        throw Exception(
-          'Erreur API: ${response.statusCode} - ${response.body}',
-        );
+        throw Exception('Aucun résultat du modèle');
       }
-    } on SocketException {
-      // Mode démo si l'API n'est pas disponible
-      return _getMockScanResult(imageFile);
     } catch (e) {
-      // Mode démo en cas d'erreur
-      return _getMockScanResult(imageFile);
+      // Return unknown on error instead of mock for production feel
+      return ScanResultModel(
+        id: _uuid.v4(),
+        diseaseId: 'unknown',
+        diseaseName: 'Erreur d\'analyse',
+        confidence: 0,
+        treatment: 'Une erreur est survenue lors de l\'analyse. Veuillez réessayer.',
+        imageUrl: imageFile.path,
+        scannedAt: DateTime.now(),
+        affectedPlants: [],
+      );
     }
   }
 
@@ -84,20 +100,6 @@ class VisionService {
       // Retourner des données de démo
       return _getMockHistory();
     }
-  }
-
-  /// Données de démo pour les tests (quand l'API Python n'est pas disponible)
-  ScanResultModel _getMockScanResult(File imageFile) {
-    return ScanResultModel(
-      id: _uuid.v4(),
-      diseaseId: 'demo_001',
-      diseaseName: 'Mildiou',
-      confidence: 0.85,
-      treatment: 'Fongicide recommandé',
-      imageUrl: imageFile.path,
-      scannedAt: DateTime.now(),
-      affectedPlants: ['Tomate', 'Pomme de terre'],
-    );
   }
 
   /// Historique de démo

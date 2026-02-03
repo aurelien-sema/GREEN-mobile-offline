@@ -5,10 +5,15 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../services/weather_service.dart';
 import '../../../services/history_service.dart';
+import '../../../utils/date_formatter.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/custom_scroll_physics.dart';
+
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +23,39 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late Future<WeatherData> _weatherFuture;
+  
+  @override
+  void initState() {
+    super.initState();
+    _weatherFuture = weatherService.fetchWeatherForCity('Douala');
+  }
+
+  Future<void> _enableLocation() async {
+    final status = await Permission.location.request();
+    if (status.isGranted) {
+      if (mounted) {
+        setState(() {
+           _weatherFuture = _fetchWeatherWithLocation();
+        });
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Permission de localisation refusée')),
+        );
+      }
+    }
+  }
+
+  Future<WeatherData> _fetchWeatherWithLocation() async {
+    try {
+      final pos = await Geolocator.getCurrentPosition();
+      return await weatherService.fetchWeatherForCoordinates(pos.latitude, pos.longitude);
+    } catch (e) {
+      return weatherService.fetchWeatherForCity('Douala');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
@@ -32,49 +70,135 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Welcome Banner
-                Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: isDarkMode
-                            ? AppColors.darkGradient
-                            : AppColors.lightGradient,
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.radiusXLarge,
+                // Welcome Banner + Profile Card in one row
+                Row(
+                  children: [
+                    // Welcome Card (50% width)
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: isDarkMode
+                              ? AppColors.darkGradient
+                              : AppColors.lightGradient,
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.radiusXLarge,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color.fromRGBO(0, 0, 0, 0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color.fromRGBO(0, 0, 0, 0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Bienvenue !',
-                            style: Theme.of(context).textTheme.displayMedium
-                                ?.copyWith(color: Colors.white),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Scannez vos plantes et obtenez des diagnostics instantanés',
-                            style: Theme.of(context).textTheme.bodyLarge
-                                ?.copyWith(
-                                  color: const Color.fromRGBO(
-                                    255,
-                                    255,
-                                    255,
-                                    0.9,
+                        padding: const EdgeInsets.all(AppConstants.paddingMedium),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Bienvenue !',
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                ),
-                          ),
-                        ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Scannez vos plantes',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: const Color.fromRGBO(255, 255, 255, 0.9),
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
-                    )
+                    ),
+                    const SizedBox(width: AppConstants.paddingMedium),
+                    // Profile Card (50% width) - avec données utilisateur
+                    Expanded(
+                      child: Consumer<AuthProvider>(
+                        builder: (context, auth, _) {
+                          final user = auth.currentUser;
+                          return GestureDetector(
+                            onTap: () => context.go('/profile'),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+                                borderRadius: BorderRadius.circular(
+                                  AppConstants.radiusXLarge,
+                                ),
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? const Color.fromRGBO(66, 66, 66, 0.3)
+                                      : const Color.fromRGBO(224, 224, 224, 0.5),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color.fromRGBO(0, 0, 0, 0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(AppConstants.paddingMedium),
+                              child: Row(
+                                children: [
+                                  // Profile Photo
+                                  Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: isDarkMode
+                                          ? const Color.fromRGBO(27, 94, 32, 0.2)
+                                          : const Color.fromRGBO(232, 245, 233, 0.2),
+                                    ),
+                                    child: Icon(
+                                      Icons.person,
+                                      color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppConstants.paddingSmall),
+                                  // Profile Info
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          user?.name ?? 'Mon Profil',
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                            color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          user?.phone ?? user?.email ?? 'Non renseigné',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                )
                     .animate()
                     .fadeIn(duration: AppConstants.animationNormal)
                     .slideY(begin: 20, end: 0),
@@ -100,9 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: isDarkMode ? null : null,
                   child: Container(
                     width: double.infinity,
-                    // original height used elsewhere; we set card to two-thirds of that
-                    // original default was 160 previously
-                    height: 160 * 2 / 3,
+                    // Dynamic height allocation (removed fixed height)
                     padding: const EdgeInsets.all(AppConstants.paddingMedium),
                     decoration: BoxDecoration(
                       gradient: isDarkMode
@@ -113,38 +235,76 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     child: FutureBuilder<WeatherData>(
-                      future: weatherService.fetchWeatherForCity('Douala'),
+                      future: _weatherFuture,
                       builder: (context, snap) {
                         if (snap.connectionState == ConnectionState.waiting) {
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: const [
-                              SizedBox(),
+                            children: [
+                              const SizedBox(),
                               Text(
                                 'Chargement...',
-                                style: TextStyle(color: Colors.white),
+                                style: const TextStyle(
+                                  color: Colors.white, // Always white
+                                ),
                               ),
-                              SizedBox(),
+                              const SizedBox(),
                             ],
                           );
                         }
                         if (snap.hasError || snap.data == null) {
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: const [
-                              Icon(Icons.error, color: Colors.white),
-                              Text(
-                                'Erreur météo',
-                                style: TextStyle(color: Colors.white),
+                            children: [
+                              const Icon(
+                                Icons.error, 
+                                color: Colors.white, // Always white
                               ),
-                              SizedBox(),
+                              const Text(
+                                'Erreur météo',
+                                style: TextStyle(
+                                  color: Colors.white, // Always white
+                                ),
+                              ),
+                              const SizedBox(),
                             ],
                           );
                         }
                         final w = snap.data!;
-                        return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        return Column(
                           children: [
+                             // Header buttons
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  TextButton.icon(
+                                    onPressed: _enableLocation,
+                                    icon: const Icon(Icons.location_on, color: Colors.white, size: 16),
+                                    label: const Text(
+                                      'Activer Localisation',
+                                      style: TextStyle(color: Colors.white, fontSize: 12),
+                                    ),
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: const Size(0, 30),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => context.go('/weather'),
+                                    child: const Text('Voir plus', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: const Size(0, 30),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8), // Added spacing
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
                             // Temperature
                             Expanded(
                               child: Column(
@@ -153,13 +313,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   const Icon(
                                     Icons.thermostat,
-                                    color: Colors.white,
+                                    color: Colors.white, // Always white
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     '${w.temperature.toStringAsFixed(1)}°C',
                                     style: const TextStyle(
-                                      color: Colors.white,
+                                      color: Colors.white, // Always white
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -174,18 +334,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   const Icon(
                                     Icons.wb_sunny,
-                                    color: Colors.white,
+                                    color: Colors.white, // Always white
                                   ),
                                   const SizedBox(height: 6),
-                                  Flexible(
-                                    child: Text(
-                                      w.description,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      overflow: TextOverflow.ellipsis,
+                                  Text(
+                                    w.description,
+                                    style: const TextStyle(
+                                      color: Colors.white, // Always white
                                     ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ],
                               ),
@@ -196,21 +353,28 @@ class _HomeScreenState extends State<HomeScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.air, color: Colors.white),
+                                  const Icon(
+                                    Icons.air, 
+                                    color: Colors.white, // Always white
+                                  ),
                                   const SizedBox(height: 6),
                                   Text(
                                     '${w.windSpeed.toStringAsFixed(1)} m/s',
-                                    style: const TextStyle(color: Colors.white),
+                                    style: const TextStyle(
+                                      color: Colors.white, // Always white
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                           ],
-                        );
-                      },
-                    ),
-                  ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
+              ),
+            ),
 
                 const SizedBox(height: AppConstants.paddingLarge),
 
@@ -282,12 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           style: const TextStyle(
                                             fontSize: 12,
                                             fontStyle: FontStyle.italic,
-                                            color: Color.fromRGBO(
-                                              255,
-                                              255,
-                                              255,
-                                              0.95,
-                                            ),
+                                            color: Color.fromRGBO(255, 255, 255, 0.8),
                                           ),
                                           textAlign: TextAlign.center,
                                           overflow: TextOverflow.ellipsis,
@@ -350,14 +509,47 @@ class _HomeScreenState extends State<HomeScreen> {
                   stream: historyService.onChanged,
                   builder: (context, _) {
                     return FutureBuilder<List<dynamic>>(
-                      future: historyService.getRecentScans(5),
+                      future: historyService.getRecentScans(3),
                       builder: (context, snap) {
                         if (snap.connectionState == ConnectionState.waiting) {
                           return const Text('Chargement...');
                         }
                         final list = snap.data ?? [];
                         if (list.isEmpty) {
-                          return const Text('Aucun historique');
+                          return GradientCard(
+                            isDarkMode: isDarkMode,
+                            opacity: 0.1,
+                            borderRadius: AppConstants.radiusLarge,
+                            child: SizedBox(
+                              height: 120,
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.image_not_supported,
+                                      size: 40,
+                                      color: isDarkMode
+                                          ? AppColors.darkHint
+                                          : AppColors.lightHint,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Aucun scan pour le moment',
+                                      style: Theme.of(context).textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: isDarkMode
+                                                ? AppColors.darkHint
+                                                : AppColors.lightHint,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                          .animate(delay: const Duration(milliseconds: 400))
+                          .fadeIn(duration: AppConstants.animationNormal);
                         }
                         return Column(
                           children: list.map((item) {
@@ -372,7 +564,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               title: Text(s.diseaseName),
                               subtitle: Text(
-                                'Analysée: ${s.scannedAt.toLocal()}',
+                                'Analysée: ${formatDateFrench(s.scannedAt)}',
                               ),
                             );
                           }).toList(),
@@ -382,42 +574,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 const SizedBox(height: AppConstants.paddingLarge),
-
-                // Fallback message when no scans (kept as visual hint)
-                GradientCard(
-                      isDarkMode: isDarkMode,
-                      opacity: 0.1,
-                      borderRadius: AppConstants.radiusLarge,
-                      child: SizedBox(
-                        height: 120,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.image_not_supported,
-                                size: 40,
-                                color: isDarkMode
-                                    ? AppColors.darkHint
-                                    : AppColors.lightHint,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Aucun scan pour le moment',
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: isDarkMode
-                                          ? AppColors.darkHint
-                                          : AppColors.lightHint,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    )
-                    .animate(delay: const Duration(milliseconds: 400))
-                    .fadeIn(duration: AppConstants.animationNormal),
               ],
             ),
           ),

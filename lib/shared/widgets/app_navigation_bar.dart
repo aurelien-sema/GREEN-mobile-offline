@@ -14,11 +14,12 @@ class _AppNavigationBarState extends State<AppNavigationBar> {
   late int _selected;
 
   final List<_NavItem> _items = [
-    _NavItem(label: 'Accueil', icon: Icons.home, path: '/'),
+    _NavItem(label: 'Accueil', icon: Icons.home, path: '/home'),
     _NavItem(label: 'Scanner', icon: Icons.camera_alt, path: '/camera'),
     _NavItem(label: 'Chat', icon: Icons.chat, path: '/chat'),
     _NavItem(label: 'Maladies', icon: Icons.spa, path: '/diseases'),
-    _NavItem(label: 'Profil', icon: Icons.person, path: '/profile'),
+    // Removed the Profil button
+    // _NavItem(label: 'Profil', icon: Icons.person, path: '/profile'),
   ];
 
   @override

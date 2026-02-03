@@ -188,9 +188,9 @@ class _MainNavigationShellState extends State<MainNavigationShell>
                               curve: Curves.elasticOut,
                             ),
                           ),
-                          child: const Icon(Icons.person),
+                          child: const Icon(Icons.shopping_bag),
                         ),
-                        label: 'Profil',
+                        label: 'Marketplace',
                       ),
                     ],
                   ), // BottomNavigationBar

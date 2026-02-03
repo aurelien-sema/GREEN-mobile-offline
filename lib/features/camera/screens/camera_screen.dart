@@ -14,6 +14,7 @@ import '../../../shared/widgets/custom_app_bar.dart';
 import '../../../shared/widgets/animation_effects.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/custom_scroll_physics.dart';
+import 'field_sheet_screen.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -68,11 +69,21 @@ class _CameraScreenState extends State<CameraScreen> {
           if (success) {
             final ScanResultModel? result = scanProvider.currentScanResult;
             if (result != null) {
-              // Persist to local history for offline access
-              try {
-                await historyService.addScan(result);
-              } catch (_) {}
-              _showResultsDialog(result);
+              if (result.diseaseId == 'unknown') {
+                _showUnknownImageDialog();
+              } else {
+                // Persist to local history for offline access
+                try {
+                  await historyService.addScan(result);
+                } catch (_) {}
+                // Naviguer vers la fiche terrain (offline) au lieu d'une pop-up
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (ctx) => FieldSheetScreen(scanResult: result),
+                  ),
+                );
+              }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -99,80 +110,107 @@ class _CameraScreenState extends State<CameraScreen> {
         });
   }
 
-  void _showResultsDialog(ScanResultModel result) {
+  // Résultats d'analyse: affichage remplacé par la Fiche terrain (FieldSheetScreen) pour être entièrement offline et plus conviviale.
+  void _showUnknownImageDialog() {
     final isDarkMode = context.read<ThemeProvider>().isDarkMode;
-
-    final confidence = (result.confidence).clamp(0.0, 1.0);
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('Résultats du scan'),
+        backgroundColor: isDarkMode ? AppColors.darkSurface : Colors.white,
+        title: Center(
+          child: Column(
+            children: [
+              const Icon(Icons.help_outline, size: 48, color: Colors.orange),
+              const SizedBox(height: 16),
+              Text(
+                'Image non reconnue',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Maladie détectée:',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              result.diseaseName,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Confiance: ${(confidence * 100).round()}%',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(
-              value: confidence,
-              minHeight: 8,
-              backgroundColor: isDarkMode
-                  ? AppColors.darkTertiary
-                  : AppColors.lightTertiary,
-              valueColor: AlwaysStoppedAnimation(
-                isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+              "Désolé, l'analyse n'est pas parvenue à identifier une plante ou une maladie connue. "
+              "Assurez-vous que l'image est bien éclairée et que la plante est centrée.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isDarkMode ? Colors.white70 : Colors.black54,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Text(
-              'Traitement: ${result.treatment}',
-              style: Theme.of(context).textTheme.bodyMedium,
+              "Il est possible que cette plante ne soit pas encore répertoriée dans notre base de données.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontStyle: FontStyle.italic,
+                fontSize: 12,
+                color: isDarkMode ? Colors.white38 : Colors.black38,
+              ),
             ),
           ],
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Fermer'),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() => _selectedImage = null);
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Réessayer'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.go('/chat');
-            },
-            child: const Text('Consulter l\'IA'),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Fermer'),
+            ),
           ),
         ],
       ),
     );
   }
 
+  // Ancienne méthode d'affichage des résultats supprimée — la Fiche terrain couvre ces informations maintenant.
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
     context.read<ThemeProvider>();
 
-    return Scaffold(
-      backgroundColor: isDarkMode
-          ? AppColors.darkBackground
-          : AppColors.lightBackground,
-      appBar: CustomAppBar(title: 'Scanner', isDarkMode: isDarkMode),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        context.go('/home');
+      },
+      child: Scaffold(
+        backgroundColor: isDarkMode
+            ? AppColors.darkBackground
+            : AppColors.lightBackground,
+        appBar: CustomAppBar(
+          title: 'Scanner',
+          isDarkMode: isDarkMode,
+          showProfileIcon: true,
+        ),
       body: GradientBackground(
         isDarkMode: isDarkMode,
         opacity: 0.1,
@@ -248,12 +286,42 @@ class _CameraScreenState extends State<CameraScreen> {
                   ],
                 ),
                 const SizedBox(height: AppConstants.paddingLarge),
+                // Consulter les maladies button
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    onPressed: () => context.go('/diseases'),
+                    icon: Icon(
+                      Icons.local_hospital,
+                      size: 18,
+                      color: isDarkMode
+                          ? AppColors.darkSecondary
+                          : AppColors.lightPrimary,
+                    ),
+                    label: Text(
+                      'Consulter les maladies',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDarkMode
+                            ? AppColors.darkSecondary
+                            : AppColors.lightPrimary,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                )
+                    .animate(delay: const Duration(milliseconds: 400))
+                    .fadeIn()
+                    .slideY(begin: 20, end: 0),
               ],
             ),
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildImagePreview(BuildContext context, bool isDarkMode) {

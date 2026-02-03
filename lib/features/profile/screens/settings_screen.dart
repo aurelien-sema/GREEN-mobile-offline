@@ -18,7 +18,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notificationsEnabled = true;
+
   bool _darkModeEnabled = false;
   bool _analyticsEnabled = true;
 
@@ -63,19 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: AppConstants.paddingMedium),
 
-                _buildSectionTitle(context, 'Notifications'),
-                _buildSettingItem(
-                  context: context,
-                  title: 'Notifications',
-                  description: 'Recevoir les alertes',
-                  icon: Icons.notifications,
-                  isDarkMode: isDarkMode,
-                  onToggle: (value) =>
-                      setState(() => _notificationsEnabled = value),
-                  value: _notificationsEnabled,
-                  delay: 150,
-                ),
-                const SizedBox(height: AppConstants.paddingMedium),
+
 
                 _buildSectionTitle(context, 'Confidentialité'),
                 _buildSettingItem(

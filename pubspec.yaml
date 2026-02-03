@@ -49,7 +49,19 @@ dependencies:
   connectivity_plus: ^5.0.2
   flutter_dotenv: ^5.0.2
   crypto: ^3.0.2
-  # flutter_local_notifications: ^14.0.0 # Disabled due to Android build conflicts with flutter_local_notifications 14.x
+  
+  # Location services
+  geolocator: ^13.0.0
+  geocoding: ^3.0.0
+  
+  # Permissions
+  permission_handler: ^11.0.0
+  
+  # Image handling for profile
+  image_cropper: ^8.0.0
+  image: ^4.1.0
+  tflite_flutter: ^0.12.1
+  intl_phone_field: ^3.2.0
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +74,9 @@ flutter:
   assets:
     - assets/images/
     - assets/rag/
+    - assets/models/
+    - assets/data/diseases.json
+    - assets/french_labels.json
     # Optionally package an env file so it is available on-device.
     # Create `assets/.env` (copy your root .env or create a secrets-free version)
     # and uncomment the following line to include it in the app bundle:

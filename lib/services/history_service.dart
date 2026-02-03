@@ -84,6 +84,27 @@ class HistoryService {
       'freq': freq,
     };
   }
+  Future<List<Map<String, String>>> getUniqueDiseases() async {
+    await _ensureLoaded();
+    final unique = <String, ScanResultModel>{};
+    for (final scan in _cache) {
+      if (!unique.containsKey(scan.diseaseName) && 
+          !scan.diseaseName.toLowerCase().contains('healthy') && 
+          !scan.diseaseName.toLowerCase().contains('saine')) {
+        unique[scan.diseaseName] = scan;
+      }
+    }
+    
+    return unique.values.map((scan) {
+      // Improve this by possibly fetching descriptions from a static map or AI
+      return {
+        'name': scan.diseaseName,
+        'scientificName': scan.diseaseId.split('___').last.replaceAll('_', ' '),
+        'description': 'Maladie identifiée sur ${scan.affectedPlants.join(", ")}.',
+        'treatment': scan.treatment,
+      };
+    }).toList();
+  }
 }
 
 final historyService = HistoryService();

@@ -13,6 +13,10 @@ import 'providers/font_size_provider.dart';
 import 'services/storage/storage_service.dart';
 import 'services/gemini/gemini_service.dart';
 import 'services/rag_service.dart';
+import 'providers/scan_provider.dart';
+import 'providers/diseases_provider.dart';
+import 'providers/marketplace_provider.dart';
+import 'utils/french_translator.dart';
 
 final StorageService storageService = StorageService();
 
@@ -141,7 +145,7 @@ Future<void> main() async {
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
-    ]);
+    ]); 
     debugPrint('✓ Orientation locked to portrait');
   } catch (e) {
     debugPrint('✗ Error setting orientation: $e');
@@ -157,6 +161,14 @@ Future<void> main() async {
     }
   } catch (e) {
     debugPrint('✗ RAG initialization failed: $e');
+  }
+
+  // Initialize French labels translator
+  try {
+    await frenchTranslator.initialize();
+    debugPrint('✓ French labels translator initialized');
+  } catch (e) {
+    debugPrint('✗ French labels translator initialization failed: $e');
   }
 
   // Initialize localization provider
@@ -215,15 +227,22 @@ class GreenApp extends StatelessWidget {
         ChangeNotifierProvider<LocaleProvider>(create: (_) => localeProvider ?? LocaleProvider()),
         ChangeNotifierProvider<FontSizeProvider>(create: (_) => fontSizeProvider ?? FontSizeProvider()),
         ChangeNotifierProvider(create: (_) => AppSettingsProvider()),
+        ChangeNotifierProvider(create: (_) => ScanProvider()),
+        ChangeNotifierProvider(create: (_) => DiseasesProvider()),
+        ChangeNotifierProvider(create: (_) => MarketplaceProvider()),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
+      child: Consumer2<ThemeProvider, LocaleProvider>(
+        builder: (context, themeProvider, localeProvider, child) {
           return MaterialApp.router(
             title: 'Green',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme(),
             darkTheme: AppTheme.darkTheme(),
             themeMode: themeProvider.themeMode,
+            locale: Locale(localeProvider.locale),
+            // These would be needed for full localization delegate setup
+            // localizationsDelegates: [ ... ],
+            // supportedLocales: [ ... ],
             routerConfig: appRouter,
           );
         },

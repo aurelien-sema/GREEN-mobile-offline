@@ -45,5 +45,19 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Permissions -->
+	<key>NSCameraUsageDescription</key>
+	<string>Cette application utilise l'appareil photo pour scanner les plantes et les maladies.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Cette application accède à vos photos pour analyser des images de plantes existantes.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Cette application peut utiliser le microphone pour certaines fonctionnalités vidéo.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Cette application utilise votre position pour afficher la météo locale adaptée à vos cultures.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Cette application utilise votre position pour afficher la météo locale.</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Cette application utilise votre position pour la météo.</string>
 </dict>
 </plist>

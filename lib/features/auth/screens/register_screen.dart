@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/widgets/gradient_button.dart';
@@ -9,6 +10,7 @@ import '../../../services/auth_service.dart';
 import '../../../providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../core/validation/validators.dart';
+import '../../../core/utils/text_input_formatters.dart';
 // password hashing handled by AuthService (PBKDF2)
 
 class RegisterScreen extends StatefulWidget {
@@ -253,8 +255,10 @@ class _RegisterScreenState extends State<RegisterScreen>
               const SizedBox(height: 8),
               TextField(
                     controller: _nameController,
+                    textCapitalization: TextCapitalization.sentences,
+                    inputFormatters: [CapitalizeSentencesFormatter()],
                     decoration: InputDecoration(
-                      hintText: 'Jean Dupont',
+                      hintText: 'TANKEU Aurélien', // Requested placeholder
                       prefixIcon: Icon(
                         Icons.person,
                         color: isDarkMode
@@ -274,23 +278,31 @@ class _RegisterScreenState extends State<RegisterScreen>
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
-              TextField(
-                    controller: _usePhone ? _phoneController : _emailController,
-                    keyboardType: _usePhone
-                        ? TextInputType.phone
-                        : TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      hintText: _usePhone
-                          ? '+237 6 12 34 56 78'
-                          : 'votre@email.com',
-                      prefixIcon: Icon(
-                        _usePhone ? Icons.phone : Icons.email,
-                        color: isDarkMode
-                            ? AppColors.darkPrimary
-                            : AppColors.lightPrimary,
+              _usePhone
+                  ? IntlPhoneField(
+                      controller: _phoneController,
+                      decoration: InputDecoration(
+                        hintText: '6 12 34 56 78',
+                        counterText: '',
                       ),
-                    ),
-                  )
+                      initialCountryCode: 'CM',
+                      onChanged: (phone) {
+                        // Store full number if needed, or rely on controller text + country code
+                      },
+                    )
+                  : TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        hintText: 'votre@email.com',
+                        prefixIcon: Icon(
+                          Icons.email,
+                          color: isDarkMode
+                              ? AppColors.darkPrimary
+                              : AppColors.lightPrimary,
+                        ),
+                      ),
+                    )
                   .animate()
                   .fadeIn(delay: const Duration(milliseconds: 250))
                   .slideY(begin: 10, end: 0),

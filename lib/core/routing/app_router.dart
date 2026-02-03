@@ -10,10 +10,14 @@ import '../../features/chat/screens/chat_screen.dart';
 import '../../features/diseases/screens/diseases_screen.dart';
 import '../../features/profile/screens/settings_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
-import '../../features/profile/screens/notifications_screen.dart';
+
 import '../../features/profile/screens/preferences_screen.dart';
+import '../../features/profile/screens/about_screen.dart';
 import '../../shared/widgets/main_navigation_shell.dart';
 import '../../features/history/screens/history_screen.dart';
+import '../../features/weather/screens/weather_screen.dart';
+import '../../features/marketplace/screens/marketplace_screen.dart';
+import '../../features/marketplace/screens/product_detail_screen.dart';
 
 final appRouter = GoRouter(
   routes: [
@@ -66,21 +70,42 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/chat',
               name: 'chat',
-              builder: (context, state) => const ChatScreen(),
+              builder: (context, state) {
+                final extra = state.extra as Map<String, dynamic>?;
+                return ChatScreen(
+                  initialMessage: extra?['initialMessage'] as String?,
+                  cacheKey: extra?['cacheKey'] as String?,
+                  autoSend: extra?['autoSend'] as bool? ?? true,
+                );
+              },
             ),
           ],
         ),
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/profile',
-              name: 'profile',
-              builder: (context, state) => const ProfileScreen(),
+              path: '/marketplace',
+              name: 'marketplace',
+              builder: (context, state) => const MarketplaceScreen(),
             ),
           ],
         ),
-        // Profile branch removed from bottom navigation per UI request
       ],
+    ),
+    // Profile (outside bottom nav with back button)
+    GoRoute(
+      path: '/profile',
+      name: 'profile',
+      builder: (context, state) => const ProfileScreen(),
+    ),
+    // Product detail (outside bottom nav)
+    GoRoute(
+      path: '/product-detail',
+      name: 'product-detail',
+      builder: (context, state) {
+        final productId = (state.extra as Map?)?['productId'] as String? ?? '';
+        return ProductDetailScreen(productId: productId);
+      },
     ),
     // Diseases (accessible from drawer or home)
     GoRoute(
@@ -95,17 +120,22 @@ final appRouter = GoRouter(
       builder: (context, state) =>
           SettingsScreen(from: (state.extra as Map?)?['from'] as String?),
     ),
-    GoRoute(
-      path: '/notifications',
-      name: 'notifications',
-      builder: (context, state) =>
-          NotificationsScreen(from: (state.extra as Map?)?['from'] as String?),
-    ),
+
     GoRoute(
       path: '/preferences',
       name: 'preferences',
       builder: (context, state) =>
           PreferencesScreen(from: (state.extra as Map?)?['from'] as String?),
+    ),
+    GoRoute(
+      path: '/about',
+      name: 'about',
+      builder: (context, state) => const AboutScreen(),
+    ),
+    GoRoute(
+      path: '/weather',
+      name: 'weather',
+      builder: (context, state) => const WeatherScreen(),
     ),
     GoRoute(
       path: '/history',

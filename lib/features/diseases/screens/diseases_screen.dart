@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
+import 'package:green_app/models/disease_catalog_model.dart';
 import 'package:provider/provider.dart';
+import '../../../providers/diseases_provider.dart';
+import '../../../shared/widgets/app_pop_scope.dart';
+import '../../../services/history_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
@@ -18,46 +23,49 @@ class DiseasesScreen extends StatefulWidget {
 
 class _DiseasesScreenState extends State<DiseasesScreen> {
   late TextEditingController _searchController;
-  final List<Map<String, String>> _diseases = [
-    {
-      'name': 'Oïdium',
-      'scientificName': 'Powdery Mildew',
-      'description': 'Revêtement blanc sur les feuilles',
-      'treatment': 'Soufre ou fongicide approprié',
-    },
-    {
-      'name': 'Mildiou',
-      'scientificName': 'Late Blight',
-      'description': 'Taches brunes sur les feuilles',
-      'treatment': 'Cuivre ou fongicide de synthèse',
-    },
-    {
-      'name': 'Rouille',
-      'scientificName': 'Rust',
-      'description': 'Pustules oranges sur les feuilles',
-      'treatment': 'Soufre ou fongicide cuivre',
-    },
-    {
-      'name': 'Anthracnose',
-      'scientificName': 'Anthracnose',
-      'description': 'Taches nécrotiques circulaires',
-      'treatment': 'Fongicide de contact',
-    },
-    {
-      'name': 'Carie blanche',
-      'scientificName': 'White Rot',
-      'description': 'Pourriture blanche du collet',
-      'treatment': 'Réduction de l\'humidité',
-    },
-  ];
-
-  List<Map<String, String>> _filteredDiseases = [];
+  List<DiseaseCatalogModel> _diseases = [];
+  List<DiseaseCatalogModel> _filteredDiseases = [];
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    _filteredDiseases = _diseases;
+    _loadDiseases();
+  }
+
+  Future<void> _loadDiseases() async {
+    try {
+      await context.read<DiseasesProvider>().load();
+      final providerDiseases = context.read<DiseasesProvider>().diseases;
+      final List<DiseaseCatalogModel> combined = List<DiseaseCatalogModel>.from(providerDiseases);
+
+      // Add unique diseases from history (by name) — lightweight conversion
+      try {
+        final historyDiseases = await historyService.getUniqueDiseases();
+        for (final d in historyDiseases) {
+          final name = d['name'] ?? '';
+          if (name.isEmpty) continue;
+          if (!combined.any((e) => e.name.toLowerCase() == name.toLowerCase())) {
+            combined.add(DiseaseCatalogModel(
+              id: name.toLowerCase().replaceAll(' ', '-'),
+              name: name,
+              scientificName: d['scientificName'] ?? '',
+              affectedPlants: (d['affectedPlants'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+              symptoms: [d['description'] ?? ''],
+              actions: [d['treatment'] ?? ''],
+              aliases: [],
+            ));
+          }
+        }
+      } catch (_) {}
+
+      if (mounted) {
+        setState(() {
+          _diseases = combined;
+          _filteredDiseases = _diseases;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -74,12 +82,8 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
         _filteredDiseases = _diseases
             .where(
               (disease) =>
-                  disease['name']!.toLowerCase().contains(
-                    query.toLowerCase(),
-                  ) ||
-                  disease['scientificName']!.toLowerCase().contains(
-                    query.toLowerCase(),
-                  ),
+                  disease.name.toLowerCase().contains(query.toLowerCase()) ||
+                  disease.scientificName.toLowerCase().contains(query.toLowerCase()),
             )
             .toList();
       }
@@ -91,14 +95,42 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
     context.read<ThemeProvider>();
 
-    return Scaffold(
-      backgroundColor: isDarkMode
-          ? AppColors.darkBackground
-          : AppColors.lightBackground,
-      appBar: CustomAppBar(
-        title: 'Maladies des plantes',
-        isDarkMode: isDarkMode,
-      ),
+    return AppPopScope(
+      onWillPop: () async {
+        if (Navigator.canPop(context)) {
+          return true;
+        }
+        context.go('/camera'); // Redirect to Camera (Scanner) as requested
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: isDarkMode
+            ? AppColors.darkBackground
+            : AppColors.lightBackground,
+        appBar: AppBar(
+          title: const Text('Maladies'),
+          elevation: 0,
+          backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.go('/camera'),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: Center(
+                child: GestureDetector(
+                  onTap: () => context.go('/profile'),
+                  child: Icon(
+                    Icons.person,
+                    color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       body: GradientBackground(
         isDarkMode: isDarkMode,
         opacity: 0.1,
@@ -179,12 +211,13 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
           ),
         ),
       ),
+    )
     );
   }
 
   Widget _buildDiseaseCard(
     BuildContext context,
-    Map<String, String> disease,
+    DiseaseCatalogModel disease,
     int index,
     bool isDarkMode,
   ) {
@@ -221,11 +254,11 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          disease['name']!,
+                          disease.name,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         Text(
-                          disease['scientificName']!,
+                          disease.scientificName,
                           style: Theme.of(context).textTheme.labelSmall
                               ?.copyWith(
                                 color: isDarkMode
@@ -240,29 +273,29 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
               ),
               const SizedBox(height: AppConstants.paddingMedium),
               Text(
-                'Description:',
+                'Plantes affectées:',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
-              const SizedBox(height: 4),
-              Text(
-                disease['description']!,
-                style: Theme.of(context).textTheme.bodySmall,
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: disease.affectedPlants.map((p) => Chip(label: Text(p))).toList(),
               ),
               const SizedBox(height: 12),
               Text(
-                'Traitement:',
+                'Symptômes principaux:',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
+              ...disease.symptoms.map((s) => Text('- $s', style: Theme.of(context).textTheme.bodySmall)),
+              const SizedBox(height: 12),
               Text(
-                disease['treatment']!,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: isDarkMode
-                      ? AppColors.darkPrimary
-                      : AppColors.lightPrimary,
-                  fontWeight: FontWeight.w500,
-                ),
+                'Actions recommandées:',
+                style: Theme.of(context).textTheme.titleSmall,
               ),
+              const SizedBox(height: 6),
+              ...disease.actions.map((a) => Text('- $a', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary, fontWeight: FontWeight.w500))),
             ],
           ),
         )
