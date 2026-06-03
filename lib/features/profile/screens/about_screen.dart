@@ -9,7 +9,9 @@ import 'package:provider/provider.dart';
 import '../../../shared/widgets/app_pop_scope.dart';
 
 class AboutScreen extends StatelessWidget {
-  const AboutScreen({super.key});
+  final String? from;
+
+  const AboutScreen({super.key, this.from});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +19,11 @@ class AboutScreen extends StatelessWidget {
 
     return AppPopScope(
       onWillPop: () async {
-        context.go('/profile');
+        if (from == 'profile') {
+          context.go('/profile');
+        } else {
+          context.go('/home');
+        }
         return false;
       },
       child: Scaffold(

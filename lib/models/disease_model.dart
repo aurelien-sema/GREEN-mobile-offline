@@ -20,6 +20,19 @@ class DiseaseModel {
     required this.type,
   });
 
+  /// Calcul du niveau de gravité en fonction de la confiance
+  /// Formule : ((confidence - 0.55) * 100) / 45
+  /// Plage de résultat : 0 à 100 (%)
+  double get severityLevel {
+    final confidenceThreshold = 0.55;
+    final range = 45;
+    if (confidence < confidenceThreshold) {
+      return 0;
+    }
+    final severity = ((confidence - confidenceThreshold) * 100) / range;
+    return severity > 100 ? 100 : severity;
+  }
+
   factory DiseaseModel.fromJson(Map<String, dynamic> json) {
     return DiseaseModel(
       id: json['id'] as String,

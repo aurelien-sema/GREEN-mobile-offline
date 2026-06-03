@@ -17,6 +17,19 @@ class DetectionResult {
     required this.detectionDate,
   });
 
+  /// Calcul du niveau de gravité en fonction de la confiance
+  /// Formule : ((confidence - 0.55) * 100) / 45
+  /// Plage de résultat : 0 à 100 (%)
+  double get severityLevel {
+    final confidenceThreshold = 0.55;
+    final range = 45;
+    if (confidence < confidenceThreshold) {
+      return 0;
+    }
+    final calculatedSeverity = ((confidence - confidenceThreshold) * 100) / range;
+    return calculatedSeverity > 100 ? 100 : calculatedSeverity;
+  }
+
   Map<String, dynamic> toJson() => {
     'diseaseId': diseaseId,
     'diseaseName': diseaseName,

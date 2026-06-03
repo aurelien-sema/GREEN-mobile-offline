@@ -9,7 +9,7 @@ class TFLiteService {
   List<String>? _labels;
   bool _isModelLoaded = false;
 
-  static const String modelPath = 'assets/models/MobileNetV2.tfliteQuant';
+  static const String modelPath = 'assets/models/best_efficientnet.tflite';
   static const String labelsPath = 'assets/models/labels.txt';
   
   // Input size for MobileNetV2 (usually 224x224)

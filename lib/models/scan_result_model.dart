@@ -20,6 +20,19 @@ class ScanResultModel {
     required this.affectedPlants,
   });
 
+  /// Calcul du niveau de gravité en fonction de la confiance
+  /// Formule : ((confidence - 0.55) * 100) / 0.45
+  /// Plage de résultat : 0 à 100 (%)
+  double get severityLevel {
+    final confidenceThreshold = 0.4;
+    final range = 0.45;
+    if (confidence < confidenceThreshold) {
+      return 0;
+    }
+    final severity = ((confidence - confidenceThreshold) * 100) / range;
+    return severity > 100 ? 100 : severity;
+  }
+
   factory ScanResultModel.fromJson(Map<String, dynamic> json) {
     return ScanResultModel(
       id: json['id'] as String,

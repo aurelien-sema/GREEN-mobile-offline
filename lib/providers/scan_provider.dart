@@ -66,7 +66,7 @@ class ScanProvider with ChangeNotifier {
           .length,
       'healthPercentage': _scanHistory.isEmpty
           ? 100
-          : ((_scanHistory.where((scan) => scan.confidence > 0.8).length /
+          : ((_scanHistory.where((scan) => scan.severityLevel < 50).length /
                         _scanHistory.length) *
                     100)
                 .round(),

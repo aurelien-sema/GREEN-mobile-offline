@@ -41,18 +41,18 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
         widget.scanResult.diseaseId == 'healthy';
   }
 
-  String _severityLabel(double confidence) {
-    if (confidence >= 0.9) return 'Très élevé';
-    if (confidence >= 0.75) return 'Élevé';
-    if (confidence >= 0.5) return 'Modéré';
-    if (confidence >= 0.35) return 'Faible';
+  String _severityLabel(double severityLevel) {
+    if (severityLevel >= 90) return 'Très élevé';
+    if (severityLevel >= 75) return 'Élevé';
+    if (severityLevel >= 50) return 'Modéré';
+    if (severityLevel >= 25) return 'Faible';
     return 'Suspicion faible';
   }
 
-  Color _severityColor(double confidence) {
-    if (confidence >= 0.9) return Colors.red.shade700;
-    if (confidence >= 0.75) return Colors.orange.shade700;
-    if (confidence >= 0.5) return Colors.amber.shade700;
+  Color _severityColor(double severityLevel) {
+    if (severityLevel >= 90) return Colors.red.shade700;
+    if (severityLevel >= 75) return Colors.orange.shade700;
+    if (severityLevel >= 50) return Colors.amber.shade700;
     return Colors.green.shade600;
   }
 
@@ -127,7 +127,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(8),
                                       child: LinearProgressIndicator(
-                                        value: widget.scanResult.confidence,
+                                        value: widget.scanResult.severityLevel / 100,
                                         minHeight: 12,
                                         backgroundColor: isDarkMode
                                             ? const Color.fromRGBO(
@@ -137,14 +137,14 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                                         valueColor:
                                             AlwaysStoppedAnimation<Color>(
                                           _severityColor(
-                                              widget.scanResult.confidence),
+                                              widget.scanResult.severityLevel),
                                         ),
                                       ),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
                                       _severityLabel(
-                                          widget.scanResult.confidence),
+                                          widget.scanResult.severityLevel),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,

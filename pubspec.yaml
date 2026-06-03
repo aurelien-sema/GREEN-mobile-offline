@@ -22,6 +22,7 @@ dependencies:
   # Network & API
   http: ^1.2.0
   dio: ^5.4.0
+  flutter_inappwebview: ^6.1.5
   google_generative_ai: ^0.4.5
   
   # Camera & Images

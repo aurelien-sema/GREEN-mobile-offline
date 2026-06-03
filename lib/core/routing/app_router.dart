@@ -130,7 +130,8 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/about',
       name: 'about',
-      builder: (context, state) => const AboutScreen(),
+      builder: (context, state) =>
+          AboutScreen(from: (state.extra as Map?)?['from'] as String?),
     ),
     GoRoute(
       path: '/weather',

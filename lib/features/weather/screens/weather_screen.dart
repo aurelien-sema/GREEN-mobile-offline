@@ -7,7 +7,6 @@ import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/locale_provider.dart';
 import '../../../services/weather_service.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/app_pop_scope.dart';
 

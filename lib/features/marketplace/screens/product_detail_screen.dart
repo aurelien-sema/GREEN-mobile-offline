@@ -7,7 +7,6 @@ import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/marketplace_provider.dart';
 import '../../../models/product_model.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
 import '../../../shared/widgets/gradient_background.dart';
 
 class ProductDetailScreen extends StatefulWidget {

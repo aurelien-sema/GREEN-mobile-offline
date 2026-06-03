@@ -105,6 +105,25 @@ class HistoryService {
       };
     }).toList();
   }
+
+  /// Remove a scan from history by ID
+  Future<void> removeScan(String scanId) async {
+    await _ensureLoaded();
+    _cache.removeWhere((scan) => scan.id == scanId);
+    await _save();
+    try {
+      _onChanged.add(null);
+    } catch (_) {}
+  }
+
+  /// Clear all scans from history
+  Future<void> clearAll() async {
+    _cache = [];
+    await _save();
+    try {
+      _onChanged.add(null);
+    } catch (_) {}
+  }
 }
 
 final historyService = HistoryService();
