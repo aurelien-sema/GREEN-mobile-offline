@@ -30,8 +30,11 @@ class ChatbotService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final botResponse =
-            data['response'] as String? ?? 'Désolé, je n\'ai pas compris.';
+        final botResponse = data['response'] as String?;
+        
+        if (botResponse == null || botResponse.isEmpty) {
+          throw Exception('Réponse vide du serveur');
+        }
 
         // Ajouter la réponse à l'historique
         _conversationHistory.add({'role': 'assistant', 'content': botResponse});
@@ -41,8 +44,7 @@ class ChatbotService {
         throw Exception('Erreur API: ${response.statusCode}');
       }
     } catch (e) {
-      // Mode démo en cas d'erreur
-      return 'Désolé, je n\'ai pas pu traiter votre demande.';
+      rethrow;
     }
   }
 
@@ -70,16 +72,20 @@ class ChatbotService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final botResponse =
-            data['response'] as String? ?? 'Désolé, je n\'ai pas compris.';
+        final botResponse = data['response'] as String?;
+        
+        if (botResponse == null || botResponse.isEmpty) {
+          throw Exception('Réponse vide du serveur');
+        }
+
+        _conversationHistory.add({'role': 'assistant', 'content': botResponse});
 
         return botResponse;
       } else {
         throw Exception('Erreur API: ${response.statusCode}');
       }
     } catch (e) {
-      // Mode démo en cas d'erreur
-      return 'Cela pourrait être une carence en magnésium. Pouvez-vous m\'envoyer une photo ?';
+      rethrow;
     }
   }
 

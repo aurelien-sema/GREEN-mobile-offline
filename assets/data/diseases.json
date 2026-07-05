@@ -8,42 +8,51 @@
     "actions": [
       "Continuez l'observation régulière",
       "Maintenez une bonne hygiène du jardin",
-      "Assurez un arrosage adapté"
+      "Assurez un arrosage adapté",
+      "Pratiquez la rotation des cultures"
     ],
-    "aliases": ["Healthy"]
+    "aliases": ["Healthy", "Healthy Plant"]
   },
   {
     "id": "mildiou",
     "name": "Mildiou",
     "scientificName": "Phytophthora infestans",
-    "affectedPlants": ["Tomate", "Pomme de terre"],
+    "affectedPlants": ["Tomate", "Pomme de terre", "Poivre", "Aubergine"],
     "symptoms": [
       "Taches brunes huileuses sur les feuilles",
+      "Taches sombres avec auréole jaune",
       "Taches sombres sur les fruits",
-      "Feuilles flétrissantes et nécrosées"
+      "Feuilles flétrissantes et nécrosées",
+      "Pourriture à la base des tiges"
     ],
     "actions": [
       "Retirer et détruire les parties infectées",
       "Améliorer le drainage et diminuer l'humidité",
-      "Appliquer un fongicide (cuivre ou autre selon recommandation locale)",
-      "Alterner les cultures et pratiquer une rotation"
+      "Éviter l'arrosage par le haut",
+      "Appliquer un fongicide (cuivre ou mancozèbe selon recommandation locale)",
+      "Alterner les cultures et pratiquer une rotation de 3-4 ans",
+      "Espacer les plants pour améliorer la ventilation"
     ],
-    "aliases": ["Late Blight"]
+    "aliases": ["Late Blight", "Phytophtora"]
   },
   {
     "id": "oidium",
     "name": "Oïdium",
     "scientificName": "Erysiphales (gén.)",
-    "affectedPlants": ["Courgette", "Vigne", "Céréales"],
+    "affectedPlants": ["Courgette", "Vigne", "Céréales", "Pois", "Haricot", "Melon"],
     "symptoms": [
-      "Poudre blanche sur la surface des feuilles",
+      "Poudre blanche farineuse sur la surface des feuilles",
       "Distorsion des jeunes tissus",
-      "Feuilles jaunissantes et desséchées"
+      "Feuilles jaunissantes et desséchées",
+      "Présence de petits points noirs (cléistothèques) en fin de saison"
     ],
     "actions": [
       "Supprimer feuilles fortement touchées",
       "Favoriser l'aération et éclaircissement de la plante",
-      "Utiliser traitement à base de soufre ou fongicide adapté"
+      "Éviter trop d'azote qui favorise la maladie",
+      "Utiliser traitement à base de soufre ou fongicide adapté",
+      "Pulvériser dès les premiers symptômes",
+      "Arroser à la base pour éviter l'humidité foliaire"
     ],
     "aliases": ["Powdery Mildew"]
   },
@@ -51,69 +60,111 @@
     "id": "rouille",
     "name": "Rouille",
     "scientificName": "Pucciniales",
-    "affectedPlants": ["Blé", "Ornementales", "Hortensia"],
+    "affectedPlants": ["Blé", "Maïs", "Orge", "Plantes ornementales", "Hortensia", "Bégonias"],
     "symptoms": [
       "Pustules orange/rouille sur la face inférieure des feuilles",
       "Taches jaunes ou chlorotiques sur la face supérieure",
-      "Perte de vigueur et chute précoce des feuilles"
+      "Perte de vigueur et chute précoce des feuilles",
+      "Pustules noires en fin de saison"
     ],
     "actions": [
       "Enlever débris végétaux et éviter l'humidité prolongée",
       "Planter des variétés résistantes si disponibles",
-      "Appliquer fongicides quand nécessaire"
+      "Appliquer fongicides à base de cuivre en prévention",
+      "Améliorer l'aération des feuillages",
+      "Arrosage par le bas uniquement",
+      "Rotation cultures de 2-3 ans minimum"
     ],
-    "aliases": ["Rust"]
+    "aliases": ["Rust", "Rust Disease"]
   },
   {
     "id": "anthracnose",
     "name": "Anthracnose",
     "scientificName": "Colletotrichum spp.",
-    "affectedPlants": ["Fruits", "Légumes", "Arbres fruitiers"],
+    "affectedPlants": ["Fruits", "Légumes", "Arbres fruitiers", "Manioc", "Haricot", "Pois"],
     "symptoms": [
       "Taches nécrotiques anguleuses sur feuilles",
       "Taches noires ou pourriture sur fruits",
-      "Branches mortes ou dépérissantes"
+      "Branches mortes ou dépérissantes",
+      "Chancres sur branches et troncs",
+      "Spores rosées en condition humide"
     ],
     "actions": [
       "Éliminer les parties atteintes et réduire l'humidité",
       "Éviter les blessures aux plantes",
-      "Appliquer traitements de contact au besoin"
+      "Appliquer traitements fongicides de contact",
+      "Utiliser semences certifiées saines",
+      "Désinfecter outils de coupe",
+      "Rotation des cultures obligatoire"
     ],
-    "aliases": []
+    "aliases": ["Anthracnose"]
   },
   {
     "id": "fusariose",
-    "name": "Fusariose",
+    "name": "Fusariose (Flétrissement fusarien)",
     "scientificName": "Fusarium spp.",
-    "affectedPlants": ["Tomate", "Bananier", "Plantes ornementales"],
+    "affectedPlants": ["Tomate", "Bananier", "Plantes ornementales", "Cacao", "Cotonnier"],
     "symptoms": [
       "Jaunissement uni-latéral des feuilles",
       "Pourriture racinaire ou collet",
-      "Dépérissement progressif de la plante"
+      "Dépérissement progressif de la plante",
+      "Coloration brun-rouge interne du système vasculaire",
+      "Flètrissement soudain lors de chaleurs"
     ],
     "actions": [
       "Utiliser plants sains et sol bien drainé",
       "Éviter excès d'arrosage",
-      "Rotation des cultures et désinfection du sol si possible"
+      "Rotation des cultures de 3-4 ans minimum",
+      "Désinfection du sol si possible (solarisation)",
+      "Planter variétés résistantes",
+      "Éliminer plants infectés complètement"
     ],
-    "aliases": []
+    "aliases": ["Fusarium Wilt"]
+  },
+  {
+    "id": "bacterial-wilt",
+    "name": "Flétrissement bactérien",
+    "scientificName": "Ralstonia solanacearum",
+    "affectedPlants": ["Tomate", "Aubergine", "Banane", "Cacao", "Poivre", "Pomme de terre"],
+    "symptoms": [
+      "Flétrissement rapide sans jaunissement du feuillage",
+      "Décoloration marron du tissu vasculaire",
+      "Dépérissement complet de la plante",
+      "Écoulement de sécrétions visqueuses",
+      "Mort soudaine de plantations entières"
+    ],
+    "actions": [
+      "Utiliser plants certifiés sains",
+      "Éviter l'excès d'humidité du sol",
+      "Rotation de cultures obligatoire (au moins 2-3 ans)",
+      "Éliminer plants malades complètement",
+      "Nettoyer et désinfecter tous les outils",
+      "Quarantaine stricte de nouvelles plantations",
+      "Maintenir sol bien drainé"
+    ],
+    "aliases": ["Brown Rot", "Bacterial Wilt"]
   },
   {
     "id": "black-sigatoka",
-    "name": "Black Sigatoka",
+    "name": "Sigatoka noir",
     "scientificName": "Pseudocercospora fijiensis",
-    "affectedPlants": ["Bananier"],
+    "affectedPlants": ["Bananier", "Plantain"],
     "symptoms": [
-      "Taches foliaires sombres longues et étroites",
+      "Petites taches foliaires sombres longues et étroites",
+      "Taches devenant noires progressivement",
       "Feuilles noircissantes conduisant à perte de rendement",
-      "Défaut de maturation des fruits"
+      "Défaut de maturation des fruits",
+      "Défoliation complète en absence de traitement"
     ],
     "actions": [
-      "Enlever feuilles très atteintes",
+      "Enlever feuilles très atteintes régulièrement",
       "Améliorer la ventilation des parcelles",
-      "Appliquer traitements fongicides prescrits localement"
+      "Appliquer traitements fongicides prescrits localement",
+      "Utiliser variétés tolérantes",
+      "Gestion stricte des débris végétaux",
+      "Pulvérisations préventives dès apparition premiers foyers"
     ],
-    "aliases": []
+    "aliases": ["Black Sigatoka", "Sigatoka Noir"]
   },
   {
     "id": "cassava-mosaic",
@@ -186,21 +237,25 @@
   },
   {
     "id": "early-blight",
-    "name": "Alternariose",
+    "name": "Alternariose (Brûlure précoce)",
     "scientificName": "Alternaria solani",
-    "affectedPlants": ["Tomate", "Pomme de terre"],
+    "affectedPlants": ["Tomate", "Pomme de terre", "Aubergine"],
     "symptoms": [
       "Petites taches brunes concentriques sur feuilles",
       "Lésions en cibles avec anneaux nécrotiques",
-      "Feuilles jaunissantes et chute prématurée"
+      "Feuilles jaunissantes et chute prématurée",
+      "Apparition d'abord sur feuilles basses",
+      "Taches circulaires avec crête noire"
     ],
     "actions": [
       "Améliorer l'aération et réduire l'arrosage par le haut",
       "Retirer feuilles infra-infectées régulièrement",
-      "Appliquer fongicides préventifs si possible",
-      "Désinfecter outils et matériel"
+      "Appliquer fongicides préventifs dès début saison",
+      "Désinfecter outils et matériel",
+      "Éviter l'humidité foliaire prolongée",
+      "Paillage pour éviter éclaboussure du sol"
     ],
-    "aliases": ["Alternaria Blight"]
+    "aliases": ["Alternaria Blight", "Early Blight"]
   },
   {
     "id": "leaf-spot-fungi",
@@ -219,96 +274,6 @@
       "Rotation des cultures sur 2-3 ans"
     ],
     "aliases": ["Cercospora Leaf Spot"]
-  },
-  {
-    "id": "powdery-mildew",
-    "name": "Oïdium",
-    "scientificName": "Erysiphales",
-    "affectedPlants": ["Courgette", "Vigne", "Céréales", "Pois"],
-    "symptoms": [
-      "Poudre blanche farineuse sur les feuilles",
-      "Distorsion des tissus",
-      "Feuilles jaunissantes et desséchées"
-    ],
-    "actions": [
-      "Supprimer feuilles fortement touchées",
-      "Favoriser l'aération de la plante",
-      "Traitement à base de soufre ou fongicide adapté",
-      "Arroser à la base pour éviter humidité foliaire"
-    ],
-    "aliases": ["Powdery Mildew"]
-  },
-  {
-    "id": "rust-disease",
-    "name": "Rouille",
-    "scientificName": "Pucciniales",
-    "affectedPlants": ["Blé", "Maïs", "Orge", "Plantes ornementales"],
-    "symptoms": [
-      "Pustules orange/rouille sur face inférieure des feuilles",
-      "Taches jaunes sur la face supérieure",
-      "Perte de vigueur et dépérissement"
-    ],
-    "actions": [
-      "Enlever débris végétaux",
-      "Planter variétés résistantes si disponibles",
-      "Appliquer fongicides en début de saison",
-      "Éviter l'humidité prolongée"
-    ],
-    "aliases": ["Rust"]
-  },
-  {
-    "id": "anthracnose",
-    "name": "Anthracnose",
-    "scientificName": "Colletotrichum spp.",
-    "affectedPlants": ["Fruits", "Légumes", "Arbres fruitiers", "Manioc"],
-    "symptoms": [
-      "Taches nécrotiques anguleuses",
-      "Taches noires sur fruits",
-      "Pourriture et dépérissement des branches"
-    ],
-    "actions": [
-      "Éliminer les parties atteintes",
-      "Réduire l'humidité et améliorer l'aération",
-      "Éviter blessures aux plantes",
-      "Appliquer traitements fongicides de contact"
-    ],
-    "aliases": ["Anthracnose"]
-  },
-  {
-    "id": "fusarium-wilt",
-    "name": "Fusariose",
-    "scientificName": "Fusarium spp.",
-    "affectedPlants": ["Tomate", "Bananier", "Cacao", "Cotonnnier"],
-    "symptoms": [
-      "Jaunissement uni-latéral des feuilles",
-      "Pourriture racinaire ou du collet",
-      "Dépérissement progressif"
-    ],
-    "actions": [
-      "Utiliser plants sains",
-      "Éviter excès d'arrosage",
-      "Rotation obligatoire des cultures (3-4 ans)",
-      "Désinfection du sol si possible"
-    ],
-    "aliases": ["Fusarium Wilt"]
-  },
-  {
-    "id": "black-sigatoka",
-    "name": "Sigatoka noir",
-    "scientificName": "Pseudocercospora fijiensis",
-    "affectedPlants": ["Bananier"],
-    "symptoms": [
-      "Taches foliaires sombres longues",
-      "Feuilles noircissantes progressivement",
-      "Défaut de maturation et baisse rendement"
-    ],
-    "actions": [
-      "Enlever feuilles très atteintes",
-      "Améliorer ventilation des parcelles",
-      "Appliquer traitements fongicides régulièrement",
-      "Planter variétés plus tolérantes"
-    ],
-    "aliases": ["Black Sigatoka"]
   },
   {
     "id": "cassava-mosaic",

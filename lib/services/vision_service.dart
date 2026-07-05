@@ -11,15 +11,6 @@ import 'package:uuid/uuid.dart';
 class VisionService {
   final Uuid _uuid = const Uuid();
 
-  // Confidence threshold for plant detection
-  // Increased from 0.55 to 0.75 for better accuracy
-  // Only results with 75%+ confidence will be considered valid plants
-  static const double confidenceThreshold = 0.75;
-  
-  // Additional threshold for final validation
-  // Even if it passes the first threshold, check if it's likely a plant
-  static const double minPlantConfidenceForValidation = 0.70;
-
   /// Analyser une image de plante avec le modèle de vision (TFLite Offline)
   Future<ScanResultModel> analyzePlantImage(File imageFile) async {
     try {
@@ -29,20 +20,6 @@ class VisionService {
         final String label = tfliteResult['label'] as String;
         final double confidence = tfliteResult['confidence'] as double;
         
-        // Check if confidence meets threshold
-        if (confidence < confidenceThreshold) {
-          return ScanResultModel(
-            id: _uuid.v4(),
-            diseaseId: 'unknown',
-            diseaseName: 'Image non reconnue',
-            confidence: confidence,
-            treatment: 'L\'image n\'est pas assez claire ou ne correspond pas à une plante connue. Confiance: ${(confidence * 100).toStringAsFixed(1)}%',
-            imageUrl: imageFile.path,
-            scannedAt: DateTime.now(),
-            affectedPlants: [],
-          );
-        }
-
         // Get French translation from translator
         final translation = frenchTranslator.getTranslation(label);
         String plantName = 'Inconnu';
@@ -52,20 +29,6 @@ class VisionService {
           plantName = translation['plante'] ?? 'Inconnu';
           diseaseName = translation['maladie'] ?? 'Inconnu';
         } else {
-          // Check if label contains 'healthy' marker and reject if too generic
-          if (label.toLowerCase().contains('healthy') && confidence < minPlantConfidenceForValidation) {
-            return ScanResultModel(
-              id: _uuid.v4(),
-              diseaseId: 'unknown',
-              diseaseName: 'Image non reconnue',
-              confidence: confidence,
-              treatment: 'Le modèle ne peut pas identifier cette image comme une plante connue.',
-              imageUrl: imageFile.path,
-              scannedAt: DateTime.now(),
-              affectedPlants: [],
-            );
-          }
-          
           // Fallback: Parse "Plant___Disease" format
           final parts = label.split('___');
           plantName = parts.isNotEmpty ? parts[0].replaceAll('_', ' ') : 'Inconnu';

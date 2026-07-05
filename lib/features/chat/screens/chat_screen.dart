@@ -100,25 +100,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _fetchInitialGreeting() async {
-    // If online, request a greeting from Gemini; otherwise start empty
-    try {
-      final connectivity = await Connectivity().checkConnectivity();
-      if (connectivity == ConnectivityResult.none) return;
-
-      final greeting = await geminiService.generateResponse('Bonjour');
-      if (greeting.isNotEmpty) {
-        _messages.add(
-          Message(
-            id: DateTime.now().toString(),
-            content: greeting,
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
-      }
-    } catch (_) {
-      // ignore errors for initial greeting
-    }
+    // Message d'accueil par défaut désactivé
+    // Les utilisateurs peuvent maintenant commencer une conversation vierge
   }
 
   void _sendMessage({String? cacheKey}) {
