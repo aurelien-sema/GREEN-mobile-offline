@@ -69,13 +69,26 @@ class _CameraScreenState extends State<CameraScreen> {
           if (success) {
             final ScanResultModel? result = scanProvider.currentScanResult;
             if (result != null) {
-              if (result.diseaseId == 'unknown') {
-                _showUnknownImageDialog();
+              if (result.diseaseId == 'unknown' || result.diseaseId == 'uncertain') {
+                _showUnknownImageDialog(message: result.treatment);
               } else {
                 // Persist to local history for offline access
+                bool saved = true;
                 try {
                   await historyService.addScan(result);
-                } catch (_) {}
+                } catch (_) {
+                  saved = false;
+                }
+                if (!mounted) return;
+                if (!saved) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Le diagnostic s'affiche mais n'a pas pu être enregistré dans l'historique.",
+                      ),
+                    ),
+                  );
+                }
                 // Naviguer vers la fiche terrain (offline) au lieu d'une pop-up
                 Navigator.push(
                   context,
@@ -111,7 +124,7 @@ class _CameraScreenState extends State<CameraScreen> {
   }
 
   // Résultats d'analyse: affichage remplacé par la Fiche terrain (FieldSheetScreen) pour être entièrement offline et plus conviviale.
-  void _showUnknownImageDialog() {
+  void _showUnknownImageDialog({String? message}) {
     final isDarkMode = context.read<ThemeProvider>().isDarkMode;
 
     showDialog(
@@ -138,8 +151,9 @@ class _CameraScreenState extends State<CameraScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "Désolé, l'analyse n'est pas parvenue à identifier une plante ou une maladie connue. "
-              "Assurez-vous que l'image est bien éclairée et que la plante est centrée.",
+              message ??
+                  "Désolé, l'analyse n'est pas parvenue à identifier une plante ou une maladie connue. "
+                      "Assurez-vous que l'image est bien éclairée et que la plante est centrée.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -196,13 +210,11 @@ class _CameraScreenState extends State<CameraScreen> {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
     context.read<ThemeProvider>();
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        context.go('/home');
-      },
-      child: Scaffold(
+    // Pas de PopScope local ici : le retour (geste système ou bouton) doit
+    // remonter jusqu'à AppPopScope dans MainNavigationShell, qui applique la
+    // même logique de navigation/sortie que pour les autres onglets (Chat,
+    // Marketplace) plutôt qu'un saut silencieux vers Home.
+    return Scaffold(
         backgroundColor: isDarkMode
             ? AppColors.darkBackground
             : AppColors.lightBackground,
@@ -321,7 +333,7 @@ class _CameraScreenState extends State<CameraScreen> {
           ),
         ),
       ),
-    ));
+    );
   }
 
   Widget _buildImagePreview(BuildContext context, bool isDarkMode) {

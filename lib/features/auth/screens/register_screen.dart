@@ -20,8 +20,7 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen>
-    with SingleTickerProviderStateMixin {
+class _RegisterScreenState extends State<RegisterScreen> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
@@ -31,7 +30,10 @@ class _RegisterScreenState extends State<RegisterScreen>
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _usePhone = true;
-  late TabController _tabController;
+  // Numéro complet avec indicatif pays (ex: +237612345678), capturé via
+  // IntlPhoneField.onChanged. Utilisé comme identifiant stocké/recherché
+  // plutôt que le seul numéro local, pour rester cohérent avec la connexion.
+  String _fullPhone = '';
 
   @override
   void initState() {
@@ -41,7 +43,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     _phoneController = TextEditingController();
     _passwordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
-    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -51,7 +52,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -80,24 +80,26 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     Future.delayed(const Duration(milliseconds: 500), () async {
       final id = DateTime.now().millisecondsSinceEpoch.toString();
+      final phoneToStore = _fullPhone.isNotEmpty ? _fullPhone : _phoneController.text.trim();
       final user = UserModel(
         id: id,
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
+        phone: _usePhone ? phoneToStore : '',
         passwordHash: '',
       );
-      final ok = await authService.registerWithPassword(
+      final result = await authService.registerWithPassword(
         user,
         _passwordController.text,
       );
-      if (!ok) {
+      if (result != RegisterResult.success) {
         if (mounted) {
           setState(() => _isLoading = false);
+          final message = result == RegisterResult.phoneTaken
+              ? 'Un compte avec ce numéro de téléphone existe déjà'
+              : 'Un compte avec cet email existe déjà';
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Un compte avec cet email existe déjà'),
-            ),
+            SnackBar(content: Text(message)),
           );
         }
         return;
@@ -105,9 +107,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       if (!mounted) return;
       // if registration succeeded, try to fetch stored user and set provider
       try {
-        final identifier = _usePhone
-            ? _phoneController.text.trim()
-            : _emailController.text.trim();
+        final identifier = _usePhone ? phoneToStore : _emailController.text.trim();
         final stored = authService.getUserByIdentifier(identifier);
         if (stored != null) {
           Provider.of<AuthProvider>(
@@ -287,7 +287,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                       initialCountryCode: 'CM',
                       onChanged: (phone) {
-                        // Store full number if needed, or rely on controller text + country code
+                        _fullPhone = phone.completeNumber;
                       },
                     )
                   : TextField(

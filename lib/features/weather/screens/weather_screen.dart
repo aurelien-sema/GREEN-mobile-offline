@@ -11,7 +11,12 @@ import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/app_pop_scope.dart';
 
 class WeatherScreen extends StatefulWidget {
-  const WeatherScreen({super.key});
+  /// Coordonnées transmises depuis l'accueil quand l'utilisateur a activé la
+  /// localisation ; si absentes, on retombe sur la ville par défaut.
+  final double? lat;
+  final double? lon;
+
+  const WeatherScreen({super.key, this.lat, this.lon});
 
   @override
   State<WeatherScreen> createState() => _WeatherScreenState();
@@ -19,11 +24,12 @@ class WeatherScreen extends StatefulWidget {
 
 class _WeatherScreenState extends State<WeatherScreen> {
   Future<WeatherData>? _weatherFuture;
-  
-  // Hardcoded city for now, or could pass as argument. 
-  // Ideally this screen receives coords or city.
-  // For now let's use the same default as home or fetch dynamically if we had global state.
-  final String _city = 'Douala';
+
+  static const String _defaultCity = 'Douala';
+
+  bool get _hasCoordinates => widget.lat != null && widget.lon != null;
+
+  String get _locationLabel => _hasCoordinates ? 'Ma position' : _defaultCity;
 
   @override
   void initState() {
@@ -42,7 +48,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
   void _loadWeather() {
     final locale = context.read<LocaleProvider>().locale;
     setState(() {
-      _weatherFuture = weatherService.fetchWeatherForCity(_city, lang: locale);
+      _weatherFuture = _hasCoordinates
+          ? weatherService.fetchWeatherForCoordinates(widget.lat!, widget.lon!, lang: locale)
+          : weatherService.fetchWeatherForCity(_defaultCity, lang: locale);
     });
   }
 
@@ -106,7 +114,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                         child: Column(
                           children: [
                             Text(
-                              _city,
+                              _locationLabel,
                               style: Theme.of(context).textTheme.headlineMedium,
                             ),
                             const SizedBox(height: 16),

@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../services/weather_service.dart';
 import '../../../services/history_service.dart';
 import '../../../utils/date_formatter.dart';
@@ -24,7 +25,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<WeatherData> _weatherFuture;
-  
+  // Position obtenue via "Activer Localisation", transmise à l'écran météo
+  // détaillé ("Voir plus") pour qu'il affiche le même lieu plutôt que de
+  // revenir silencieusement sur Douala en dur.
+  double? _lat;
+  double? _lon;
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +38,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _enableLocation() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Le GPS est désactivé sur votre téléphone.'),
+            action: SnackBarAction(
+              label: 'Activer',
+              onPressed: () => Geolocator.openLocationSettings(),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     final status = await Permission.location.request();
     if (status.isGranted) {
       if (mounted) {
@@ -51,8 +73,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<WeatherData> _fetchWeatherWithLocation() async {
     try {
       final pos = await Geolocator.getCurrentPosition();
+      _lat = pos.latitude;
+      _lon = pos.longitude;
       return await weatherService.fetchWeatherForCoordinates(pos.latitude, pos.longitude);
     } catch (e) {
+      _lat = null;
+      _lon = null;
       return weatherService.fetchWeatherForCity('Douala');
     }
   }
@@ -291,7 +317,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                   TextButton(
-                                    onPressed: () => context.go('/weather'),
+                                    onPressed: () => context.go(
+                                      '/weather',
+                                      extra: (_lat != null && _lon != null)
+                                          ? {'lat': _lat, 'lon': _lon}
+                                          : null,
+                                    ),
                                     child: const Text('Voir plus', style: TextStyle(color: Colors.white, fontSize: 12)),
                                     style: TextButton.styleFrom(
                                       padding: EdgeInsets.zero,
@@ -564,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               title: Text(s.diseaseName),
                               subtitle: Text(
-                                'Analysée: ${formatDateFrench(s.scannedAt)}',
+                                'Analysée: ${formatDateFrench(s.scannedAt, context.read<LocaleProvider>().locale)}',
                               ),
                             );
                           }).toList(),

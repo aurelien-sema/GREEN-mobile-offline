@@ -25,6 +25,10 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _isPhone = true; // Default to phone as requested
+  // Numéro complet avec indicatif pays, capturé via IntlPhoneField.onChanged —
+  // c'est ce qui a été stocké à l'inscription, donc c'est ce qu'il faut
+  // rechercher ici plutôt que le seul numéro local du contrôleur.
+  String _fullPhone = '';
 
   @override
   void initState() {
@@ -41,17 +45,24 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() {
-    final input = _identifierController.text.trim();
-    final emailErr = input.contains('@')
-        ? Validators.validateEmail(input)
-        : Validators.validatePhone(input);
+    final rawInput = _identifierController.text.trim();
+    // Se base sur le mode réellement sélectionné par l'utilisateur (toggle
+    // Téléphone/Email), pas sur le contenu du champ — évite une validation
+    // incohérente si le texte et le mode affiché venaient à diverger.
+    final identifierErr = _isPhone
+        ? Validators.validatePhone(rawInput)
+        : Validators.validateEmail(rawInput);
     final passErr = Validators.validatePassword(_passwordController.text);
-    if (emailErr != null || passErr != null) {
+    if (identifierErr != null || passErr != null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(emailErr ?? passErr ?? '')));
+      ).showSnackBar(SnackBar(content: Text(identifierErr ?? passErr ?? '')));
       return;
     }
+
+    final input = _isPhone
+        ? (_fullPhone.isNotEmpty ? _fullPhone : rawInput)
+        : rawInput;
 
     setState(() => _isLoading = true);
     Future.delayed(const Duration(milliseconds: 500), () async {
@@ -160,6 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     setState(() {
                       _isPhone = newSelection.first;
                       _identifierController.clear();
+                      _fullPhone = '';
                     });
                   },
                   style: ButtonStyle(
@@ -202,15 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       initialCountryCode: 'CM', // Default to Cameroon
                       onChanged: (phone) {
-                        // We might need to handle the full number logic
-                        // But since the controller is shared, let's keep it simple.
-                        // Ideally we should store the full number. 
-                        // But _identifierController only holds the text.
-                        // For login, we might need the country code.
-                        // Let's assume the user enters the local number and we prefix it 
-                        // if we want to support full international format.
-                        // However, standard IntlPhoneField usage usually involves 
-                        // getting the full number from 'phone.completeNumber'.
+                        _fullPhone = phone.completeNumber;
                       },
                     )
                   : TextField(

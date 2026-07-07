@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_strings.dart';
 
 /// Font size enum with normalized scale values.
 enum FontSize {
@@ -11,19 +12,10 @@ enum FontSize {
   final double scale;
   const FontSize(this.scale);
 
-  /// Get display name for the font size.
-  String getDisplayName(String locale) {
-    switch (this) {
-      case FontSize.small:
-        return locale == 'fr' ? 'Petit' : locale == 'pid' ? 'Small' : 'Small';
-      case FontSize.medium:
-        return locale == 'fr' ? 'Moyen' : locale == 'pid' ? 'Medium' : 'Medium';
-      case FontSize.large:
-        return locale == 'fr' ? 'Grand' : locale == 'pid' ? 'Big' : 'Large';
-      case FontSize.extraLarge:
-        return locale == 'fr' ? 'Très grand' : locale == 'pid' ? 'Very big' : 'Extra Large';
-    }
-  }
+  /// Get display name for the font size, réutilisant la table de
+  /// traductions unique d'AppStrings plutôt que d'en dupliquer une copie
+  /// (qui divergeait déjà : il manquait la 4e taille ici).
+  String getDisplayName(String locale) => AppStrings.get(name, locale);
 }
 
 /// Provider for managing app font size.

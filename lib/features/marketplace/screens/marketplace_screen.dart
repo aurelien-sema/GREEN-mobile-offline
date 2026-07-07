@@ -40,6 +40,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       backgroundColor: isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: CustomAppBar(
         title: 'Marketplace',
+        isDarkMode: isDarkMode,
         showProfileIcon: true,
       ),
       body: GradientBackground(

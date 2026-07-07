@@ -17,9 +17,16 @@ class DiseasesProvider with ChangeNotifier {
       final raw = await rootBundle.loadString('assets/data/diseases.json');
       final data = jsonDecode(raw) as List<dynamic>;
       _diseases.clear();
-      _diseases.addAll(
-        data.map((e) => DiseaseCatalogModel.fromJson(e as Map<String, dynamic>)).toList(),
-      );
+      for (var i = 0; i < data.length; i++) {
+        try {
+          _diseases.add(DiseaseCatalogModel.fromJson(data[i] as Map<String, dynamic>));
+        } catch (e) {
+          // Une entrée malformée ne doit pas empêcher le chargement des
+          // autres ; on log l'index fautif pour faciliter le débogage de
+          // diseases.json plutôt que de masquer l'erreur silencieusement.
+          debugPrint('Error parsing diseases.json entry #$i: $e');
+        }
+      }
       _loaded = true;
       notifyListeners();
     } catch (e) {

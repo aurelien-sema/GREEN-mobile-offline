@@ -86,13 +86,14 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Mettre à jour le profil utilisateur
+  /// Mettre à jour le profil utilisateur (nom, photo, etc.) et persister le
+  /// changement en cache — sans cela, une mise à jour (ex: nouvelle photo de
+  /// profil) était perdue au prochain lancement de l'app, contrairement à
+  /// [setCurrentUserFromService] qui persiste déjà correctement.
   Future<bool> updateProfile(UserModel updatedUser) async {
     try {
-      // TODO: Implémenter l'appel API réel
-      await Future.delayed(const Duration(seconds: 1));
-
       _currentUser = updatedUser;
+      await _saveToCache();
       notifyListeners();
       return true;
     } catch (e) {

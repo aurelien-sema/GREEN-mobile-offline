@@ -1,3 +1,5 @@
+import 'package:green_app/core/constants/app_constants.dart';
+
 /// Modèle pour les résultats de scan
 class ScanResultModel {
   final String id;
@@ -20,12 +22,15 @@ class ScanResultModel {
     required this.affectedPlants,
   });
 
-  /// Calcul du niveau de gravité en fonction de la confiance
-  /// Formule : ((confidence - 0.55) * 100) / 0.45
-  /// Plage de résultat : 0 à 100 (%)
+  /// Calcul du niveau de gravité affiché (0 à 100 %) en fonction de la confiance.
+  ///
+  /// Aligné sur le même seuil que VisionService (AppConstants.visionConfidenceThreshold) :
+  /// en dessous de ce seuil, VisionService ne produit plus de diagnostic
+  /// affirmatif (diseaseId == 'uncertain'), donc la gravité vaut 0. Au-dessus,
+  /// elle progresse linéairement jusqu'à 100 % à confidence == 1.0.
   double get severityLevel {
-    final confidenceThreshold = 0.4;
-    final range = 0.45;
+    final confidenceThreshold = AppConstants.visionConfidenceThreshold;
+    final range = 1.0 - confidenceThreshold;
     if (confidence < confidenceThreshold) {
       return 0;
     }

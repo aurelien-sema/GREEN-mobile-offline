@@ -80,7 +80,8 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _loadSession(String sessionId) async {
     await chatHistoryService.switchToSession(sessionId);
     final session = await chatHistoryService.getSessionById(sessionId);
-    if (session != null && mounted) {
+    if (!mounted) return;
+    if (session != null) {
       setState(() {
         _messages.clear();
         _messages.addAll(
@@ -97,6 +98,22 @@ class _ChatScreenState extends State<ChatScreen> {
       _scrollToBottom();
     }
     Navigator.pop(context); // Close drawer
+  }
+
+  /// Supprime une session et, si c'est celle actuellement affichée à
+  /// l'écran, réinitialise la conversation visible pour éviter qu'elle ne
+  /// continue d'apparaître (alors qu'elle n'existe plus en stockage) puis
+  /// ne soit re-persistée par erreur dans une nouvelle session au prochain
+  /// message envoyé.
+  Future<void> _deleteSession(ChatSession session) async {
+    final wasCurrent = chatHistoryService.getCurrentSession()?.id == session.id;
+    await chatHistoryService.deleteSession(session.id);
+    if (!mounted) return;
+    if (wasCurrent) {
+      setState(() => _messages.clear());
+      await chatHistoryService.clearCurrentSession();
+    }
+    await _loadSessions();
   }
 
   Future<void> _fetchInitialGreeting() async {
@@ -328,10 +345,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             onTap: () => _loadSession(session.id),
                             trailing: IconButton(
                               icon: const Icon(Icons.delete_outline),
-                              onPressed: () {
-                                chatHistoryService.deleteSession(session.id);
-                                _loadSessions();
-                              },
+                              onPressed: () => _deleteSession(session),
                             ),
                           );
                         },

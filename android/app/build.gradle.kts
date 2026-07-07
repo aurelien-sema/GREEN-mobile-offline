@@ -1,8 +1,20 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Identifiants de signature de release chargés depuis android/key.properties
+// (fichier local, ignoré par git) plutôt que codés en dur dans ce fichier
+// versionné. Voir key.properties.example pour le format attendu.
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
@@ -21,10 +33,10 @@ android {
 
     signingConfigs {
         create("release") {
-            keyAlias = "green_app_key"
-            keyPassword = "Green@App2025"
-            storeFile = file("../keystore/green_app.jks")
-            storePassword = "Green@App2025"
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = keystoreProperties["keyPassword"] as String?
+            storeFile = (keystoreProperties["storeFile"] as String?)?.let { file(it) }
+            storePassword = keystoreProperties["storePassword"] as String?
         }
     }
 

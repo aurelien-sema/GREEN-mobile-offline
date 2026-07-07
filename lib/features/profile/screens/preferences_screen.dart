@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../shared/widgets/app_pop_scope.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -21,16 +22,26 @@ class PreferencesScreen extends StatefulWidget {
 }
 
 class _PreferencesScreenState extends State<PreferencesScreen> {
+  static const _frequencyKey = 'preferences_advice_frequency';
 
   String _frequency = 'daily';
-
-
-
 
   @override
   void initState() {
     super.initState();
+    _loadFrequency();
+  }
 
+  Future<void> _loadFrequency() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() => _frequency = prefs.getString(_frequencyKey) ?? 'daily');
+  }
+
+  Future<void> _setFrequency(String value) async {
+    setState(() => _frequency = value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_frequencyKey, value);
   }
 
   @override
@@ -75,8 +86,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
                     'monthly': localeProvider.t('monthly'),
                     'never': localeProvider.t('never'),
                   },
-                  onChanged: (value) =>
-                      setState(() => _frequency = value ?? 'daily'),
+                  onChanged: (value) => _setFrequency(value ?? 'daily'),
                   isDarkMode: isDarkMode,
                   delay: 250,
                 ),

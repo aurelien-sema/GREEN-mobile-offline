@@ -1,0 +1,7 @@
+## Copiez ce fichier en "key.properties" (même dossier) et renseignez vos
+## vraies valeurs. key.properties est ignoré par git (.gitignore) — ne jamais
+## committer le vrai fichier ni ses identifiants en clair ailleurs dans le repo.
+storePassword=CHANGE_ME
+keyPassword=CHANGE_ME
+keyAlias=green_app_key
+storeFile=../keystore/green_app.jks

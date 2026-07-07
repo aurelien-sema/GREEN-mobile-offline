@@ -34,6 +34,13 @@ class RagService {
   RagService._();
   static final RagService instance = RagService._();
 
+  /// Dimension produite par le modèle d'embedding utilisé pour construire
+  /// embeddings_f32.bin (voir tools/rag/build_embeddings.py) — doit
+  /// correspondre exactement au modèle appelé côté requête (GeminiService),
+  /// sinon la similarité cosinus n'a aucun sens (deux espaces vectoriels
+  /// différents). Actuellement : Gemini "models/text-embedding-004" (768).
+  static const int expectedVectorDim = 768;
+
   List<RagChunk> chunks = [];
   Float32List? embeddings; // flat array: n_chunks * dim
   int? vectorDim;
@@ -43,6 +50,14 @@ class RagService {
 
   bool get isInitialized => _initialized;
   bool get hasFailedInitialization => _initializationFailed;
+
+  /// True si les embeddings chargés ont la dimension attendue et peuvent
+  /// donc être utilisés pour une recherche par similarité fiable. Si les
+  /// assets embarqués n'ont pas encore été régénérés avec le bon modèle
+  /// d'embedding (dimension différente), on désactive silencieusement la
+  /// recherche vectorielle plutôt que de renvoyer des scores incohérents.
+  bool get embeddingsUsable =>
+      _initialized && embeddings != null && vectorDim == expectedVectorDim;
 
   /// Load chunks.json and embeddings float32 binary from assets.
   Future<void> initFromAssets({String chunksAsset = 'assets/rag/chunks.json', String embeddingsAsset = 'assets/rag/embeddings_f32.bin'}) async {
@@ -88,10 +103,18 @@ class RagService {
       if (chunks.isNotEmpty) {
         vectorDim = embeddings!.length ~/ chunks.length;
         debugPrint('RAG Service: Vector dimension = $vectorDim');
-        
+
         // Validate dimension
         if (vectorDim != null && (vectorDim! <= 0 || embeddings!.length % chunks.length != 0)) {
           throw StateError('Invalid embeddings dimension: ${embeddings!.length} values for ${chunks.length} chunks');
+        }
+        if (vectorDim != expectedVectorDim) {
+          debugPrint(
+            'RAG Service: ⚠ embeddings_f32.bin a une dimension de $vectorDim, '
+            'attendu $expectedVectorDim (models/text-embedding-004). La recherche par '
+            'similarité sera désactivée (repli sur la recherche par mots-clés) '
+            'tant que les embeddings ne sont pas régénérés avec tools/rag/build_embeddings.py.',
+          );
         }
       } else {
         vectorDim = 0;
@@ -116,9 +139,21 @@ class RagService {
 
   /// Compute top-k matches given a query embedding (List<double> or Float32List).
   /// Runs the CPU-heavy work in a background isolate using `compute`.
+  ///
+  /// Renvoie une liste vide si les embeddings ne sont pas utilisables (non
+  /// initialisés, ou dimension incompatible avec le modèle d'embedding
+  /// attendu) — l'appelant doit alors se replier sur une autre stratégie de
+  /// recherche plutôt que d'interpréter un résultat vide comme "aucun match".
   Future<List<Map<String, dynamic>>> searchByEmbedding(List<double> queryEmbedding, {int topK = 5}) async {
     if (!_initialized) throw StateError('RagService not initialized');
-    if (embeddings == null || vectorDim == null || vectorDim == 0) return [];
+    if (!embeddingsUsable) return [];
+    if (queryEmbedding.length != vectorDim) {
+      debugPrint(
+        'RAG Service: dimension du vecteur de requête (${queryEmbedding.length}) '
+        'différente de celle des embeddings chargés ($vectorDim) — recherche ignorée.',
+      );
+      return [];
+    }
 
     // prepare params for isolate
     final params = {

@@ -72,7 +72,6 @@ class _MainNavigationShellState extends State<MainNavigationShell>
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
 
-    // Migrate to PopScope to support Android predictive back gesture.
     return AppPopScope(
       onWillPop: () async {
         // If not on home tab, switch to home instead of exiting

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../shared/widgets/app_pop_scope.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -18,9 +19,27 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  static const _analyticsKey = 'settings_analytics_enabled';
 
-  bool _darkModeEnabled = false;
   bool _analyticsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAnalyticsPreference();
+  }
+
+  Future<void> _loadAnalyticsPreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() => _analyticsEnabled = prefs.getBool(_analyticsKey) ?? true);
+  }
+
+  Future<void> _setAnalyticsEnabled(bool value) async {
+    setState(() => _analyticsEnabled = value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_analyticsKey, value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,11 +73,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   description: 'Basculer vers le thème sombre',
                   icon: Icons.dark_mode,
                   isDarkMode: isDarkMode,
-                  onToggle: (value) {
-                    setState(() => _darkModeEnabled = value);
-                    themeProvider.toggleTheme();
-                  },
-                  value: _darkModeEnabled || isDarkMode,
+                  onToggle: (value) => themeProvider.toggleTheme(),
+                  value: isDarkMode,
                   delay: 100,
                 ),
                 const SizedBox(height: AppConstants.paddingMedium),
@@ -72,8 +88,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   description: 'Permettre l\'analyse de données',
                   icon: Icons.privacy_tip,
                   isDarkMode: isDarkMode,
-                  onToggle: (value) =>
-                      setState(() => _analyticsEnabled = value),
+                  onToggle: _setAnalyticsEnabled,
                   value: _analyticsEnabled,
                   delay: 200,
                 ),

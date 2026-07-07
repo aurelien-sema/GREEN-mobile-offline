@@ -1,11 +1,18 @@
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import '../rag_service.dart';
 import '../storage/storage_service.dart';
 
 class GeminiService {
   late GenerativeModel _model;
+  GenerativeModel? _embeddingModel;
+
+  /// Doit rester identique au modèle utilisé pour construire
+  /// assets/rag/embeddings_f32.bin (voir tools/rag/build_embeddings.py) —
+  /// requête et documents doivent vivre dans le même espace vectoriel.
+  static const String _embeddingModelName = 'models/text-embedding-004';
 
   /// Initialiser le service Gemini avec une clé API
   /// Vous devez obtenir une clé API gratuite depuis https://makersuite.google.com/app/apikey
@@ -18,23 +25,61 @@ class GeminiService {
         SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.medium),
       ],
     );
+    // Même clé API, modèle dédié à l'embedding (utilisé pour le RAG sémantique).
+    _embeddingModel = GenerativeModel(model: _embeddingModelName, apiKey: apiKey);
   }
 
-  /// Build RAG context from retrieved chunks for a query (keyword-based simple approach)
+  /// Recherche par similarité sémantique (embeddings) dans les chunks RAG.
+  /// Retourne null si indisponible (RAG non initialisé, dimension
+  /// incompatible, pas de clé/erreur réseau) pour laisser l'appelant se
+  /// replier sur la recherche par mots-clés.
+  Future<List<Map<String, dynamic>>?> _searchRagByEmbedding(String query, {int topK = 5}) async {
+    if (_embeddingModel == null) return null;
+    if (!RagService.instance.embeddingsUsable) return null;
+
+    try {
+      final response = await _embeddingModel!.embedContent(
+        Content.text(query),
+        taskType: TaskType.retrievalQuery,
+      );
+      final values = response.embedding.values;
+      final results = await RagService.instance.searchByEmbedding(values, topK: topK);
+      return results.isEmpty ? null : results;
+    } catch (e) {
+      debugPrint('GeminiService: recherche RAG par embedding indisponible ($e), repli mots-clés.');
+      return null;
+    }
+  }
+
+  /// Recherche par mots-clés (repli utilisé si la recherche sémantique n'est
+  /// pas disponible ou échoue).
+  List<String> _searchRagByKeywords(String query, {int limit = 3}) {
+    final queryLower = query.toLowerCase();
+    final keywords = queryLower.split(RegExp(r'\s+'));
+
+    return RagService.instance.chunks
+        .where((chunk) {
+          final text = chunk.text.toLowerCase();
+          return keywords.any((kw) => text.contains(kw) && kw.length > 2);
+        })
+        .map((chunk) => chunk.text)
+        .take(limit)
+        .toList();
+  }
+
+  /// Build RAG context from retrieved chunks for a query : recherche
+  /// sémantique par embeddings en priorité, repli sur la recherche par
+  /// mots-clés si indisponible.
   Future<String> _buildRagContext(String query) async {
     try {
-      // Simple keyword search in chunks (alternative: use embeddings if available)
-      final queryLower = query.toLowerCase();
-      final keywords = queryLower.split(RegExp(r'\s+'));
-      
-      final relevant = RagService.instance.chunks
-          .where((chunk) {
-            final text = chunk.text.toLowerCase();
-            return keywords.any((kw) => text.contains(kw) && kw.length > 2);
-          })
-          .map((chunk) => chunk.text)
-          .take(3)
-          .toList();
+      List<String> relevant;
+
+      final semanticResults = await _searchRagByEmbedding(query, topK: 3);
+      if (semanticResults != null) {
+        relevant = semanticResults.map((r) => r['text'] as String).toList();
+      } else {
+        relevant = _searchRagByKeywords(query, limit: 3);
+      }
 
       if (relevant.isEmpty) {
         return '';

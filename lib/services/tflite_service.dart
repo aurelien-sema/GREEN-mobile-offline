@@ -11,8 +11,8 @@ class TFLiteService {
 
   static const String modelPath = 'assets/models/best_efficientnet.tflite';
   static const String labelsPath = 'assets/models/labels.txt';
-  
-  // Input size for MobileNetV2 (usually 224x224)
+
+  // Input size attendu par le modèle EfficientNet embarqué (224x224)
   static const int inputSize = 224;
 
   Future<void> loadModel() async {
@@ -21,12 +21,29 @@ class TFLiteService {
       final options = InterpreterOptions();
       // Use XNNPACK delegate or GPU delegate if needed/available, keeping it simple for now
       _interpreter = await Interpreter.fromAsset(modelPath, options: options);
-      
+
       final labelData = await rootBundle.loadString(labelsPath);
-      _labels = labelData.split('\n').where((l) => l.isNotEmpty).map((l) => l.trim()).toList();
+      _labels = labelData
+          .split('\n')
+          .map((l) => l.trim().replaceAll(RegExp(r',+$'), ''))
+          .where((l) => l.isNotEmpty)
+          .toList();
+
+      // Garde-fou : le nombre de labels doit correspondre exactement au
+      // nombre de classes en sortie du modèle. Un décalage silencieux ici
+      // (ex: labels.txt hérité d'un modèle précédent avec un autre nombre
+      // de classes) fausserait tous les diagnostics sans jamais planter.
+      final outputClasses = _interpreter!.getOutputTensor(0).shape.last;
+      if (_labels!.length != outputClasses) {
+        throw StateError(
+          'Incohérence modèle/labels : le modèle produit $outputClasses classes '
+          'mais labels.txt en contient ${_labels!.length}. Vérifiez que '
+          'labels.txt correspond bien au modèle chargé ($modelPath).',
+        );
+      }
 
       _isModelLoaded = true;
-      print('TFLite Model loaded successfully');
+      print('TFLite Model loaded successfully ($outputClasses classes)');
     } catch (e) {
       print('Error loading TFLite model: $e');
       rethrow;

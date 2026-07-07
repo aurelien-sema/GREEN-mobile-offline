@@ -346,7 +346,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     int delay,
   ) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
+        if (route == '/login') {
+          // "Se déconnecter" : invalider la session avant de naviguer,
+          // sinon l'utilisateur reste authentifié et splash_screen le
+          // renvoie directement sur /home au prochain lancement.
+          await context.read<AuthProvider>().logout();
+          if (!context.mounted) return;
+          context.go(route);
+          return;
+        }
         if (route != null) {
           context.go(route, extra: {'from': 'profile'});
         }

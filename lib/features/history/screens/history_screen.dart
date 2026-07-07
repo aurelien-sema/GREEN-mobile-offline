@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../services/history_service.dart';
 import '../../../models/scan_result_model.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../utils/date_formatter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -163,7 +164,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               _buildDetailSection(
                 context,
                 'Date du scan',
-                formatDateFrench(scan.scannedAt),
+                formatDateFrench(scan.scannedAt, context.read<LocaleProvider>().locale),
                 isDark,
               ),
               const SizedBox(height: 16),
@@ -199,6 +200,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         await historyService.removeScan(scan.id);
+                        if (!mounted) return;
                         setState(() {
                           _items.removeWhere((e) => e.id == scan.id);
                         });
@@ -264,7 +266,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
     return AppPopScope(
       onWillPop: () async {
-        context.go('/camera');
+        // Cohérent avec la flèche de l'AppBar : /history n'est ouvert que
+        // depuis /home (bouton "Voir l'historique"), donc les deux contrôles
+        // de retour doivent mener au même endroit.
+        context.go('/home');
         return false;
       },
       child: Scaffold(
@@ -431,7 +436,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            '${formatDateFrench(it.scannedAt)} • ${(it.confidence * 100).toStringAsFixed(0)}%',
+                                            '${formatDateFrench(it.scannedAt, context.read<LocaleProvider>().locale)} • ${(it.confidence * 100).toStringAsFixed(0)}%',
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodySmall

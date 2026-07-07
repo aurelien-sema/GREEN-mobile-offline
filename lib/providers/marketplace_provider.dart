@@ -304,7 +304,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Cameroun',
         priceMin: 30000,
         priceMax: 60000,
-        imageUrl: 'https://www.facebook.com/camcocameroonltd/',
+        imageUrl: 'assets/images/12 kit irrigation.jpg',
         tags: ['irrigation', 'goutte-à-goutte', 'économique'],
         rating: 0,
         reviewCount: 0,

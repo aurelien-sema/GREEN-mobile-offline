@@ -136,7 +136,13 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/weather',
       name: 'weather',
-      builder: (context, state) => const WeatherScreen(),
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return WeatherScreen(
+          lat: extra?['lat'] as double?,
+          lon: extra?['lon'] as double?,
+        );
+      },
     ),
     GoRoute(
       path: '/history',

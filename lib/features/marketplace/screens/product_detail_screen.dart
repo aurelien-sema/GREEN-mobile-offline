@@ -8,6 +8,7 @@ import '../../../providers/theme_provider.dart';
 import '../../../providers/marketplace_provider.dart';
 import '../../../models/product_model.dart';
 import '../../../shared/widgets/gradient_background.dart';
+import '../../../shared/widgets/app_pop_scope.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -37,7 +38,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final avgPrice = (product.priceMin + product.priceMax) / 2;
     final totalPrice = avgPrice * _quantity;
 
-    return WillPopScope(
+    return AppPopScope(
       onWillPop: () async {
         context.go('/marketplace');
         return false;

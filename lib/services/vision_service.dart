@@ -1,15 +1,18 @@
 import 'dart:io';
-import 'dart:convert';
-import 'package:green_app/config/api_config.dart';
+import 'package:green_app/core/constants/app_constants.dart';
 import 'package:green_app/models/scan_result_model.dart';
-import 'package:http/http.dart' as http;
 import 'package:green_app/services/tflite_service.dart';
 import 'package:green_app/utils/french_translator.dart';
 import 'package:uuid/uuid.dart';
 
-/// Service pour l'intégration du modèle de vision par ordinateur Python
+/// Service pour l'intégration du modèle de vision par ordinateur (TFLite, offline)
 class VisionService {
   final Uuid _uuid = const Uuid();
+
+  /// En dessous de ce seuil, le résultat n'est pas présenté comme un
+  /// diagnostic fiable (voir AppConstants.visionConfidenceThreshold, valeur
+  /// partagée avec ScanResultModel.severityLevel pour rester cohérentes).
+  static const double confidenceThreshold = AppConstants.visionConfidenceThreshold;
 
   /// Analyser une image de plante avec le modèle de vision (TFLite Offline)
   Future<ScanResultModel> analyzePlantImage(File imageFile) async {
@@ -19,18 +22,41 @@ class VisionService {
       if (tfliteResult != null) {
         final String label = tfliteResult['label'] as String;
         final double confidence = tfliteResult['confidence'] as double;
-        
+
+        if (confidence < confidenceThreshold) {
+          return ScanResultModel(
+            id: _uuid.v4(),
+            diseaseId: 'uncertain',
+            diseaseName: 'Résultat incertain',
+            confidence: confidence,
+            treatment:
+                'La confiance du modèle est trop faible (${(confidence * 100).toStringAsFixed(0)}%) '
+                'pour proposer un diagnostic fiable. Reprenez la photo en gros plan, '
+                'bien éclairée, sur la feuille affectée.',
+            imageUrl: imageFile.path,
+            scannedAt: DateTime.now(),
+            affectedPlants: [],
+          );
+        }
+
         // Get French translation from translator
         final translation = frenchTranslator.getTranslation(label);
         String plantName = 'Inconnu';
         String diseaseName = 'Inconnu';
-        
+
         if (translation != null) {
           plantName = translation['plante'] ?? 'Inconnu';
           diseaseName = translation['maladie'] ?? 'Inconnu';
         } else {
-          // Fallback: Parse "Plant___Disease" format
-          final parts = label.split('___');
+          // Filet de sécurité si un label n'a pas (encore) de traduction dans
+          // french_labels.json : on tente d'abord l'ancienne convention
+          // PlantVillage "Plante___Maladie" (triple underscore), puis la
+          // convention actuelle "Culture_Maladie" (underscore simple).
+          List<String> parts = label.split('___');
+          if (parts.length < 2) {
+            final idx = label.indexOf('_');
+            parts = idx == -1 ? [label] : [label.substring(0, idx), label.substring(idx + 1)];
+          }
           plantName = parts.isNotEmpty ? parts[0].replaceAll('_', ' ') : 'Inconnu';
           diseaseName = parts.length > 1 ? parts[1].replaceAll('_', ' ') : 'Inconnu';
         }
@@ -61,54 +87,5 @@ class VisionService {
         affectedPlants: [],
       );
     }
-  }
-
-  /// Obtenir l'historique des scans
-  Future<List<ScanResultModel>> getScanHistory() async {
-    try {
-      final url = Uri.parse(ApiConfig.getVisionUrl(ApiConfig.visionHistory));
-
-      final response = await http.get(url).timeout(ApiConfig.connectionTimeout);
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
-        return data
-            .map(
-              (item) => ScanResultModel.fromJson(item as Map<String, dynamic>),
-            )
-            .toList();
-      } else {
-        throw Exception('Erreur de chargement de l\'historique');
-      }
-    } catch (e) {
-      // Retourner des données de démo
-      return _getMockHistory();
-    }
-  }
-
-  /// Historique de démo
-  List<ScanResultModel> _getMockHistory() {
-    return [
-      ScanResultModel(
-        id: _uuid.v4(),
-        diseaseId: 'demo_001',
-        diseaseName: 'Mildiou',
-        confidence: 0.85,
-        treatment: 'Fongicide recommandé',
-        imageUrl: '',
-        scannedAt: DateTime(2024, 1, 15, 14, 30),
-        affectedPlants: ['Tomate', 'Pomme de terre'],
-      ),
-      ScanResultModel(
-        id: _uuid.v4(),
-        diseaseId: 'demo_002',
-        diseaseName: 'Oïdium',
-        confidence: 0.92,
-        treatment: 'Fongicide recommandé',
-        imageUrl: '',
-        scannedAt: DateTime(2024, 1, 12, 9, 15),
-        affectedPlants: ['Courgette'],
-      ),
-    ];
   }
 }
