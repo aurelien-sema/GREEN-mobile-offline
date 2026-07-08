@@ -63,7 +63,7 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
         backgroundColor: isDarkMode
             ? AppColors.darkBackground
             : AppColors.lightBackground,
-        appBar: CustomAppBar(title: 'Préférences', isDarkMode: isDarkMode),
+        appBar: CustomAppBar(title: localeProvider.t('preferences'), isDarkMode: isDarkMode),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppConstants.paddingMedium),

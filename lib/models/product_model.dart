@@ -1,4 +1,9 @@
 class ProductModel {
+  /// Valeur sentinelle pour `imageUrl` : produit sans photo dédiée, à
+  /// afficher avec un repère de marque neutre plutôt qu'un chemin d'asset
+  /// existant réutilisé à tort comme photo produit.
+  static const String defaultImage = 'default';
+
   final String id;
   final String name;
   final String categoryId;

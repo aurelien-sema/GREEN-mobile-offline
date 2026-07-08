@@ -4,14 +4,21 @@ import 'dart:io';
 
 import 'package:path_provider/path_provider.dart';
 import '../models/scan_result_model.dart';
+import 'user_scope.dart';
 
 class HistoryService {
-  static const _fileName = 'scan_history.json';
   List<ScanResultModel> _cache = [];
+  // Compte pour lequel _cache a été chargé — comparé à UserScope.userId à
+  // chaque accès pour recharger depuis le bon fichier si l'utilisateur a
+  // changé (nouvelle connexion, changement de compte sur le même appareil).
+  String? _loadedForUserId;
+  bool _loaded = false;
   final StreamController<void> _onChanged = StreamController<void>.broadcast();
 
   /// Stream that emits whenever history changes (add/remove)
   Stream<void> get onChanged => _onChanged.stream;
+
+  String get _fileName => 'scan_history_${UserScope.userId ?? 'guest'}.json';
 
   Future<File> _getLocalFile() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -19,7 +26,9 @@ class HistoryService {
   }
 
   Future<void> _ensureLoaded() async {
-    if (_cache.isNotEmpty) return;
+    if (_loaded && _loadedForUserId == UserScope.userId) return;
+    _loadedForUserId = UserScope.userId;
+    _loaded = true;
     try {
       final file = await _getLocalFile();
       if (!await file.exists()) {

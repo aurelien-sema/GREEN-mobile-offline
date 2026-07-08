@@ -15,6 +15,7 @@ import 'services/rag_service.dart';
 import 'providers/scan_provider.dart';
 import 'providers/diseases_provider.dart';
 import 'providers/marketplace_provider.dart';
+import 'providers/cart_provider.dart';
 import 'utils/french_translator.dart';
 
 final StorageService storageService = StorageService();
@@ -228,6 +229,7 @@ class GreenApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ScanProvider()),
         ChangeNotifierProvider(create: (_) => DiseasesProvider()),
         ChangeNotifierProvider(create: (_) => MarketplaceProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: Consumer2<ThemeProvider, LocaleProvider>(
         builder: (context, themeProvider, localeProvider, child) {

@@ -8,6 +8,7 @@ import '../../../shared/widgets/gradient_button.dart';
 import '../../../shared/widgets/custom_app_bar.dart';
 import '../../../services/auth_service.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/locale_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../core/validation/validators.dart';
 import '../../../core/utils/text_input_formatters.dart';
@@ -95,9 +96,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (result != RegisterResult.success) {
         if (mounted) {
           setState(() => _isLoading = false);
+          final t = context.read<LocaleProvider>().t;
           final message = result == RegisterResult.phoneTaken
-              ? 'Un compte avec ce numéro de téléphone existe déjà'
-              : 'Un compte avec cet email existe déjà';
+              ? t('duplicatePhoneAccount')
+              : t('duplicateEmailAccount');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(message)),
           );
@@ -124,12 +126,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final t = context.watch<LocaleProvider>().t;
 
     return Scaffold(
       backgroundColor: isDarkMode
           ? AppColors.darkBackground
           : AppColors.lightBackground,
-      appBar: CustomAppBar(title: 'Inscription', isDarkMode: isDarkMode),
+      appBar: CustomAppBar(title: t('register'), isDarkMode: isDarkMode),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
@@ -140,7 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                    'Créer un compte',
+                    t('createAccount'),
                     style: Theme.of(context).textTheme.displayMedium,
                   )
                   .animate()
@@ -148,7 +151,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   .slideX(begin: -20, end: 0),
               const SizedBox(height: 8),
               Text(
-                    'Rejoignez-nous pour commencer',
+                    t('joinUsToStart'),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: isDarkMode
                           ? AppColors.darkHint
@@ -194,7 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               child: Center(
                                 child: Text(
-                                  'Email',
+                                  t('email'),
                                   style: TextStyle(
                                     color: !_usePhone
                                         ? Colors.white
@@ -225,7 +228,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               child: Center(
                                 child: Text(
-                                  'Téléphone',
+                                  t('phone'),
                                   style: TextStyle(
                                     color: _usePhone
                                         ? Colors.white
@@ -249,7 +252,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // Name Field
               Text(
-                'Nom complet',
+                t('fullName'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -274,7 +277,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // Email or Phone Field
               Text(
-                _usePhone ? 'Numéro de téléphone' : 'Email',
+                _usePhone ? t('phoneNumberLabel') : t('email'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -310,7 +313,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // Password Field
               Text(
-                'Mot de passe',
+                t('password'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -347,7 +350,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // Confirm Password Field
               Text(
-                'Confirmer le mot de passe',
+                t('confirmPassword'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -387,7 +390,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // Register Button
               GradientButton(
-                    label: _isLoading ? 'Inscription...' : 'S\'inscrire',
+                    label: _isLoading ? t('registering') : t('signUpButton'),
                     onPressed: _handleRegister,
                     isLoading: _isLoading,
                   )
@@ -401,7 +404,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: TextButton(
                       onPressed: () => context.go('/login'),
                       child: Text(
-                        'Vous avez un compte ? Se connecter',
+                        t('haveAccountLogin'),
                         style: TextStyle(
                           color: isDarkMode
                               ? AppColors.darkPrimary

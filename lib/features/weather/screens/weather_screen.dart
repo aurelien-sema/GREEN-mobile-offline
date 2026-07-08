@@ -29,7 +29,8 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
   bool get _hasCoordinates => widget.lat != null && widget.lon != null;
 
-  String get _locationLabel => _hasCoordinates ? 'Ma position' : _defaultCity;
+  String get _locationLabel =>
+      _hasCoordinates ? context.read<LocaleProvider>().t('myLocation') : _defaultCity;
 
   @override
   void initState() {
@@ -61,6 +62,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+    final t = context.watch<LocaleProvider>().t;
 
     return AppPopScope(
       onWillPop: () async {
@@ -71,7 +73,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
       child: Scaffold(
         backgroundColor: isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
         appBar: AppBar(
-          title: const Text('Météo détaillée'),
+          title: Text(t('detailedWeather')),
           elevation: 0,
           backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
           leading: IconButton(
@@ -96,7 +98,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Erreur: ${snapshot.error}'));
+                  return Center(child: Text('${t('errorPrefix')}: ${snapshot.error}'));
                 }
                 
                 final w = snapshot.data!;
@@ -151,31 +153,31 @@ class _WeatherScreenState extends State<WeatherScreen> {
                         childAspectRatio: 1.5,
                         children: [
                           _buildDetailCard(
-                            context, 
-                            'Humidité', 
-                            '${w.humidity}%', 
-                            Icons.water_drop, 
+                            context,
+                            t('humidity'),
+                            '${w.humidity}%',
+                            Icons.water_drop,
                             isDarkMode
                           ),
                           _buildDetailCard(
-                            context, 
-                            'Vent', 
-                            '${w.windSpeed} m/s', 
-                            Icons.air, 
+                            context,
+                            t('wind'),
+                            '${w.windSpeed} m/s',
+                            Icons.air,
                             isDarkMode
                           ),
                           _buildDetailCard(
-                            context, 
-                            'Pression', 
+                            context,
+                            t('pressure'),
                             '1012 hPa', // Mocked as not in WeatherData yet
-                            Icons.speed, 
+                            Icons.speed,
                             isDarkMode
                           ),
                           _buildDetailCard(
-                            context, 
-                            'Visibilité', 
+                            context,
+                            t('visibility'),
                             '10 km', // Mocked
-                            Icons.visibility, 
+                            Icons.visibility,
                             isDarkMode
                           ),
                         ],

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../shared/widgets/custom_app_bar.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/widgets/app_pop_scope.dart';
@@ -16,6 +17,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+    final t = context.watch<LocaleProvider>().t;
 
     return AppPopScope(
       onWillPop: () async {
@@ -30,7 +32,7 @@ class AboutScreen extends StatelessWidget {
         backgroundColor: isDarkMode
             ? AppColors.darkBackground
             : AppColors.lightBackground,
-        appBar: CustomAppBar(title: 'À propos', isDarkMode: isDarkMode),
+        appBar: CustomAppBar(title: t('about'), isDarkMode: isDarkMode),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppConstants.paddingLarge),
@@ -79,7 +81,7 @@ class AboutScreen extends StatelessWidget {
 
                 // Description
                 Text(
-                  'Votre assistant intelligent pour la détection des maladies des plantes et l\'accompagnement agricole.',
+                  t('appDescriptionLong'),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge,
                 ).animate(delay: 200.ms).fadeIn(),
@@ -98,14 +100,14 @@ class AboutScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        'Équipe de réalisation',
+                        t('teamSection'),
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const Divider(height: 24),
                       Text(
-                        'Ingénieurs chercheurs en Sciences de Données et Intelligence Artificielle niveau 3',
+                        t('teamDescription'),
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontStyle: FontStyle.italic,
@@ -127,7 +129,7 @@ class AboutScreen extends StatelessWidget {
                 
                 // Copyright
                 Text(
-                  '© 2026 Green Project. Tous droits réservés.',
+                  t('copyrightNotice'),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                   ),

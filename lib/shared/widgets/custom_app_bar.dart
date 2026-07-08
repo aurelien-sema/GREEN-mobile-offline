@@ -32,7 +32,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             padding: const EdgeInsets.only(right: 16.0),
             child: Center(
               child: GestureDetector(
-                onTap: () => context.go('/profile'),
+                // Transmet la route courante pour que le bouton retour du
+                // Profil y ramène (au lieu de forcer /home quel que soit
+                // l'écran d'où l'on vient : Caméra, Chat, Marketplace...).
+                onTap: () => context.go(
+                  '/profile',
+                  extra: {'from': GoRouterState.of(context).uri.toString()},
+                ),
                 child: Icon(
                   Icons.person,
                   color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,

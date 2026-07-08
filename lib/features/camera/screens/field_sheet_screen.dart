@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../models/scan_result_model.dart';
 import '../../../providers/diseases_provider.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../models/disease_catalog_model.dart';
 import '../../../core/constants/app_constants.dart';
 
@@ -41,12 +42,12 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
         widget.scanResult.diseaseId == 'healthy';
   }
 
-  String _severityLabel(double severityLevel) {
-    if (severityLevel >= 90) return 'Très élevé';
-    if (severityLevel >= 75) return 'Élevé';
-    if (severityLevel >= 50) return 'Modéré';
-    if (severityLevel >= 25) return 'Faible';
-    return 'Suspicion faible';
+  String _severityLabel(double severityLevel, String Function(String) t) {
+    if (severityLevel >= 90) return t('severityVeryHigh');
+    if (severityLevel >= 75) return t('severityHigh');
+    if (severityLevel >= 50) return t('severityModerate');
+    if (severityLevel >= 25) return t('severityLow');
+    return t('severityLowSuspicion');
   }
 
   Color _severityColor(double severityLevel) {
@@ -60,6 +61,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
   Widget build(BuildContext context) {
     final diseasesProv = context.read<DiseasesProvider>();
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+    final t = context.watch<LocaleProvider>().t;
     final isHealthy = _isHealthy();
 
     return FutureBuilder(
@@ -71,11 +73,11 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
         final imageSize = (screenW * 0.34).clamp(80.0, 160.0);
         final plantName = widget.scanResult.affectedPlants.isNotEmpty
             ? widget.scanResult.affectedPlants.first
-            : 'Plante inconnue';
+            : t('unknownPlant');
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Fiche terrain'),
+            title: Text(t('fieldSheet')),
             elevation: 0,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             foregroundColor: Theme.of(context).textTheme.titleLarge?.color,
@@ -107,9 +109,9 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Niveau de gravité',
-                                style: TextStyle(
+                              Text(
+                                t('severityLevel'),
+                                style: const TextStyle(
                                     fontSize: 12, fontWeight: FontWeight.w600),
                               ),
                               const SizedBox(height: 12),
@@ -144,7 +146,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                                     const SizedBox(height: 8),
                                     Text(
                                       _severityLabel(
-                                          widget.scanResult.severityLevel),
+                                          widget.scanResult.severityLevel, t),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 13,
@@ -155,7 +157,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Confiance:\n${(widget.scanResult.confidence * 100).round()}%',
+                                '${t('confidenceLabel')}:\n${(widget.scanResult.confidence * 100).round()}%',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
@@ -170,7 +172,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                                   color: Colors.green, size: 48),
                               const SizedBox(height: 12),
                               Text(
-                                'Plante saine',
+                                t('healthyPlant'),
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleMedium
@@ -188,7 +190,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
 
                   // Nom de la plante
                   Text(
-                    'Plante',
+                    t('plantLabel'),
                     style: Theme.of(context).textTheme.labelMedium,
                   ),
                   const SizedBox(height: 4),
@@ -204,7 +206,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                   // Nom de la maladie (sauf si plante saine)
                   if (!isHealthy) ...[
                     Text(
-                      'Maladie détectée',
+                      t('detectedDisease'),
                       style: Theme.of(context).textTheme.labelMedium,
                     ),
                     const SizedBox(height: 4),
@@ -217,7 +219,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
 
                     // Symptômes
                     Text(
-                      'Symptômes',
+                      t('symptoms'),
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
@@ -226,14 +228,14 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                           .map((s) => _bulletItem(context, s))
                     else
                       Text(
-                        'Informations insuffisantes sur les symptômes pour cette maladie.',
+                        t('insufficientSymptomsInfo'),
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     const SizedBox(height: AppConstants.paddingLarge),
 
                     // Actions recommandées
                     Text(
-                      'Actions recommandées',
+                      t('recommendedActions'),
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
@@ -241,12 +243,12 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                       ...diseaseInfo.actions.map((a) => _bulletItem(context, a))
                     else
                       Text(
-                        'Aucune recommandation locale disponible. Consultez Green Bot pour des conseils pratiques.',
+                        t('noLocalRecommendation'),
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                   ] else ...[
                     Text(
-                      'Aucun traitement nécessaire',
+                      t('noTreatmentNeeded'),
                       style: Theme.of(context)
                           .textTheme
                           .bodyMedium
@@ -254,17 +256,13 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                     ),
                     const SizedBox(height: AppConstants.paddingLarge),
                     Text(
-                      'Conseil préventif',
+                      t('preventiveAdvice'),
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
-                    _bulletItem(
-                        context,
-                        'Continuez à observer régulièrement votre plante'),
-                    _bulletItem(context,
-                        'Maintenez une bonne hygiène du jardin'),
-                    _bulletItem(context,
-                        'Assurez un arrosage régulier et adapté'),
+                    _bulletItem(context, t('keepObservingPlant')),
+                    _bulletItem(context, t('maintainGardenHygiene')),
+                    _bulletItem(context, t('ensureRegularWatering')),
                   ],
                   const SizedBox(height: AppConstants.paddingLarge),
 
@@ -277,7 +275,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                             Navigator.pop(context);
                           },
                           icon: const Icon(Icons.check_circle),
-                          label: const Text('Compris'),
+                          label: Text(t('understood')),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -285,8 +283,9 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              final prompt =
-                                  "J'ai détecté une ${widget.scanResult.diseaseName} sur ma ${plantName}. Donne-moi des conseils pratiques et simples pour la traiter avec les ressources disponibles au village.";
+                              final prompt = t('chatPromptTemplate')
+                                  .replaceAll('{disease}', widget.scanResult.diseaseName)
+                                  .replaceAll('{plant}', plantName);
                               Navigator.pop(context);
                               Future.microtask(() => context.go('/chat',
                                   extra: {
@@ -295,7 +294,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
                                   }));
                             },
                             icon: const Icon(Icons.chat_bubble),
-                            label: const Text('Green Bot'),
+                            label: Text(t('greenBot')),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green.shade600,
                             ),

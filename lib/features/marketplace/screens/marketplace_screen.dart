@@ -5,9 +5,12 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../providers/marketplace_provider.dart';
 import '../../../shared/widgets/custom_app_bar.dart';
 import '../../../shared/widgets/gradient_background.dart';
+import '../../../shared/widgets/product_card.dart';
+import '../../../shared/widgets/cart_icon_button.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -34,14 +37,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+    final t = context.watch<LocaleProvider>().t;
     final marketplace = context.read<MarketplaceProvider>();
 
     return Scaffold(
       backgroundColor: isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: CustomAppBar(
-        title: 'Marketplace',
+        title: t('marketplaceTitle'),
         isDarkMode: isDarkMode,
         showProfileIcon: true,
+        actions: [CartIconButton(isDarkMode: isDarkMode)],
       ),
       body: GradientBackground(
         isDarkMode: isDarkMode,
@@ -60,7 +65,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Bienvenue à la Marketplace',
+                        t('welcomeToMarketplace'),
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
                       )
                           .animate()
@@ -68,7 +73,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                           .slideY(begin: -10, end: 0),
                       const SizedBox(height: 8),
                       Text(
-                        'Trouvez tous les produits agricoles dont vous avez besoin',
+                        t('findAllAgriProducts'),
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                             ),
@@ -122,9 +127,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                                 ],
                               ),
                               TextButton(
-                                onPressed: () {},
+                                onPressed: () => context.push(
+                                  '/marketplace/category',
+                                  extra: {'categoryId': category.id},
+                                ),
                                 child: Text(
-                                  'Voir tout',
+                                  t('seeAll'),
                                   style: TextStyle(
                                     color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
                                     fontSize: 12,
@@ -150,7 +158,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                                 final product = productsInCategory[prodIndex];
                                 return Padding(
                                   padding: const EdgeInsets.only(right: AppConstants.paddingMedium),
-                                  child: _buildProductCard(context, product, isDarkMode, catIndex, prodIndex),
+                                  child: ProductCard(product: product, isDarkMode: isDarkMode)
+                                      .animate(
+                                        delay: Duration(milliseconds: (catIndex * 300) + (prodIndex * 50)),
+                                      )
+                                      .fadeIn(duration: AppConstants.animationNormal)
+                                      .slideY(begin: 20, end: 0),
                                 );
                               },
                             ),
@@ -169,127 +182,4 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _buildProductCard(BuildContext context, dynamic product, bool isDarkMode, int catIndex, int prodIndex) {
-    return GestureDetector(
-      onTap: () => context.go('/product-detail', extra: {'productId': product.id}),
-      child: Container(
-        width: 160,
-        decoration: BoxDecoration(
-          color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-          borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
-          border: Border.all(
-            color: isDarkMode
-                ? const Color.fromRGBO(66, 66, 66, 0.3)
-                : const Color.fromRGBO(224, 224, 224, 0.5),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image
-            Container(
-              height: 120,
-              decoration: BoxDecoration(
-                color: isDarkMode
-                    ? const Color.fromRGBO(27, 94, 32, 0.2)
-                    : const Color.fromRGBO(232, 245, 233, 0.3),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(AppConstants.radiusLarge),
-                  topRight: Radius.circular(AppConstants.radiusLarge),
-                ),
-              ),
-              child: _buildProductImage(product.imageUrl, isDarkMode),
-            ),
-
-            // Contenu
-            Padding(
-              padding: const EdgeInsets.all(AppConstants.paddingSmall),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 6),
-                  if (product.reviewCount > 0)
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 14, color: Colors.amber),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${product.rating}',
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '(${product.reviewCount})',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                              ),
-                        ),
-                      ],
-                    )
-                  else
-                    Text(
-                      'Aucun avis',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                          ),
-                    ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${product.priceMin.toStringAsFixed(0)} - ${product.priceMax.toStringAsFixed(0)} FCFA',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Colors.amber,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      )
-          .animate(
-            delay: Duration(milliseconds: (catIndex * 300) + (prodIndex * 50)),
-          )
-          .fadeIn(duration: AppConstants.animationNormal)
-          .slideY(begin: 20, end: 0),
-    );
-  }
-
-  Widget _buildProductImage(String imageUrl, bool isDarkMode) {
-    if (imageUrl.startsWith('assets/')) {
-      return ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(AppConstants.radiusLarge),
-          topRight: Radius.circular(AppConstants.radiusLarge),
-        ),
-        child: Image.asset(
-          imageUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Center(
-              child: Icon(
-                Icons.image_not_supported,
-                color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                size: 40,
-              ),
-            );
-          },
-        ),
-      );
-    }
-    return Center(
-      child: Icon(
-        Icons.image_not_supported,
-        color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-        size: 40,
-      ),
-    );
-  }
 }

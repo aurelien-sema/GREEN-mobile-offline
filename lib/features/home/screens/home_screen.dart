@@ -38,14 +38,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _enableLocation() async {
+    final t = context.read<LocaleProvider>().t;
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Le GPS est désactivé sur votre téléphone.'),
+            content: Text(t('gpsDisabled')),
             action: SnackBarAction(
-              label: 'Activer',
+              label: t('activate'),
               onPressed: () => Geolocator.openLocationSettings(),
             ),
           ),
@@ -64,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Permission de localisation refusée')),
+          SnackBar(content: Text(t('locationPermissionDenied'))),
         );
       }
     }
@@ -85,6 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+    final t = context.watch<LocaleProvider>().t;
     return Scaffold(
       body: GradientBackground(
         isDarkMode: isDarkMode,
@@ -123,7 +125,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Bienvenue !',
+                              t('welcomeBang'),
                               style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(
                                     color: Colors.white,
@@ -132,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Scannez vos plantes',
+                              t('scanYourPlants'),
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: const Color.fromRGBO(255, 255, 255, 0.9),
@@ -197,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Text(
-                                          user?.name ?? 'Mon Profil',
+                                          user?.name ?? t('myProfile'),
                                           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                             color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                                           ),
@@ -206,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          user?.phone ?? user?.email ?? 'Non renseigné',
+                                          user?.phone ?? user?.email ?? t('notProvided'),
                                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -232,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Section Title
                 Text(
-                      'Fonctionnalités principales',
+                      t('mainFeatures'),
                       style: Theme.of(context).textTheme.headlineMedium,
                     )
                     .animate()
@@ -269,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               const SizedBox(),
                               Text(
-                                'Chargement...',
+                                t('loading'),
                                 style: const TextStyle(
                                   color: Colors.white, // Always white
                                 ),
@@ -283,12 +285,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Icon(
-                                Icons.error, 
+                                Icons.error,
                                 color: Colors.white, // Always white
                               ),
-                              const Text(
-                                'Erreur météo',
-                                style: TextStyle(
+                              Text(
+                                t('weatherError'),
+                                style: const TextStyle(
                                   color: Colors.white, // Always white
                                 ),
                               ),
@@ -306,9 +308,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   TextButton.icon(
                                     onPressed: _enableLocation,
                                     icon: const Icon(Icons.location_on, color: Colors.white, size: 16),
-                                    label: const Text(
-                                      'Activer Localisation',
-                                      style: TextStyle(color: Colors.white, fontSize: 12),
+                                    label: Text(
+                                      t('enableLocation'),
+                                      style: const TextStyle(color: Colors.white, fontSize: 12),
                                     ),
                                     style: TextButton.styleFrom(
                                       padding: EdgeInsets.zero,
@@ -323,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ? {'lat': _lat, 'lon': _lon}
                                           : null,
                                     ),
-                                    child: const Text('Voir plus', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                    child: Text(t('seeMore'), style: const TextStyle(color: Colors.white, fontSize: 12)),
                                     style: TextButton.styleFrom(
                                       padding: EdgeInsets.zero,
                                       minimumSize: const Size(0, 30),
@@ -502,8 +504,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? AppColors.darkGradient
                               : AppColors.lightGradient,
                           icon: Icons.camera_alt,
-                          title: 'Scanner',
-                          subtitle: 'Analyser une plante',
+                          title: t('scanner'),
+                          subtitle: t('analyzeAPlant'),
                         ),
                         SizedBox(width: horizontalSpacing),
                         buildAction(
@@ -512,8 +514,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? AppColors.darkGradient
                               : AppColors.lightGradient,
                           icon: Icons.chat_bubble,
-                          title: 'Green Bot',
-                          subtitle: 'Conseils et diagnostics IA',
+                          title: t('greenBot'),
+                          subtitle: t('aiAdviceAndDiagnostics'),
                         ),
                       ],
                     );
@@ -526,12 +528,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Consulter l\'historique',
+                      t('viewHistory'),
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     TextButton(
                       onPressed: () => context.go('/history'),
-                      child: const Text('Voir tout'),
+                      child: Text(t('seeAll')),
                     ),
                   ],
                 ),
@@ -543,7 +545,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       future: historyService.getRecentScans(3),
                       builder: (context, snap) {
                         if (snap.connectionState == ConnectionState.waiting) {
-                          return const Text('Chargement...');
+                          return Text(t('loading'));
                         }
                         final list = snap.data ?? [];
                         if (list.isEmpty) {
@@ -566,7 +568,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Aucun scan pour le moment',
+                                      t('noScansYet'),
                                       style: Theme.of(context).textTheme.bodyMedium
                                           ?.copyWith(
                                             color: isDarkMode
@@ -595,7 +597,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               title: Text(s.diseaseName),
                               subtitle: Text(
-                                'Analysée: ${formatDateFrench(s.scannedAt, context.read<LocaleProvider>().locale)}',
+                                '${t('analyzedOn')}: ${formatDateFrench(s.scannedAt, context.read<LocaleProvider>().locale)}',
                               ),
                             );
                           }).toList(),

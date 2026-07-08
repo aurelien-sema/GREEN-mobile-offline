@@ -9,13 +9,16 @@ import '../../../services/history_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../../services/profile_image_service.dart';
+import '../../../shared/widgets/app_pop_scope.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final String? from;
+  const ProfileScreen({super.key, this.from});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -44,6 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _showImagePickerOptions(BuildContext context) async {
+    final t = context.read<LocaleProvider>().t;
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -51,7 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('Galerie'),
+              title: Text(t('gallery')),
               onTap: () async {
                 Navigator.pop(ctx);
                 await _pickImage(ImageSource.gallery);
@@ -59,7 +63,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: const Text('Appareil photo'),
+              title: Text(t('cameraSource')),
               onTap: () async {
                 Navigator.pop(ctx);
                 await _pickImage(ImageSource.camera);
@@ -73,7 +77,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final path = await profileImageService.pickAndSaveImage(source);
+      final cropTitle = context.read<LocaleProvider>().t('cropPhotoTitle');
+      final path = await profileImageService.pickAndSaveImage(source, cropTitle: cropTitle);
       if (path != null && mounted) {
         final auth = context.read<AuthProvider>();
         final currentUser = auth.currentUser;
@@ -86,7 +91,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       debugPrint('Error in profile screen pick image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Erreur lors de la sélection de l\'image')),
+          SnackBar(content: Text(context.read<LocaleProvider>().t('imagePickErrorMessage'))),
         );
       }
     }
@@ -95,24 +100,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    context.read<ThemeProvider>();
+    final t = context.watch<LocaleProvider>().t;
     final auth = context.watch<AuthProvider>();
     final user = auth.currentUser;
     final contact = (user != null && (user.email.isNotEmpty))
         ? user.email
         : (user?.phone ?? '');
 
-    return Scaffold(
+    return AppPopScope(
+      onWillPop: () async {
+        context.go(widget.from ?? '/home');
+        return false;
+      },
+      child: Scaffold(
       backgroundColor: isDarkMode
           ? AppColors.darkBackground
           : AppColors.lightBackground,
       appBar: AppBar(
-        title: const Text('Profil'),
+        title: Text(t('profile')),
         elevation: 0,
         backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/home'),
+          onPressed: () => context.go(widget.from ?? '/home'),
         ),
       ),
       body: SafeArea(
@@ -186,7 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          user?.name ?? 'Utilisateur',
+                          user?.name ?? t('defaultUserName'),
                           style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(
                                 color: Colors.white,
@@ -215,7 +225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Expanded(
                     child: _buildStatCard(
                       context,
-                      'Scans',
+                      t('scansStat'),
                       _stats != null ? '${_stats!['total'] ?? 0}' : '...',
                       isDarkMode,
                       100,
@@ -225,7 +235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Expanded(
                     child: _buildStatCard(
                       context,
-                      'Confiance Moy.',
+                      t('avgConfidenceStat'),
                       _stats != null
                           ? '${((_stats!['avgConfidence'] ?? 0.0) * 100).round()}%'
                           : '...',
@@ -237,7 +247,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Expanded(
                     child: _buildStatCard(
                       context,
-                      'Plus fréquente',
+                      t('mostFrequentStat'),
                       _stats != null ? (_stats!['mostCommon'] ?? '-') : '...',
                       isDarkMode,
                       200,
@@ -253,7 +263,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
-
+      ),
     );
   }
 
@@ -305,18 +315,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildMenuSection(BuildContext context, bool isDarkMode) {
+    final t = context.read<LocaleProvider>().t;
     final menuItems = [
-      ('Paramètres', Icons.settings, '/settings'),
-
-      ('Préférences', Icons.tune, '/preferences'),
-      ('À propos', Icons.info, '/about'),
-      ('Se déconnecter', Icons.logout, '/login'),
+      (t('settingsLabel'), Icons.settings, '/settings'),
+      (t('preferences'), Icons.tune, '/preferences'),
+      (t('about'), Icons.info, '/about'),
+      (t('logout'), Icons.logout, '/login'),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Menu', style: Theme.of(context).textTheme.headlineSmall)
+        Text(t('menu'), style: Theme.of(context).textTheme.headlineSmall)
             .animate(delay: const Duration(milliseconds: 250))
             .fadeIn(duration: AppConstants.animationNormal),
         const SizedBox(height: AppConstants.paddingMedium),
@@ -428,28 +438,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// Build delete account button (red text)
   Widget _buildDeleteAccountButton(BuildContext context, bool isDarkMode) {
+    final t = context.read<LocaleProvider>().t;
     return GestureDetector(
       onTap: () {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Supprimer le compte'),
-            content: const Text(
-              'Êtes-vous sûr ? Cette action est irréversible.',
+            title: Text(t('deleteAccount')),
+            content: Text(
+              t('confirmIrreversibleAction'),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Annuler'),
+                child: Text(t('cancel')),
               ),
               TextButton(
                 onPressed: () async {
                   Navigator.pop(ctx);
                   await _deleteAccount();
                 },
-                child: const Text(
-                  'Supprimer',
-                  style: TextStyle(color: Colors.red),
+                child: Text(
+                  t('delete'),
+                  style: const TextStyle(color: Colors.red),
                 ),
               ),
             ],
@@ -472,10 +483,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               const Icon(Icons.delete, color: Colors.red, size: 24),
               const SizedBox(width: AppConstants.paddingMedium),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Supprimer le compte',
-                  style: TextStyle(
+                  t('deleteAccount'),
+                  style: const TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.w600,
                   ),
@@ -503,7 +514,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!deleted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Erreur: compte non trouvé')),
+            SnackBar(content: Text(context.read<LocaleProvider>().t('userNotFoundError'))),
           );
         }
         return;
@@ -518,7 +529,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e')),
+          SnackBar(content: Text('${context.read<LocaleProvider>().t('errorPrefix')}: $e')),
         );
       }
     }

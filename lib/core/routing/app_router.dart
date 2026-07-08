@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../providers/locale_provider.dart';
 import '../../features/auth/screens/splash_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
@@ -18,6 +20,8 @@ import '../../features/history/screens/history_screen.dart';
 import '../../features/weather/screens/weather_screen.dart';
 import '../../features/marketplace/screens/marketplace_screen.dart';
 import '../../features/marketplace/screens/product_detail_screen.dart';
+import '../../features/marketplace/screens/category_products_screen.dart';
+import '../../features/marketplace/screens/cart_screen.dart';
 
 final appRouter = GoRouter(
   routes: [
@@ -96,7 +100,8 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/profile',
       name: 'profile',
-      builder: (context, state) => const ProfileScreen(),
+      builder: (context, state) =>
+          ProfileScreen(from: (state.extra as Map?)?['from'] as String?),
     ),
     // Product detail (outside bottom nav)
     GoRoute(
@@ -106,6 +111,21 @@ final appRouter = GoRouter(
         final productId = (state.extra as Map?)?['productId'] as String? ?? '';
         return ProductDetailScreen(productId: productId);
       },
+    ),
+    // Tous les produits d'une catégorie ("Voir tout" depuis la Marketplace)
+    GoRoute(
+      path: '/marketplace/category',
+      name: 'marketplace-category',
+      builder: (context, state) {
+        final categoryId = (state.extra as Map?)?['categoryId'] as String? ?? '';
+        return CategoryProductsScreen(categoryId: categoryId);
+      },
+    ),
+    // Panier
+    GoRoute(
+      path: '/cart',
+      name: 'cart',
+      builder: (context, state) => const CartScreen(),
     ),
     // Diseases (accessible from drawer or home)
     GoRoute(
@@ -151,20 +171,23 @@ final appRouter = GoRouter(
     ),
   ],
   initialLocation: '/',
-  errorBuilder: (context, state) => Scaffold(
-    appBar: AppBar(title: const Text('Erreur')),
+  errorBuilder: (context, state) {
+    final t = context.watch<LocaleProvider>().t;
+    return Scaffold(
+    appBar: AppBar(title: Text(t('error'))),
     body: Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text('Erreur: ${state.error}'),
+          Text('${t('error')}: ${state.error}'),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () => context.go('/home'),
-            child: const Text('Retourner à l\'accueil'),
+            child: Text(t('returnToHome')),
           ),
         ],
       ),
     ),
-  ),
+  );
+  },
 );

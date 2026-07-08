@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../shared/widgets/custom_app_bar.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -45,6 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
     final themeProvider = context.read<ThemeProvider>();
+    final t = context.watch<LocaleProvider>().t;
 
     return AppPopScope(
       onWillPop: () async {
@@ -59,18 +61,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: isDarkMode
             ? AppColors.darkBackground
             : AppColors.lightBackground,
-        appBar: CustomAppBar(title: 'Paramètres', isDarkMode: isDarkMode),
+        appBar: CustomAppBar(title: t('settingsLabel'), isDarkMode: isDarkMode),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppConstants.paddingMedium),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionTitle(context, 'Apparence'),
+                _buildSectionTitle(context, t('appearance')),
                 _buildSettingItem(
                   context: context,
-                  title: 'Mode sombre',
-                  description: 'Basculer vers le thème sombre',
+                  title: t('darkModeToggle'),
+                  description: t('toggleDarkThemeDesc'),
                   icon: Icons.dark_mode,
                   isDarkMode: isDarkMode,
                   onToggle: (value) => themeProvider.toggleTheme(),
@@ -81,11 +83,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 
 
-                _buildSectionTitle(context, 'Confidentialité'),
+                _buildSectionTitle(context, t('privacy')),
                 _buildSettingItem(
                   context: context,
-                  title: 'Partage de données',
-                  description: 'Permettre l\'analyse de données',
+                  title: t('dataSharing'),
+                  description: t('allowDataAnalysisDesc'),
                   icon: Icons.privacy_tip,
                   isDarkMode: isDarkMode,
                   onToggle: _setAnalyticsEnabled,
@@ -119,25 +121,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'À propos de l\'application',
+                              t('aboutTheApp'),
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             const SizedBox(height: 12),
                             _buildInfoRow(
                               context,
-                              'Version',
+                              t('version'),
                               '1.0.0',
                               isDarkMode,
                             ),
                             _buildInfoRow(
                               context,
-                              'Build',
+                              t('buildLabel'),
                               'v1.0.0+1',
                               isDarkMode,
                             ),
                             _buildInfoRow(
                               context,
-                              'Dernière mise à jour',
+                              t('lastUpdate'),
                               '19 janvier 2026',
                               isDarkMode,
                             ),

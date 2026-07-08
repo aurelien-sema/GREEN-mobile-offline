@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:green_app/models/user_model.dart';
 import 'package:green_app/services/auth_service.dart' as svc;
 import 'package:green_app/services/auth_service.dart' show authService;
+import 'package:green_app/services/user_scope.dart';
 
 /// Provider pour gérer l'authentification
 class AuthProvider with ChangeNotifier {
@@ -39,6 +40,7 @@ class AuthProvider with ChangeNotifier {
         memberSince: DateTime.now(),
       );
       _isAuthenticated = true;
+      UserScope.setUserId(_currentUser!.id);
       _isLoading = false;
       notifyListeners();
       return true;
@@ -66,6 +68,7 @@ class AuthProvider with ChangeNotifier {
         memberSince: DateTime.now(),
       );
       _isAuthenticated = true;
+      UserScope.setUserId(_currentUser!.id);
       _isLoading = false;
       notifyListeners();
       return true;
@@ -81,6 +84,7 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     _currentUser = null;
     _isAuthenticated = false;
+    UserScope.setUserId(null);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_cacheKey);
     notifyListeners();
@@ -116,6 +120,7 @@ class AuthProvider with ChangeNotifier {
       memberSince: DateTime.now(),
     );
     _isAuthenticated = true;
+    UserScope.setUserId(_currentUser!.id);
     _saveToCache();
     notifyListeners();
   }
@@ -139,6 +144,7 @@ class AuthProvider with ChangeNotifier {
         final decoded = jsonDecode(cached) as Map<String, dynamic>;
         _currentUser = UserModel.fromJson(decoded);
         _isAuthenticated = true;
+        UserScope.setUserId(_currentUser!.id);
       } catch (e) {
         debugPrint('Erreur restauration cache: $e');
         _currentUser = null;

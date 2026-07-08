@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'user_scope.dart';
 
 class ChatMessage {
   final String id;
@@ -78,9 +79,14 @@ class ChatSession {
 }
 
 class ChatHistoryService {
-  static const String _fileName = 'chat_history.json';
   List<ChatSession> _sessions = [];
   ChatSession? _currentSession;
+  // Compte pour lequel _sessions a été chargé — voir HistoryService pour le
+  // même mécanisme d'isolation par utilisateur.
+  String? _loadedForUserId;
+  bool _loaded = false;
+
+  String get _fileName => 'chat_history_${UserScope.userId ?? 'guest'}.json';
 
   Future<File> _getFile() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -88,7 +94,10 @@ class ChatHistoryService {
   }
 
   Future<void> _load() async {
-    if (_sessions.isNotEmpty) return;
+    if (_loaded && _loadedForUserId == UserScope.userId) return;
+    _loadedForUserId = UserScope.userId;
+    _loaded = true;
+    _currentSession = null;
     try {
       final file = await _getFile();
       if (!await file.exists()) {

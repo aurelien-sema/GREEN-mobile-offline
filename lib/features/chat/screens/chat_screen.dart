@@ -8,6 +8,7 @@ import '../../../services/chat_history_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../shared/models/message.dart';
 import '../../../shared/widgets/animated_chat_message.dart';
 import '../../../shared/widgets/gradient_background.dart';
@@ -154,8 +155,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (connectivity == ConnectivityResult.none) {
           final offlineMsg = Message(
             id: DateTime.now().toString(),
-            content:
-                'Vous êtes hors-ligne — le chat IA nécessite une connexion internet.',
+            content: context.read<LocaleProvider>().t('offlineChatMessage'),
             isUser: false,
             timestamp: DateTime.now(),
           );
@@ -231,7 +231,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Message(
                 id: DateTime.now().toString(),
                 content:
-                    'Erreur lors de la communication avec le service IA: $e',
+                    '${context.read<LocaleProvider>().t('aiServiceErrorPrefix')}: $e',
                 isUser: false,
                 timestamp: DateTime.now(),
               ),
@@ -261,21 +261,21 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    context.read<ThemeProvider>();
+    final t = context.watch<LocaleProvider>().t;
 
     return Scaffold(
       backgroundColor: isDarkMode
           ? AppColors.darkBackground
           : AppColors.lightBackground,
       appBar: CustomAppBar(
-        title: 'Green Bot',
+        title: t('greenBot'),
         isDarkMode: isDarkMode,
         showProfileIcon: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _startNewChat,
-            tooltip: 'Nouvelle discussion',
+            tooltip: t('newDiscussion'),
           ),
         ],
       ),
@@ -301,9 +301,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     const Icon(Icons.history, color: Colors.white, size: 28),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Historique',
-                      style: TextStyle(
+                    Text(
+                      t('history'),
+                      style: const TextStyle(
                         color: Colors.white, 
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -316,7 +316,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: _sessions.isEmpty
                     ? Center(
                         child: Text(
-                          'Aucune discussion',
+                          t('noDiscussionYet'),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       )
@@ -377,7 +377,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Aucun message',
+                              t('noMessages'),
                               style: Theme.of(context).textTheme.headlineSmall,
                             ),
                           ],
@@ -403,7 +403,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 child: Row(
                                   children: [
                                     Text(
-                                      'Green Bot écrit...',
+                                      t('greenBotTyping'),
                                       style: TextStyle(
                                         color: isDarkMode
                                             ? AppColors.darkHint
@@ -452,7 +452,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         enabled: !_isLoading,
                         maxLines: null,
                         decoration: InputDecoration(
-                          hintText: 'Écrivez un message...',
+                          hintText: t('writeMessageHint'),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(
                               AppConstants.radiusMedium,

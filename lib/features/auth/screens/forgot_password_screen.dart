@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/validation/validators.dart';
+import '../../../providers/locale_provider.dart';
+import 'package:provider/provider.dart';
 import '../../../services/auth_service.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/custom_app_bar.dart';
@@ -63,7 +65,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => _isLoading = false);
 
     if (user == null) {
-      setState(() => _error = 'Aucun compte trouvé avec cet identifiant.');
+      setState(() => _error = context.read<LocaleProvider>().t('noAccountFoundForIdentifier'));
       return;
     }
 
@@ -84,7 +86,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
     if (newPassword != confirm) {
-      setState(() => _error = 'Les mots de passe ne correspondent pas.');
+      setState(() => _error = context.read<LocaleProvider>().t('passwordsDoNotMatch'));
       return;
     }
 
@@ -94,7 +96,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     setState(() => _isLoading = false);
 
     if (!ok) {
-      setState(() => _error = "La réinitialisation a échoué. Réessayez.");
+      setState(() => _error = context.read<LocaleProvider>().t('resetFailedMessage'));
       return;
     }
     setState(() => _step = _Step.done);
@@ -103,11 +105,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final t = context.watch<LocaleProvider>().t;
 
     return Scaffold(
       backgroundColor: isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
       appBar: CustomAppBar(
-        title: 'Réinitialiser le mot de passe',
+        title: t('resetPasswordTitle'),
         isDarkMode: isDarkMode,
       ),
       body: GradientBackground(
@@ -117,9 +120,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppConstants.paddingMedium),
             child: switch (_step) {
-              _Step.identify => _buildIdentifyView(context, isDarkMode),
-              _Step.reset => _buildResetView(context, isDarkMode),
-              _Step.done => _buildSuccessView(context, isDarkMode),
+              _Step.identify => _buildIdentifyView(context, isDarkMode, t),
+              _Step.reset => _buildResetView(context, isDarkMode, t),
+              _Step.done => _buildSuccessView(context, isDarkMode, t),
             },
           ),
         ),
@@ -152,19 +155,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  Widget _buildIdentifyView(BuildContext context, bool isDarkMode) {
+  Widget _buildIdentifyView(BuildContext context, bool isDarkMode, String Function(String) t) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: AppConstants.paddingLarge),
-        Text('Mot de passe oublié ?', style: Theme.of(context).textTheme.headlineSmall)
+        Text(t('forgotPasswordTitle'), style: Theme.of(context).textTheme.headlineSmall)
             .animate()
             .fadeIn(duration: AppConstants.animationNormal)
             .slideX(begin: -20, end: 0),
         const SizedBox(height: AppConstants.paddingMedium),
         Text(
-          "L'application fonctionne sans connexion à un serveur : entrez l'email ou le "
-          "numéro de téléphone utilisé à l'inscription pour définir un nouveau mot de passe.",
+          t('offlineResetExplanation'),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
               ),
@@ -174,7 +176,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           controller: _identifierController,
           keyboardType: TextInputType.emailAddress,
           enabled: !_isLoading,
-          decoration: _fieldDecoration('Email ou téléphone', Icons.person_outline, isDarkMode),
+          decoration: _fieldDecoration(t('emailOrPhoneHint'), Icons.person_outline, isDarkMode),
         ),
         _buildErrorText(),
         const SizedBox(height: AppConstants.paddingLarge),
@@ -193,18 +195,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     height: 24,
                     child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
                   )
-                : const Text('Continuer', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                : Text(t('continueButton'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
         const SizedBox(height: AppConstants.paddingMedium),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Se souvenir du mot de passe? ', style: Theme.of(context).textTheme.bodySmall),
+            Text(t('rememberPasswordQuestion'), style: Theme.of(context).textTheme.bodySmall),
             GestureDetector(
               onTap: () => context.pop(),
               child: Text(
-                'Connexion',
+                t('login'),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
                       fontWeight: FontWeight.w600,
@@ -217,15 +219,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  Widget _buildResetView(BuildContext context, bool isDarkMode) {
+  Widget _buildResetView(BuildContext context, bool isDarkMode, String Function(String) t) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: AppConstants.paddingLarge),
-        Text('Nouveau mot de passe', style: Theme.of(context).textTheme.headlineSmall),
+        Text(t('newPasswordTitle'), style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: AppConstants.paddingMedium),
         Text(
-          'Compte trouvé pour "$_resolvedIdentifier". Choisissez un nouveau mot de passe.',
+          t('accountFoundForTemplate').replaceAll('{identifier}', _resolvedIdentifier ?? ''),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
               ),
@@ -235,14 +237,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           controller: _newPasswordController,
           obscureText: true,
           enabled: !_isLoading,
-          decoration: _fieldDecoration('Nouveau mot de passe', Icons.lock_outline, isDarkMode),
+          decoration: _fieldDecoration(t('newPasswordTitle'), Icons.lock_outline, isDarkMode),
         ),
         const SizedBox(height: AppConstants.paddingMedium),
         TextField(
           controller: _confirmPasswordController,
           obscureText: true,
           enabled: !_isLoading,
-          decoration: _fieldDecoration('Confirmer le mot de passe', Icons.lock_outline, isDarkMode),
+          decoration: _fieldDecoration(t('confirmNewPasswordHint'), Icons.lock_outline, isDarkMode),
         ),
         _buildErrorText(),
         const SizedBox(height: AppConstants.paddingLarge),
@@ -261,14 +263,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     height: 24,
                     child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
                   )
-                : const Text('Réinitialiser', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                : Text(t('resetButton'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSuccessView(BuildContext context, bool isDarkMode) {
+  Widget _buildSuccessView(BuildContext context, bool isDarkMode, String Function(String) t) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -283,10 +285,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           child: const Icon(Icons.check_circle, size: 60, color: Colors.white),
         ).animate().scale(duration: AppConstants.animationNormal),
         const SizedBox(height: 32),
-        Text('Mot de passe réinitialisé !', style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
+        Text(t('passwordResetTitle'), style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
         const SizedBox(height: 16),
         Text(
-          'Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.',
+          t('canNowLoginMessage'),
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
               ),
@@ -302,7 +304,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               backgroundColor: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusMedium)),
             ),
-            child: const Text('Retour à la connexion', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            child: Text(t('backToLogin'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),
         ),
       ],

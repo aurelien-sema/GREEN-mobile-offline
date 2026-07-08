@@ -5,10 +5,13 @@ import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../providers/marketplace_provider.dart';
 import '../../../models/product_model.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/app_pop_scope.dart';
+import '../../../shared/widgets/cart_icon_button.dart';
+import '../../../providers/cart_provider.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -24,13 +27,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+    final t = context.watch<LocaleProvider>().t;
     final marketplace = context.read<MarketplaceProvider>();
     final product = marketplace.getProductById(widget.productId);
 
     if (product == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Produit')),
-        body: Center(child: Text('Produit non trouvé')),
+        appBar: AppBar(title: Text(t('productLabel'))),
+        body: Center(child: Text(t('productNotFound'))),
       );
     }
 
@@ -53,6 +57,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.go('/marketplace'),
           ),
+          actions: [CartIconButton(isDarkMode: isDarkMode)],
         ),
         body: GradientBackground(
           isDarkMode: isDarkMode,
@@ -101,7 +106,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         const Icon(Icons.star, size: 18, color: Colors.amber),
                         const SizedBox(width: 6),
                         Text(
-                          '${product.rating} · ${product.reviewCount} avis',
+                          '${product.rating} · ${product.reviewCount} ${t('reviewsSuffix')}',
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
@@ -116,7 +121,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Aucun avis pour le moment',
+                          t('noReviewsYet'),
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                               ),
@@ -159,7 +164,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Fournisseur',
+                            t('supplier'),
                             style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                   color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                                 ),
@@ -180,7 +185,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
                 // Description
                 Text(
-                  'Description',
+                  t('descriptionLabel'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                 )
                     .animate()
@@ -237,7 +242,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Prix',
+                        t('priceLabel'),
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
                               color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                             ),
@@ -252,7 +257,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Prix moyen: ${avgPrice.toStringAsFixed(0)} FCFA',
+                        '${t('averagePricePrefix')}: ${avgPrice.toStringAsFixed(0)} FCFA',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                             ),
@@ -271,7 +276,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Caractéristiques',
+                        t('characteristics'),
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                       )
                           .animate()
@@ -316,7 +321,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Lieu de disponibilité',
+                        t('availabilityLocation'),
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
                               color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                             ),
@@ -356,7 +361,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Quantité',
+                        t('quantityLabel'),
                         style: Theme.of(context).textTheme.labelMedium?.copyWith(
                               color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                             ),
@@ -390,7 +395,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                'Total',
+                                t('totalLabel'),
                                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                                       color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                                     ),
@@ -422,16 +427,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         minimum: const EdgeInsets.all(AppConstants.paddingMedium),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
-          child: ElevatedButton(
-            onPressed: () => _showOrderConfirmation(context, product, isDarkMode),
+          child: ElevatedButton.icon(
+            onPressed: () => _addToCart(context, product),
+            icon: const Icon(Icons.add_shopping_cart, color: Colors.white),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
               ),
             ),
-            child: Text(
-              'Commander',
+            label: Text(
+              t('addToCart'),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -447,6 +453,22 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildProductImage(String imageUrl, bool isDarkMode) {
+    if (imageUrl == ProductModel.defaultImage) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(AppConstants.radiusXLarge),
+        child: Container(
+          color: Colors.black,
+          child: Center(
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 64,
+              height: 64,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      );
+    }
     if (imageUrl.startsWith('assets/')) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(AppConstants.radiusXLarge),
@@ -474,95 +496,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  void _showOrderConfirmation(BuildContext context, ProductModel product, bool isDarkMode) async {
-    final marketplace = context.read<MarketplaceProvider>();
-
-    // Simuler la création de la commande
-    final success = await marketplace.placeOrder(product.id, _quantity);
-
-    if (mounted && success) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          backgroundColor: isDarkMode ? AppColors.darkSurface : Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusLarge)),
-          title: Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.check_circle, size: 48, color: Colors.green),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Commande confirmée',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Votre commande a bien été prise en compte.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? const Color.fromRGBO(27, 94, 32, 0.2) : const Color.fromRGBO(232, 245, 233, 0.3),
-                  borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Quantité: $_quantity',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Total: ${(product.price * _quantity).toStringAsFixed(0)} FCFA',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext);
-                  context.go('/marketplace');
-                },
-                child: const Text('Retour à la Marketplace'),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
+  /// Ajoute le produit (à la quantité sélectionnée) au panier — la commande
+  /// n'est validée que depuis l'écran Panier ("Valider la commande"), qui
+  /// liste tous les articles ajoutés avant confirmation.
+  void _addToCart(BuildContext context, ProductModel product) {
+    context.read<CartProvider>().addItem(product, quantity: _quantity);
+    final t = context.read<LocaleProvider>().t;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${product.name} ${t('addedToCartSuffix')} ($_quantity)'),
+        action: SnackBarAction(label: t('viewCart'), onPressed: () => context.push('/cart')),
+      ),
+    );
   }
 }

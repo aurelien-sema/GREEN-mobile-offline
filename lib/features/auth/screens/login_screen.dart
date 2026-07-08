@@ -8,6 +8,7 @@ import '../../../shared/widgets/gradient_button.dart';
 import '../../../shared/widgets/custom_app_bar.dart';
 import '../../../services/auth_service.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/locale_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../core/validation/validators.dart';
 // password hashing/verification handled by AuthService
@@ -74,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Identifiants invalides')),
+            SnackBar(content: Text(context.read<LocaleProvider>().t('invalidCredentials'))),
           );
         }
         return;
@@ -94,12 +95,13 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final t = context.watch<LocaleProvider>().t;
 
     return Scaffold(
       backgroundColor: isDarkMode
           ? AppColors.darkBackground
           : AppColors.lightBackground,
-      appBar: CustomAppBar(title: 'Connexion', isDarkMode: isDarkMode),
+      appBar: CustomAppBar(title: t('login'), isDarkMode: isDarkMode),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
@@ -130,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ).animate().fadeIn(duration: AppConstants.animationNormal),
               const SizedBox(height: 40),
               Text(
-                    'Bienvenue',
+                    t('welcomeSimple'),
                     style: Theme.of(context).textTheme.displayMedium,
                   )
                   .animate()
@@ -138,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   .slideX(begin: -20, end: 0),
               const SizedBox(height: 8),
               Text(
-                    'Connectez-vous pour accéder à l\'application',
+                    t('loginToAccess'),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: isDarkMode
                           ? AppColors.darkHint
@@ -154,16 +156,16 @@ class _LoginScreenState extends State<LoginScreen> {
               // Toggle Email/Phone
               Center(
                 child: SegmentedButton<bool>(
-                  segments: const [
+                  segments: [
                     ButtonSegment<bool>(
                       value: true,
-                      label: Text('Téléphone'),
-                      icon: Icon(Icons.phone),
+                      label: Text(t('phone')),
+                      icon: const Icon(Icons.phone),
                     ),
                     ButtonSegment<bool>(
                       value: false,
-                      label: Text('Email'),
-                      icon: Icon(Icons.email),
+                      label: Text(t('email')),
+                      icon: const Icon(Icons.email),
                     ),
                   ],
                   selected: {_isPhone},
@@ -201,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 24),
 
               Text(
-                _isPhone ? 'Numéro de téléphone' : 'Adresse Email',
+                _isPhone ? t('phoneNumberLabel') : t('emailAddressLabel'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -235,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   .slideY(begin: 10, end: 0),
               const SizedBox(height: 24),
               Text(
-                'Mot de passe',
+                t('password'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -275,7 +277,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextButton(
                       onPressed: () => context.push('/forgot-password'),
                       child: Text(
-                        'Mot de passe oublié?',
+                        t('forgotPassword'),
                         style: TextStyle(
                           color: isDarkMode
                               ? AppColors.darkPrimary
@@ -291,7 +293,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   .slideX(begin: 20, end: 0),
               const SizedBox(height: 20),
               GradientButton(
-                    label: _isLoading ? 'Connexion...' : 'Se connecter',
+                    label: _isLoading ? t('loggingIn') : t('loginButton'),
                     onPressed: _handleLogin,
                     isLoading: _isLoading,
                   )
@@ -303,7 +305,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextButton(
                       onPressed: () => context.go('/register'),
                       child: Text(
-                        'Pas de compte ? S\'inscrire',
+                        t('noAccountSignUp'),
                         style: TextStyle(
                           color: isDarkMode
                               ? AppColors.darkPrimary

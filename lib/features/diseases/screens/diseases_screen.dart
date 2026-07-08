@@ -9,6 +9,7 @@ import '../../../services/history_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../shared/widgets/animation_effects.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/custom_scroll_physics.dart';
@@ -92,7 +93,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    context.read<ThemeProvider>();
+    final t = context.watch<LocaleProvider>().t;
 
     return AppPopScope(
       onWillPop: () async {
@@ -107,7 +108,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
             ? AppColors.darkBackground
             : AppColors.lightBackground,
         appBar: AppBar(
-          title: const Text('Maladies'),
+          title: Text(t('diseasesTitle')),
           elevation: 0,
           backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
           leading: IconButton(
@@ -143,7 +144,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
                       controller: _searchController,
                       onChanged: _filterDiseases,
                       decoration: InputDecoration(
-                        hintText: 'Rechercher une maladie...',
+                        hintText: t('searchDiseaseHint'),
                         prefixIcon: Icon(
                           Icons.search,
                           color: isDarkMode
@@ -183,7 +184,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Aucune maladie trouvée',
+                              t('noDiseaseFound'),
                               style: Theme.of(context).textTheme.headlineSmall,
                             ),
                           ],
@@ -220,6 +221,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
     int index,
     bool isDarkMode,
   ) {
+    final t = context.read<LocaleProvider>().t;
     return GradientCard(
           isDarkMode: isDarkMode,
           opacity: 0.12,
@@ -272,7 +274,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
               ),
               const SizedBox(height: AppConstants.paddingMedium),
               Text(
-                'Plantes affectées:',
+                '${t('affectedPlantsLabel')}:',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 6),
@@ -283,14 +285,14 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                'Symptômes principaux:',
+                '${t('mainSymptomsLabel')}:',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 6),
               ...disease.symptoms.map((s) => Text('- $s', style: Theme.of(context).textTheme.bodySmall)),
               const SizedBox(height: 12),
               Text(
-                'Actions recommandées:',
+                '${t('recommendedActions')}:',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 6),
