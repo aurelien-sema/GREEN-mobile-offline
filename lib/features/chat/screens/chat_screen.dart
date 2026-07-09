@@ -287,29 +287,42 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Column(
             children: [
               Container(
-                height: 120,
                 width: double.infinity,
                 padding: const EdgeInsets.all(AppConstants.paddingLarge),
                 decoration: BoxDecoration(
-                  gradient: isDarkMode
-                      ? AppColors.darkGradient
-                      : AppColors.lightGradient,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.history, color: Colors.white, size: 28),
-                    const SizedBox(height: 8),
-                    Text(
-                      t('history'),
-                      style: const TextStyle(
-                        color: Colors.white, 
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
                     ),
-                  ],
+                  ),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
+                        ),
+                        child: Icon(
+                          Icons.history,
+                          color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: AppConstants.paddingMedium),
+                      Text(
+                        t('history'),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Expanded(
@@ -321,31 +334,62 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       )
                     : ListView.builder(
+                        padding: const EdgeInsets.all(AppConstants.paddingMedium),
                         itemCount: _sessions.length,
                         itemBuilder: (context, idx) {
                           final session = _sessions[idx];
                           final isActive =
                               chatHistoryService.getCurrentSession()?.id ==
                                   session.id;
-                          return ListTile(
-                            title: Text(
-                              session.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: isActive
-                                    ? FontWeight.w700
-                                    : FontWeight.w400,
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: AppConstants.paddingSmall),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
+                                  : (isDarkMode ? AppColors.darkSurface : AppColors.lightSurface),
+                              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                              border: Border.all(
+                                color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
                               ),
                             ),
-                            subtitle: Text(
-                              '${session.messages.length} messages',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            onTap: () => _loadSession(session.id),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () => _deleteSession(session),
+                            child: ListTile(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                              ),
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
+                                ),
+                                child: Icon(
+                                  Icons.chat_bubble_outline,
+                                  size: 18,
+                                  color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                                ),
+                              ),
+                              title: Text(
+                                session.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontWeight: isActive
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${session.messages.length} messages',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
+                                ),
+                              ),
+                              onTap: () => _loadSession(session.id),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 20),
+                                onPressed: () => _deleteSession(session),
+                              ),
                             ),
                           );
                         },
@@ -368,12 +412,18 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              size: 80,
-                              color: isDarkMode
-                                  ? AppColors.darkHint
-                                  : AppColors.lightHint,
+                            Container(
+                              width: 88,
+                              height: 88,
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
+                                borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
+                              ),
+                              child: Icon(
+                                Icons.chat_bubble_outline,
+                                size: 36,
+                                color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Text(

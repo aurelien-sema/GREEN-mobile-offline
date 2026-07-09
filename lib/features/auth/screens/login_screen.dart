@@ -5,7 +5,6 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/widgets/gradient_button.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
 import '../../../services/auth_service.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/locale_provider.dart';
@@ -101,7 +100,6 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: isDarkMode
           ? AppColors.darkBackground
           : AppColors.lightBackground,
-      appBar: CustomAppBar(title: t('login'), isDarkMode: isDarkMode),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
@@ -111,26 +109,40 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: double.infinity,
-                height: 200,
-                decoration: BoxDecoration(
-                  gradient: isDarkMode
-                      ? AppColors.darkGradient
-                      : AppColors.lightGradient,
-                  borderRadius: BorderRadius.circular(
-                    AppConstants.radiusXLarge,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.eco,
-                    size: 80,
-                    color: Colors.white,
-                  ).animate().scale(duration: AppConstants.animationNormal),
+              // Logo + wordmark de marque, centrés
+              Center(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 88,
+                      height: 88,
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color.fromRGBO(0, 0, 0, 0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset('assets/images/logo_dark.png'),
+                    ).animate().scale(duration: AppConstants.animationNormal),
+                    const SizedBox(height: 12),
+                    Text(
+                      'GREEN',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                    ),
+                  ],
                 ),
               ).animate().fadeIn(duration: AppConstants.animationNormal),
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
               Text(
                     t('welcomeSimple'),
                     style: Theme.of(context).textTheme.displayMedium,
@@ -150,54 +162,35 @@ class _LoginScreenState extends State<LoginScreen> {
                   .animate()
                   .fadeIn(delay: const Duration(milliseconds: 150))
                   .slideX(begin: -20, end: 0),
-              const SizedBox(height: 32),
-              const SizedBox(height: 32),
-              
-              // Toggle Email/Phone
-              Center(
-                child: SegmentedButton<bool>(
-                  segments: [
-                    ButtonSegment<bool>(
-                      value: true,
-                      label: Text(t('phone')),
-                      icon: const Icon(Icons.phone),
-                    ),
-                    ButtonSegment<bool>(
-                      value: false,
-                      label: Text(t('email')),
-                      icon: const Icon(Icons.email),
-                    ),
-                  ],
-                  selected: {_isPhone},
-                  onSelectionChanged: (Set<bool> newSelection) {
-                    setState(() {
-                      _isPhone = newSelection.first;
-                      _identifierController.clear();
-                      _fullPhone = '';
-                    });
-                  },
-                  style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                      (Set<MaterialState> states) {
-                        if (states.contains(MaterialState.selected)) {
-                          return isDarkMode
-                              ? AppColors.darkPrimary
-                              : AppColors.lightPrimary;
-                        }
-                        return Colors.transparent;
-                      },
-                    ),
-                    foregroundColor: MaterialStateProperty.resolveWith<Color>(
-                      (Set<MaterialState> states) {
-                        if (states.contains(MaterialState.selected)) {
-                          return Colors.white;
-                        }
-                        return isDarkMode
-                            ? AppColors.darkHint
-                            : AppColors.lightHint;
-                      },
-                    ),
+              const SizedBox(height: 28),
+
+              // Toggle Téléphone/Email (pilule pleine largeur)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? AppColors.darkSurface : AppColors.lightChipNeutralBg,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
+                  border: Border.all(
+                    color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
                   ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(child: _buildToggleSegment(context, t('phone'), _isPhone, isDarkMode, () {
+                      setState(() {
+                        _isPhone = true;
+                        _identifierController.clear();
+                        _fullPhone = '';
+                      });
+                    })),
+                    Expanded(child: _buildToggleSegment(context, t('email'), !_isPhone, isDarkMode, () {
+                      setState(() {
+                        _isPhone = false;
+                        _identifierController.clear();
+                        _fullPhone = '';
+                      });
+                    })),
+                  ],
                 ),
               ).animate().fadeIn(duration: AppConstants.animationNormal),
               const SizedBox(height: 24),
@@ -320,6 +313,40 @@ class _LoginScreenState extends State<LoginScreen> {
                   .fadeIn(delay: const Duration(milliseconds: 350))
                   .slideY(begin: 10, end: 0),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleSegment(
+    BuildContext context,
+    String label,
+    bool selected,
+    bool isDarkMode,
+    VoidCallback onTap,
+  ) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: AppConstants.animationFast,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary) : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : (isDarkMode ? AppColors.darkHint : AppColors.lightHint),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ),
       ),

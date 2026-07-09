@@ -78,6 +78,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen>
         return Scaffold(
           appBar: AppBar(
             title: Text(t('fieldSheet')),
+            centerTitle: false,
             elevation: 0,
             backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             foregroundColor: Theme.of(context).textTheme.titleLarge?.color,

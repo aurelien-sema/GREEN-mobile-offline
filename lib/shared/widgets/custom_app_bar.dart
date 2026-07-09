@@ -20,7 +20,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       title: Text(title, style: Theme.of(context).appBarTheme.titleTextStyle),
-      centerTitle: true,
+      centerTitle: false,
       backgroundColor: isDarkMode
           ? AppColors.darkSurface
           : AppColors.lightSurface,
@@ -39,17 +39,24 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                   '/profile',
                   extra: {'from': GoRouterState.of(context).uri.toString()},
                 ),
-                child: Icon(
-                  Icons.person,
-                  color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                  size: 24,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
+                  ),
+                  child: Icon(
+                    Icons.person_outline,
+                    color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
           ),
       ],
-      elevation: 2,
-      shadowColor: const Color.fromRGBO(0, 0, 0, 0.1),
+      elevation: 0,
     );
   }
 

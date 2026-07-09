@@ -118,6 +118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           : AppColors.lightBackground,
       appBar: AppBar(
         title: Text(t('profile')),
+        centerTitle: false,
         elevation: 0,
         backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
         leading: IconButton(
@@ -397,12 +398,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        icon,
-                        color: isDarkMode
-                            ? AppColors.darkPrimary
-                            : AppColors.lightPrimary,
-                        size: 24,
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDarkMode
+                              ? AppColors.darkTertiary
+                              : AppColors.lightTertiary,
+                        ),
+                        child: Icon(
+                          icon,
+                          color: isDarkMode
+                              ? AppColors.darkPrimary
+                              : AppColors.lightPrimary,
+                          size: 20,
+                        ),
                       ),
                       const SizedBox(width: AppConstants.paddingMedium),
                       Expanded(
@@ -481,7 +492,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           child: Row(
             children: [
-              const Icon(Icons.delete, color: Colors.red, size: 24),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color.fromRGBO(244, 67, 54, 0.12),
+                ),
+                child: const Icon(Icons.delete, color: Colors.red, size: 20),
+              ),
               const SizedBox(width: AppConstants.paddingMedium),
               Expanded(
                 child: Text(

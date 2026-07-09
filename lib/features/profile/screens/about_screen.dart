@@ -42,24 +42,19 @@ class AboutScreen extends StatelessWidget {
                 Container(
                   width: 120,
                   height: 120,
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: isDarkMode
-                        ? AppColors.darkGradient
-                        : AppColors.lightGradient,
+                    color: Colors.white,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color.fromRGBO(0, 0, 0, 0.2),
+                        color: const Color.fromRGBO(0, 0, 0, 0.08),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.eco,
-                    size: 60,
-                    color: Colors.white,
-                  ),
+                  child: Image.asset('assets/images/logo_dark.png'),
                 ).animate().scale(duration: AppConstants.animationNormal).then().shimmer(delay: 1.seconds, duration: 2.seconds),
                 const SizedBox(height: 24),
                 

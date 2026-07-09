@@ -135,7 +135,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       hintText: hint,
       prefixIcon: Icon(icon),
       filled: true,
-      fillColor: isDarkMode ? const Color.fromRGBO(27, 94, 32, 0.3) : AppColors.lightTertiary,
+      fillColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
         borderSide: BorderSide(color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder),
@@ -160,13 +160,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: AppConstants.paddingLarge),
-        Text(t('forgotPasswordTitle'), style: Theme.of(context).textTheme.headlineSmall)
-            .animate()
-            .fadeIn(duration: AppConstants.animationNormal)
-            .slideX(begin: -20, end: 0),
+        Center(
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
+              borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
+            ),
+            child: Icon(
+              Icons.lock_open_rounded,
+              size: 32,
+              color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+            ),
+          ),
+        ).animate().scale(duration: AppConstants.animationNormal),
+        const SizedBox(height: AppConstants.paddingLarge),
+        Text(
+          t('forgotPasswordTitle'),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ).animate().fadeIn(duration: AppConstants.animationNormal),
         const SizedBox(height: AppConstants.paddingMedium),
         Text(
           t('offlineResetExplanation'),
+          textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
               ),
@@ -187,7 +205,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             onPressed: _isLoading ? null : _handleIdentify,
             style: ElevatedButton.styleFrom(
               backgroundColor: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusMedium)),
+              shape: const StadiumBorder(),
             ),
             child: _isLoading
                 ? const SizedBox(
@@ -255,7 +273,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             onPressed: _isLoading ? null : _handleReset,
             style: ElevatedButton.styleFrom(
               backgroundColor: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusMedium)),
+              shape: const StadiumBorder(),
             ),
             child: _isLoading
                 ? const SizedBox(
@@ -302,7 +320,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             onPressed: () => context.go('/login'),
             style: ElevatedButton.styleFrom(
               backgroundColor: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusMedium)),
+              shape: const StadiumBorder(),
             ),
             child: Text(t('backToLogin'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
           ),

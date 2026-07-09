@@ -104,15 +104,18 @@ class _PreferencesScreenState extends State<PreferencesScreen> {
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
+    final isDarkMode = context.read<ThemeProvider>().isDarkMode;
     return Padding(
           padding: const EdgeInsets.symmetric(
             vertical: AppConstants.paddingSmall,
           ),
           child: Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            title.toUpperCase(),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
+            ),
           ),
         )
         .animate()

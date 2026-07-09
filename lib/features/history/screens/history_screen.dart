@@ -282,6 +282,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(t('history')),
+          centerTitle: false,
           elevation: 0,
           backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
           leading: IconButton(

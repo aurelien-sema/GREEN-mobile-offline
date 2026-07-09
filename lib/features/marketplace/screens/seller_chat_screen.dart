@@ -118,6 +118,7 @@ class _SellerChatScreenState extends State<SellerChatScreen> {
           ],
         ),
         backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+        centerTitle: false,
         elevation: 0,
       ),
       body: Column(
@@ -166,7 +167,7 @@ class _SellerChatScreenState extends State<SellerChatScreen> {
                           decoration: BoxDecoration(
                             color: msg.isUser
                                 ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)
-                                : (isDarkMode ? AppColors.darkSurface : AppColors.lightSurface),
+                                : (isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg),
                             borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
                           ),
                           child: Text(

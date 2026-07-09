@@ -165,46 +165,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // Registration Method Toggle
               Container(
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: isDarkMode
                           ? AppColors.darkSurface
-                          : AppColors.lightSurface,
+                          : AppColors.lightChipNeutralBg,
                       borderRadius: BorderRadius.circular(
-                        AppConstants.radiusMedium,
+                        AppConstants.radiusLarge,
                       ),
                       border: Border.all(
-                        color: isDarkMode
-                            ? AppColors.darkBorder
-                            : AppColors.lightBorder,
+                        color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
                       ),
                     ),
                     child: Row(
                       children: [
                         Expanded(
-                          child: GestureDetector(
-                            onTap: () => setState(() => _usePhone = false),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: !_usePhone
-                                    ? (isDarkMode
-                                          ? AppColors.darkPrimary
-                                          : AppColors.lightPrimary)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(
-                                  AppConstants.radiusMedium,
+                          child: Semantics(
+                            button: true,
+                            selected: !_usePhone,
+                            label: t('email'),
+                            child: GestureDetector(
+                              onTap: () => setState(() => _usePhone = false),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: !_usePhone
+                                      ? (isDarkMode
+                                            ? AppColors.darkPrimary
+                                            : AppColors.lightPrimary)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(
+                                    AppConstants.radiusMedium,
+                                  ),
                                 ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  t('email'),
-                                  style: TextStyle(
-                                    color: !_usePhone
-                                        ? Colors.white
-                                        : (isDarkMode
-                                              ? AppColors.darkOnBackground
-                                              : AppColors.lightOnBackground),
-                                    fontWeight: FontWeight.w600,
+                                child: Center(
+                                  child: Text(
+                                    t('email'),
+                                    style: TextStyle(
+                                      color: !_usePhone
+                                          ? Colors.white
+                                          : (isDarkMode
+                                                ? AppColors.darkOnBackground
+                                                : AppColors.lightOnBackground),
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -212,30 +216,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         Expanded(
-                          child: GestureDetector(
-                            onTap: () => setState(() => _usePhone = true),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: _usePhone
-                                    ? (isDarkMode
-                                          ? AppColors.darkPrimary
-                                          : AppColors.lightPrimary)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(
-                                  AppConstants.radiusMedium,
+                          child: Semantics(
+                            button: true,
+                            selected: _usePhone,
+                            label: t('phone'),
+                            child: GestureDetector(
+                              onTap: () => setState(() => _usePhone = true),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: _usePhone
+                                      ? (isDarkMode
+                                            ? AppColors.darkPrimary
+                                            : AppColors.lightPrimary)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(
+                                    AppConstants.radiusMedium,
+                                  ),
                                 ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  t('phone'),
-                                  style: TextStyle(
-                                    color: _usePhone
-                                        ? Colors.white
-                                        : (isDarkMode
-                                              ? AppColors.darkOnBackground
-                                              : AppColors.lightOnBackground),
-                                    fontWeight: FontWeight.w600,
+                                child: Center(
+                                  child: Text(
+                                    t('phone'),
+                                    style: TextStyle(
+                                      color: _usePhone
+                                          ? Colors.white
+                                          : (isDarkMode
+                                                ? AppColors.darkOnBackground
+                                                : AppColors.lightOnBackground),
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),

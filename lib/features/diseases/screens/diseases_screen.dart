@@ -13,6 +13,7 @@ import '../../../providers/locale_provider.dart';
 import '../../../shared/widgets/animation_effects.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/custom_scroll_physics.dart';
+import '../../../core/utils/disease_status.dart';
 
 class DiseasesScreen extends StatefulWidget {
   const DiseasesScreen({super.key});
@@ -109,6 +110,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
             : AppColors.lightBackground,
         appBar: AppBar(
           title: Text(t('diseasesTitle')),
+          centerTitle: false,
           elevation: 0,
           backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
           leading: IconButton(
@@ -121,10 +123,18 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
               child: Center(
                 child: GestureDetector(
                   onTap: () => context.go('/profile'),
-                  child: Icon(
-                    Icons.person,
-                    color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                    size: 24,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
+                    ),
+                    child: Icon(
+                      Icons.person_outline,
+                      color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
@@ -222,6 +232,19 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
     bool isDarkMode,
   ) {
     final t = context.read<LocaleProvider>().t;
+    final bool healthy = isHealthyDiseaseName(disease.name);
+    final Color statusBg = healthy
+        ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
+        : (isDarkMode ? AppColors.darkChipAmberBg : AppColors.lightChipAmberBg);
+    final Color statusFg = healthy
+        ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)
+        : (isDarkMode ? AppColors.darkChipAmberText : AppColors.lightChipAmberText);
+    final Color chipBg = healthy
+        ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
+        : (isDarkMode ? AppColors.darkChipAmberBg : AppColors.lightChipAmberBg);
+    final Color chipFg = healthy
+        ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)
+        : (isDarkMode ? AppColors.darkChipAmberText : AppColors.lightChipAmberText);
     return GradientCard(
           isDarkMode: isDarkMode,
           opacity: 0.12,
@@ -237,14 +260,12 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        gradient: isDarkMode
-                            ? AppColors.darkGradient
-                            : AppColors.lightGradient,
+                        color: statusBg,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.eco,
-                        color: Colors.white,
+                      child: Icon(
+                        healthy ? Icons.check_circle : Icons.warning_amber_rounded,
+                        color: statusFg,
                         size: 24,
                       ),
                     ),
@@ -265,6 +286,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
                                 color: isDarkMode
                                     ? AppColors.darkHint
                                     : AppColors.lightHint,
+                                fontStyle: FontStyle.italic,
                               ),
                         ),
                       ],
@@ -281,7 +303,13 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 6,
-                children: disease.affectedPlants.map((p) => Chip(label: Text(p))).toList(),
+                children: disease.affectedPlants
+                    .map((p) => Chip(
+                          label: Text(p, style: TextStyle(color: chipFg)),
+                          backgroundColor: chipBg,
+                          side: BorderSide.none,
+                        ))
+                    .toList(),
               ),
               const SizedBox(height: 12),
               Text(

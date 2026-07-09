@@ -103,7 +103,7 @@ class ProductCard extends StatelessWidget {
                   Text(
                     '${product.priceMin.toStringAsFixed(0)} - ${product.priceMax.toStringAsFixed(0)} FCFA',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Colors.amber,
+                          color: isDarkMode ? AppColors.darkPriceAccent : AppColors.lightPriceAccent,
                           fontWeight: FontWeight.w700,
                         ),
                   ),

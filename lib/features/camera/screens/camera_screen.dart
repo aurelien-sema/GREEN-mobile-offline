@@ -354,12 +354,18 @@ class _CameraScreenState extends State<CameraScreen> {
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.image_search,
-                    size: 80,
-                    color: isDarkMode
-                        ? AppColors.darkPrimary
-                        : AppColors.lightPrimary,
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
+                      borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
+                    ),
+                    child: Icon(
+                      Icons.image_search,
+                      size: 32,
+                      color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -390,16 +396,14 @@ class _CameraScreenState extends State<CameraScreen> {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            gradient: isDarkMode
-                ? AppColors.darkGradient
-                : AppColors.lightGradient,
+            color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               number,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -438,12 +442,14 @@ class _CameraScreenState extends State<CameraScreen> {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  gradient: isDarkMode
-                      ? AppColors.darkGradient
-                      : AppColors.lightGradient,
-                  shape: BoxShape.circle,
+                  color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
                 ),
-                child: Icon(icon, color: Colors.white, size: 24),
+                child: Icon(
+                  icon,
+                  color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(

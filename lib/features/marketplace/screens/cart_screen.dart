@@ -230,7 +230,7 @@ class _CartScreenState extends State<CartScreen> {
                     Text(
                       '${item.totalPrice.toStringAsFixed(0)} FCFA',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                            color: isDarkMode ? AppColors.darkPriceAccent : AppColors.lightPriceAccent,
                             fontWeight: FontWeight.w700,
                           ),
                     ),
@@ -316,7 +316,7 @@ class _CartScreenState extends State<CartScreen> {
                   '${total.toStringAsFixed(0)} FCFA',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                        color: isDarkMode ? AppColors.darkPriceAccent : AppColors.lightPriceAccent,
                       ),
                 ),
               ],
@@ -388,11 +388,14 @@ class _CartScreenState extends State<CartScreen> {
         actions: [
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton(
+            child: OutlinedButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
                 context.go('/marketplace');
               },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
               child: Text(t('backToMarketplace')),
             ),
           ),

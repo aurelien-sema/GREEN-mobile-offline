@@ -86,15 +86,17 @@ class _GradientButtonState extends State<GradientButton>
           decoration: BoxDecoration(
             gradient: !widget.isOutlined ? AppColors.buttonGradient : null,
             border: widget.isOutlined
-                ? Border.all(color: outlinedColor, width: 2)
+                ? Border.all(color: outlinedColor, width: 1.5)
                 : null,
-            borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-            boxShadow: !widget.disabled
+            // Forme pilule (rayon = moitié de la hauteur), conforme à la
+            // direction "Clean Emerald" des maquettes.
+            borderRadius: BorderRadius.circular(widget.height / 2),
+            boxShadow: !widget.disabled && !widget.isOutlined
                 ? [
                     BoxShadow(
-                      color: const Color.fromRGBO(46, 139, 87, 0.12),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+                      color: const Color.fromRGBO(46, 139, 87, 0.10),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
                     ),
                   ]
                 : null,

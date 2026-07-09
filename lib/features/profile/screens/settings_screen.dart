@@ -159,15 +159,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
+    final isDarkMode = context.read<ThemeProvider>().isDarkMode;
     return Padding(
           padding: const EdgeInsets.symmetric(
             vertical: AppConstants.paddingSmall,
           ),
           child: Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            title.toUpperCase(),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
+            ),
           ),
         )
         .animate()
@@ -204,12 +207,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  color: isDarkMode
-                      ? AppColors.darkPrimary
-                      : AppColors.lightPrimary,
-                  size: 24,
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDarkMode
+                        ? AppColors.darkTertiary
+                        : AppColors.lightTertiary,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isDarkMode
+                        ? AppColors.darkPrimary
+                        : AppColors.lightPrimary,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: AppConstants.paddingMedium),
                 Expanded(

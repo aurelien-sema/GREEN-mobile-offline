@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../core/utils/color_utils.dart';
 import '../../core/constants/app_colors.dart';
 
-/// Widget conteneur avec dégradé de fond
+/// Fond d'écran neutre (pass-through).
+///
+/// Utilisait auparavant un léger voile dégradé vert sur toute la page ; la
+/// direction "Clean Emerald" veut des fonds plats et neutres partout, le vert
+/// n'apparaissant que sur des éléments "hero" ciblés (carte météo, cartes
+/// d'action, en-tête profil...). Les paramètres sont conservés pour ne pas
+/// devoir modifier tous les appels existants, mais n'ont plus d'effet visuel.
 class GradientBackground extends StatelessWidget {
   final Widget child;
   final bool isDarkMode;
@@ -20,26 +25,7 @@ class GradientBackground extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final gradient = isDarkMode
-        ? AppColors.darkGradient
-        : AppColors.lightGradient;
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: begin,
-          end: end,
-          colors: [
-            colorWithOpacity(gradient.colors[0], opacity),
-            colorWithOpacity(gradient.colors[1], opacity),
-          ],
-          stops: gradient.stops,
-        ),
-      ),
-      child: child,
-    );
-  }
+  Widget build(BuildContext context) => child;
 }
 
 /// Widget pour écran complet avec dégradé
@@ -73,7 +59,10 @@ class FullGradientScreen extends StatelessWidget {
   }
 }
 
-/// Widget conteneur avec bord arrondi et dégradé
+/// Carte à fond neutre (blanc/surface) avec bordure fine — direction "Clean
+/// Emerald" : plus de teinte verte sur les cartes de contenu ordinaires, le
+/// vert reste réservé aux éléments "hero". Le paramètre [opacity] est
+/// conservé pour compatibilité mais n'est plus utilisé.
 class GradientCard extends StatelessWidget {
   final Widget child;
   final double borderRadius;
@@ -96,25 +85,16 @@ class GradientCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = isDarkMode
-        ? AppColors.darkGradient
-        : AppColors.lightGradient;
-
     final card = Container(
       padding: padding,
       margin: margin,
       decoration: BoxDecoration(
+        color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: BorderRadius.circular(borderRadius),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorWithOpacity(gradient.colors[0], opacity),
-            colorWithOpacity(gradient.colors[1], opacity),
-          ],
-        ),
         border: Border.all(
-          color: colorWithOpacity(gradient.colors[0], 0.2),
+          color: isDarkMode
+              ? const Color.fromRGBO(66, 66, 66, 0.3)
+              : const Color.fromRGBO(224, 224, 224, 0.6),
           width: 1.0,
         ),
       ),
@@ -128,7 +108,8 @@ class GradientCard extends StatelessWidget {
   }
 }
 
-/// Widget pour les sections avec titre et fond dégradé
+/// Section titrée à fond neutre — le titre reste en vert (accent), le fond
+/// est blanc/surface avec bordure fine plutôt qu'un voile dégradé.
 class GradientSection extends StatelessWidget {
   final String title;
   final Widget child;
@@ -145,21 +126,17 @@ class GradientSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = isDarkMode
-        ? AppColors.darkGradient
-        : AppColors.lightGradient;
+    final accent = isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       decoration: BoxDecoration(
+        color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: BorderRadius.circular(12.0),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorWithOpacity(gradient.colors[0], 0.05),
-            colorWithOpacity(gradient.colors[1], 0.05),
-          ],
+        border: Border.all(
+          color: isDarkMode
+              ? const Color.fromRGBO(66, 66, 66, 0.3)
+              : const Color.fromRGBO(224, 224, 224, 0.6),
         ),
       ),
       child: Padding(
@@ -170,7 +147,7 @@ class GradientSection extends StatelessWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: gradient.colors[0],
+                color: accent,
                 fontWeight: FontWeight.bold,
               ),
             ),

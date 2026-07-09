@@ -12,6 +12,7 @@ import '../../../services/history_service.dart';
 import '../../../utils/date_formatter.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/custom_scroll_physics.dart';
+import '../../../core/utils/disease_status.dart';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -587,17 +588,41 @@ class _HomeScreenState extends State<HomeScreen> {
                         return Column(
                           children: list.map((item) {
                             final s = item as dynamic;
-                            return ListTile(
-                              leading: CircleAvatar(
-                                child: Text(
-                                  s.diseaseName.isNotEmpty
-                                      ? s.diseaseName[0]
-                                      : '?',
+                            final bool healthy = isHealthyDiseaseName(s.diseaseName as String);
+                            final Color avatarBg = healthy
+                                ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
+                                : (isDarkMode ? AppColors.darkChipAmberBg : AppColors.lightChipAmberBg);
+                            final Color avatarFg = healthy
+                                ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)
+                                : (isDarkMode ? AppColors.darkChipAmberText : AppColors.lightChipAmberText);
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: AppConstants.paddingSmall),
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+                                borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? const Color.fromRGBO(66, 66, 66, 0.3)
+                                      : const Color.fromRGBO(224, 224, 224, 0.5),
                                 ),
                               ),
-                              title: Text(s.diseaseName),
-                              subtitle: Text(
-                                '${t('analyzedOn')}: ${formatDateFrench(s.scannedAt, context.read<LocaleProvider>().locale)}',
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: avatarBg,
+                                  child: Text(
+                                    s.diseaseName.isNotEmpty ? s.diseaseName[0].toUpperCase() : '?',
+                                    style: TextStyle(color: avatarFg, fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                                title: Text(s.diseaseName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                subtitle: Text(
+                                  formatDateFrench(s.scannedAt, context.read<LocaleProvider>().locale),
+                                  style: TextStyle(color: isDarkMode ? AppColors.darkHint : AppColors.lightHint),
+                                ),
+                                trailing: Icon(
+                                  Icons.chevron_right,
+                                  color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
+                                ),
                               ),
                             );
                           }).toList(),

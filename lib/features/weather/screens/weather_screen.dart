@@ -74,6 +74,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
         backgroundColor: isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
         appBar: AppBar(
           title: Text(t('detailedWeather')),
+          centerTitle: false,
           elevation: 0,
           backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
           leading: IconButton(
@@ -157,28 +158,32 @@ class _WeatherScreenState extends State<WeatherScreen> {
                             t('humidity'),
                             '${w.humidity}%',
                             Icons.water_drop,
-                            isDarkMode
+                            isDarkMode,
+                            iconColor: const Color(0xFF2196F3),
                           ),
                           _buildDetailCard(
                             context,
                             t('wind'),
                             '${w.windSpeed} m/s',
                             Icons.air,
-                            isDarkMode
+                            isDarkMode,
+                            iconColor: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                           ),
                           _buildDetailCard(
                             context,
                             t('pressure'),
                             '1012 hPa', // Mocked as not in WeatherData yet
                             Icons.speed,
-                            isDarkMode
+                            isDarkMode,
+                            iconColor: const Color(0xFF9C27B0),
                           ),
                           _buildDetailCard(
                             context,
                             t('visibility'),
                             '10 km', // Mocked
                             Icons.visibility,
-                            isDarkMode
+                            isDarkMode,
+                            iconColor: isDarkMode ? AppColors.darkPriceAccent : AppColors.lightPriceAccent,
                           ),
                         ],
                       ).animate(delay: 200.ms).fadeIn().slideY(begin: 20, end: 0),
@@ -193,7 +198,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
     );
   }
 
-  Widget _buildDetailCard(BuildContext context, String label, String value, IconData icon, bool isDarkMode) {
+  Widget _buildDetailCard(BuildContext context, String label, String value, IconData icon, bool isDarkMode, {Color? iconColor}) {
     return Container(
       decoration: BoxDecoration(
         color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
@@ -205,7 +210,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary),
+          Icon(icon, color: iconColor ?? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)),
           const SizedBox(height: 8),
           Text(
             value,

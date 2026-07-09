@@ -52,6 +52,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         backgroundColor: isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
         appBar: AppBar(
           title: Text(product.name),
+          centerTitle: false,
           elevation: 0,
           backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
           leading: IconButton(
@@ -226,8 +227,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             .map((tag) => Chip(
                                   label: Text(tag),
                                   backgroundColor: isDarkMode
-                                      ? const Color.fromRGBO(27, 94, 32, 0.2)
-                                      : const Color.fromRGBO(232, 245, 233, 0.3),
+                                      ? AppColors.darkChipNeutralBg
+                                      : AppColors.lightChipNeutralBg,
+                                  side: BorderSide.none,
                                 ))
                             .toList(),
                       ),
@@ -264,7 +266,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       Text(
                         '${product.priceMin.toStringAsFixed(0)} - ${product.priceMax.toStringAsFixed(0)} FCFA',
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: Colors.amber,
+                              color: isDarkMode ? AppColors.darkPriceAccent : AppColors.lightPriceAccent,
                               fontWeight: FontWeight.w700,
                             ),
                       ),
@@ -416,7 +418,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               Text(
                                 '${totalPrice.toStringAsFixed(0)} FCFA',
                                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                      color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                                      color: isDarkMode ? AppColors.darkPriceAccent : AppColors.lightPriceAccent,
                                       fontWeight: FontWeight.w700,
                                     ),
                               ),
