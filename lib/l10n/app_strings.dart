@@ -319,6 +319,25 @@ class AppStrings {
       'quitAppConfirm': 'Voulez-vous quitter l\'application ?',
       'returnToHome': 'Retourner à l\'accueil',
       'cropPhotoTitle': 'Recadrer la photo',
+
+      // Paiement / Livraison / Chat vendeur (extra)
+      'paymentMethodTitle': 'Mode de paiement',
+      'paymentMobileMoney': 'Mobile Money (Orange Money / MTN MoMo)',
+      'paymentCashOnDelivery': 'Paiement à la livraison',
+      'paymentBankTransfer': 'Virement bancaire',
+      'deliveryMethodTitle': 'Mode de livraison',
+      'deliveryPickup': 'Retrait chez le fournisseur',
+      'deliveryHome': 'Livraison à domicile',
+      'freeDelivery': 'Gratuit',
+      'contactSupplier': 'Contacter le fournisseur',
+      'sellerReplyDelivery': 'La livraison prend généralement 2 à 3 jours selon votre localisation. Nous vous contactons pour confirmer avant l\'envoi.',
+      'sellerReplyPrice': 'Le prix affiché est indicatif, une petite marge de négociation est possible selon la quantité commandée.',
+      'sellerReplyAvailability': 'Ce produit est disponible en stock. N\'hésitez pas à valider votre commande.',
+      'sellerReplyPayment': 'Nous acceptons Mobile Money, le virement bancaire et le paiement à la livraison.',
+      'sellerReplyGeneric': 'Merci pour votre message, nous revenons vers vous rapidement avec une réponse précise.',
+      'sellerChatIntro': 'Posez vos questions à {supplier} sur ce produit : livraison, prix, disponibilité...',
+      'sellerTyping': 'Le fournisseur écrit...',
+      'sellerMessageHint': 'Écrivez votre message...',
     },
     'en': {
       // General
@@ -637,6 +656,25 @@ class AppStrings {
       'quitAppConfirm': 'Do you want to quit the app?',
       'returnToHome': 'Back to home',
       'cropPhotoTitle': 'Crop photo',
+
+      // Payment / Delivery / Seller chat (extra)
+      'paymentMethodTitle': 'Payment method',
+      'paymentMobileMoney': 'Mobile Money (Orange Money / MTN MoMo)',
+      'paymentCashOnDelivery': 'Cash on delivery',
+      'paymentBankTransfer': 'Bank transfer',
+      'deliveryMethodTitle': 'Delivery method',
+      'deliveryPickup': 'Pickup from supplier',
+      'deliveryHome': 'Home delivery',
+      'freeDelivery': 'Free',
+      'contactSupplier': 'Contact supplier',
+      'sellerReplyDelivery': 'Delivery usually takes 2 to 3 days depending on your location. We\'ll contact you to confirm before shipping.',
+      'sellerReplyPrice': 'The listed price is indicative, a small discount may be possible depending on the quantity ordered.',
+      'sellerReplyAvailability': 'This product is in stock. Feel free to go ahead and place your order.',
+      'sellerReplyPayment': 'We accept Mobile Money, bank transfer and cash on delivery.',
+      'sellerReplyGeneric': 'Thanks for your message, we\'ll get back to you shortly with a precise answer.',
+      'sellerChatIntro': 'Ask {supplier} anything about this product: delivery, price, availability...',
+      'sellerTyping': 'Supplier is typing...',
+      'sellerMessageHint': 'Write your message...',
     },
     'pid': {
       // General
@@ -955,6 +993,25 @@ class AppStrings {
       'quitAppConfirm': 'You want comot for this app?',
       'returnToHome': 'Go back home',
       'cropPhotoTitle': 'Cut the photo well',
+
+      // Payment / Delivery / Seller chat (extra)
+      'paymentMethodTitle': 'How you go pay',
+      'paymentMobileMoney': 'Mobile Money (Orange Money / MTN MoMo)',
+      'paymentCashOnDelivery': 'Pay when e reach',
+      'paymentBankTransfer': 'Bank transfer',
+      'deliveryMethodTitle': 'How you go collect am',
+      'deliveryPickup': 'Go carry am for supplier place',
+      'deliveryHome': 'Dem go bring am for your house',
+      'freeDelivery': 'Free',
+      'contactSupplier': 'Talk to supplier',
+      'sellerReplyDelivery': 'Delivery dey take like 2 to 3 days, e depend on where you dey. We go call you before we send am.',
+      'sellerReplyPrice': 'The price wey dey show na normal price, we fit reduce small if you order plenty.',
+      'sellerReplyAvailability': 'This product dey available. You fit go ahead confirm your order.',
+      'sellerReplyPayment': 'We dey accept Mobile Money, bank transfer, and pay-when-e-reach.',
+      'sellerReplyGeneric': 'Thank you for your message, we go reply you quick quick with correct answer.',
+      'sellerChatIntro': 'Ask {supplier} anything about this product: delivery, price, if e dey available...',
+      'sellerTyping': 'Supplier dey type...',
+      'sellerMessageHint': 'Write your message...',
     },
   };
 

@@ -328,7 +328,13 @@ class MarketplaceProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> placeOrder(String productId, int quantity) async {
+  Future<bool> placeOrder(
+    String productId,
+    int quantity, {
+    String paymentMethod = '',
+    String deliveryMethod = '',
+    double deliveryFee = 0,
+  }) async {
     final product = getProductById(productId);
     if (product == null) return false;
 
@@ -338,9 +344,12 @@ class MarketplaceProvider with ChangeNotifier {
       productName: product.name,
       quantity: quantity,
       price: product.price,
-      totalPrice: product.price * quantity,
+      totalPrice: (product.price * quantity) + deliveryFee,
       orderedAt: DateTime.now(),
       status: 'pending',
+      paymentMethod: paymentMethod,
+      deliveryMethod: deliveryMethod,
+      deliveryFee: deliveryFee,
     );
 
     _orders.insert(0, order);

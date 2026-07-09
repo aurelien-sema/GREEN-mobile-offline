@@ -12,6 +12,7 @@ import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/app_pop_scope.dart';
 import '../../../shared/widgets/cart_icon_button.dart';
 import '../../../providers/cart_provider.dart';
+import 'seller_chat_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -174,6 +175,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                           ),
                         ],
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => SellerChatScreen(product: product)),
+                        ),
+                        icon: Icon(
+                          Icons.chat_bubble_outline,
+                          color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                        ),
+                        tooltip: t('contactSupplier'),
                       ),
                     ],
                   ),

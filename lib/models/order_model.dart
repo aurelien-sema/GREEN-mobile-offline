@@ -7,6 +7,10 @@ class OrderModel {
   final double totalPrice;
   final DateTime orderedAt;
   final String status; // pending, confirmed, shipped, delivered
+  // Choix faits par l'acheteur au moment de valider la commande (voir CartScreen).
+  final String paymentMethod;
+  final String deliveryMethod;
+  final double deliveryFee;
 
   OrderModel({
     required this.id,
@@ -17,6 +21,9 @@ class OrderModel {
     required this.totalPrice,
     required this.orderedAt,
     this.status = 'pending',
+    this.paymentMethod = '',
+    this.deliveryMethod = '',
+    this.deliveryFee = 0,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +36,9 @@ class OrderModel {
       totalPrice: (json['totalPrice'] as num).toDouble(),
       orderedAt: DateTime.parse(json['orderedAt'] as String),
       status: json['status'] as String? ?? 'pending',
+      paymentMethod: json['paymentMethod'] as String? ?? '',
+      deliveryMethod: json['deliveryMethod'] as String? ?? '',
+      deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0,
     );
   }
 
@@ -41,5 +51,8 @@ class OrderModel {
         'totalPrice': totalPrice,
         'orderedAt': orderedAt.toIso8601String(),
         'status': status,
+        'paymentMethod': paymentMethod,
+        'deliveryMethod': deliveryMethod,
+        'deliveryFee': deliveryFee,
       };
 }
