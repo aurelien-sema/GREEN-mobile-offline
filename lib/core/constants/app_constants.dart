@@ -40,4 +40,11 @@ class AppConstants {
   // Validation
   static const int minPasswordLength = 8;
   static const int maxPasswordLength = 128;
+
+  // Vision (détection de maladies)
+  // En dessous de ce seuil, un résultat est considéré comme incertain et
+  // n'est pas présenté comme un diagnostic fiable. Référencé à la fois par
+  // VisionService (décision d'acceptation) et ScanResultModel (calcul de la
+  // gravité affichée), pour éviter toute divergence entre les deux.
+  static const double visionConfidenceThreshold = 0.70;
 }

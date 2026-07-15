@@ -17,9 +17,16 @@ class DiseasesProvider with ChangeNotifier {
       final raw = await rootBundle.loadString('assets/data/diseases.json');
       final data = jsonDecode(raw) as List<dynamic>;
       _diseases.clear();
-      _diseases.addAll(
-        data.map((e) => DiseaseCatalogModel.fromJson(e as Map<String, dynamic>)).toList(),
-      );
+      for (var i = 0; i < data.length; i++) {
+        try {
+          _diseases.add(DiseaseCatalogModel.fromJson(data[i] as Map<String, dynamic>));
+        } catch (e) {
+          // Une entrée malformée ne doit pas empêcher le chargement des
+          // autres ; on log l'index fautif pour faciliter le débogage de
+          // diseases.json plutôt que de masquer l'erreur silencieusement.
+          debugPrint('Error parsing diseases.json entry #$i: $e');
+        }
+      }
       _loaded = true;
       notifyListeners();
     } catch (e) {
@@ -31,6 +38,7 @@ class DiseasesProvider with ChangeNotifier {
   /// Recherche simple par nom (tolère accents, underscores, casse)
   DiseaseCatalogModel? findByName(String name) {
     final n = _normalize(name);
+    if (n.isEmpty) return null;
     for (final d in _diseases) {
       if (_normalize(d.name) == n) return d;
       if (d.aliases.any((a) => _normalize(a) == n)) return d;
@@ -40,6 +48,36 @@ class DiseasesProvider with ChangeNotifier {
       if (_normalize(d.name).contains(n)) return d;
       if (d.aliases.any((a) => _normalize(a).contains(n))) return d;
     }
+    return null;
+  }
+
+  /// Recherche locale robuste par plante et maladie en français.
+  DiseaseCatalogModel? findByPlantAndDisease(String? plantName, String? diseaseName) {
+    final normalizedPlant = _normalize(plantName ?? '');
+    final normalizedDisease = _normalize(diseaseName ?? '');
+
+    if (normalizedPlant.isEmpty && normalizedDisease.isEmpty) return null;
+
+    for (final disease in _diseases) {
+      final matchesPlant = normalizedPlant.isEmpty ||
+          disease.affectedPlants.any((plant) => _normalize(plant) == normalizedPlant || _normalize(plant).contains(normalizedPlant));
+      final matchesDisease = normalizedDisease.isEmpty ||
+          _normalize(disease.name) == normalizedDisease ||
+          _normalize(disease.name).contains(normalizedDisease) ||
+          disease.aliases.any((alias) => _normalize(alias) == normalizedDisease || _normalize(alias).contains(normalizedDisease));
+
+      if (matchesPlant && matchesDisease) {
+        return disease;
+      }
+    }
+
+    if (normalizedDisease.isNotEmpty) {
+      final directMatch = findByName(diseaseName ?? '');
+      if (directMatch != null) {
+        return directMatch;
+      }
+    }
+
     return null;
   }
 

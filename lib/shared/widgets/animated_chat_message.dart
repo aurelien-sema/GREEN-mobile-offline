@@ -162,8 +162,8 @@ class AnimatedChatMessage extends StatelessWidget {
         height: 32,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          image: const DecorationImage(
-            image: AssetImage('assets/images/logo.png'),
+          image: DecorationImage(
+            image: AssetImage(isDarkMode ? 'assets/images/logo_dark.png' : 'assets/images/logo_white.png'),
             fit: BoxFit.cover,
           ),
           border: Border.all(

@@ -17,15 +17,21 @@ class DiseaseCatalogModel {
     required this.aliases,
   });
 
+  // Casts défensifs (valeurs de repli plutôt que TypeError) : un futur ajout
+  // ou une traduction de diseases.json avec un champ manquant/mal typé ne
+  // doit pas faire échouer le chargement de tout le catalogue.
   factory DiseaseCatalogModel.fromJson(Map<String, dynamic> json) {
+    List<String> stringList(dynamic value) =>
+        (value as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+
     return DiseaseCatalogModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      scientificName: json['scientificName'] as String,
-      affectedPlants: (json['affectedPlants'] as List<dynamic>).map((e) => e as String).toList(),
-      symptoms: (json['symptoms'] as List<dynamic>).map((e) => e as String).toList(),
-      actions: (json['actions'] as List<dynamic>).map((e) => e as String).toList(),
-      aliases: (json['aliases'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      scientificName: json['scientificName'] as String? ?? '',
+      affectedPlants: stringList(json['affectedPlants']),
+      symptoms: stringList(json['symptoms']),
+      actions: stringList(json['actions']),
+      aliases: stringList(json['aliases']),
     );
   }
 

@@ -8,6 +8,7 @@ import '../../../shared/widgets/gradient_button.dart';
 import '../../../shared/widgets/custom_app_bar.dart';
 import '../../../services/auth_service.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/locale_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../core/validation/validators.dart';
 import '../../../core/utils/text_input_formatters.dart';
@@ -20,8 +21,7 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen>
-    with SingleTickerProviderStateMixin {
+class _RegisterScreenState extends State<RegisterScreen> {
   late TextEditingController _nameController;
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
@@ -31,7 +31,10 @@ class _RegisterScreenState extends State<RegisterScreen>
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _usePhone = true;
-  late TabController _tabController;
+  // Numéro complet avec indicatif pays (ex: +237612345678), capturé via
+  // IntlPhoneField.onChanged. Utilisé comme identifiant stocké/recherché
+  // plutôt que le seul numéro local, pour rester cohérent avec la connexion.
+  String _fullPhone = '';
 
   @override
   void initState() {
@@ -41,7 +44,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     _phoneController = TextEditingController();
     _passwordController = TextEditingController();
     _confirmPasswordController = TextEditingController();
-    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
@@ -51,7 +53,6 @@ class _RegisterScreenState extends State<RegisterScreen>
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -80,24 +81,27 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     Future.delayed(const Duration(milliseconds: 500), () async {
       final id = DateTime.now().millisecondsSinceEpoch.toString();
+      final phoneToStore = _fullPhone.isNotEmpty ? _fullPhone : _phoneController.text.trim();
       final user = UserModel(
         id: id,
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
+        phone: _usePhone ? phoneToStore : '',
         passwordHash: '',
       );
-      final ok = await authService.registerWithPassword(
+      final result = await authService.registerWithPassword(
         user,
         _passwordController.text,
       );
-      if (!ok) {
+      if (result != RegisterResult.success) {
         if (mounted) {
           setState(() => _isLoading = false);
+          final t = context.read<LocaleProvider>().t;
+          final message = result == RegisterResult.phoneTaken
+              ? t('duplicatePhoneAccount')
+              : t('duplicateEmailAccount');
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Un compte avec cet email existe déjà'),
-            ),
+            SnackBar(content: Text(message)),
           );
         }
         return;
@@ -105,9 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       if (!mounted) return;
       // if registration succeeded, try to fetch stored user and set provider
       try {
-        final identifier = _usePhone
-            ? _phoneController.text.trim()
-            : _emailController.text.trim();
+        final identifier = _usePhone ? phoneToStore : _emailController.text.trim();
         final stored = authService.getUserByIdentifier(identifier);
         if (stored != null) {
           Provider.of<AuthProvider>(
@@ -124,12 +126,13 @@ class _RegisterScreenState extends State<RegisterScreen>
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final t = context.watch<LocaleProvider>().t;
 
     return Scaffold(
       backgroundColor: isDarkMode
           ? AppColors.darkBackground
           : AppColors.lightBackground,
-      appBar: CustomAppBar(title: 'Inscription', isDarkMode: isDarkMode),
+      appBar: CustomAppBar(title: t('register'), isDarkMode: isDarkMode),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
@@ -140,7 +143,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                    'Créer un compte',
+                    t('createAccount'),
                     style: Theme.of(context).textTheme.displayMedium,
                   )
                   .animate()
@@ -148,7 +151,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                   .slideX(begin: -20, end: 0),
               const SizedBox(height: 8),
               Text(
-                    'Rejoignez-nous pour commencer',
+                    t('joinUsToStart'),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: isDarkMode
                           ? AppColors.darkHint
@@ -162,46 +165,50 @@ class _RegisterScreenState extends State<RegisterScreen>
 
               // Registration Method Toggle
               Container(
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: isDarkMode
                           ? AppColors.darkSurface
-                          : AppColors.lightSurface,
+                          : AppColors.lightChipNeutralBg,
                       borderRadius: BorderRadius.circular(
-                        AppConstants.radiusMedium,
+                        AppConstants.radiusLarge,
                       ),
                       border: Border.all(
-                        color: isDarkMode
-                            ? AppColors.darkBorder
-                            : AppColors.lightBorder,
+                        color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
                       ),
                     ),
                     child: Row(
                       children: [
                         Expanded(
-                          child: GestureDetector(
-                            onTap: () => setState(() => _usePhone = false),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: !_usePhone
-                                    ? (isDarkMode
-                                          ? AppColors.darkPrimary
-                                          : AppColors.lightPrimary)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(
-                                  AppConstants.radiusMedium,
+                          child: Semantics(
+                            button: true,
+                            selected: !_usePhone,
+                            label: t('email'),
+                            child: GestureDetector(
+                              onTap: () => setState(() => _usePhone = false),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: !_usePhone
+                                      ? (isDarkMode
+                                            ? AppColors.darkPrimary
+                                            : AppColors.lightPrimary)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(
+                                    AppConstants.radiusMedium,
+                                  ),
                                 ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'Email',
-                                  style: TextStyle(
-                                    color: !_usePhone
-                                        ? Colors.white
-                                        : (isDarkMode
-                                              ? AppColors.darkOnBackground
-                                              : AppColors.lightOnBackground),
-                                    fontWeight: FontWeight.w600,
+                                child: Center(
+                                  child: Text(
+                                    t('email'),
+                                    style: TextStyle(
+                                      color: !_usePhone
+                                          ? Colors.white
+                                          : (isDarkMode
+                                                ? AppColors.darkOnBackground
+                                                : AppColors.lightOnBackground),
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -209,30 +216,35 @@ class _RegisterScreenState extends State<RegisterScreen>
                           ),
                         ),
                         Expanded(
-                          child: GestureDetector(
-                            onTap: () => setState(() => _usePhone = true),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: _usePhone
-                                    ? (isDarkMode
-                                          ? AppColors.darkPrimary
-                                          : AppColors.lightPrimary)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(
-                                  AppConstants.radiusMedium,
+                          child: Semantics(
+                            button: true,
+                            selected: _usePhone,
+                            label: t('phone'),
+                            child: GestureDetector(
+                              onTap: () => setState(() => _usePhone = true),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: _usePhone
+                                      ? (isDarkMode
+                                            ? AppColors.darkPrimary
+                                            : AppColors.lightPrimary)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(
+                                    AppConstants.radiusMedium,
+                                  ),
                                 ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'Téléphone',
-                                  style: TextStyle(
-                                    color: _usePhone
-                                        ? Colors.white
-                                        : (isDarkMode
-                                              ? AppColors.darkOnBackground
-                                              : AppColors.lightOnBackground),
-                                    fontWeight: FontWeight.w600,
+                                child: Center(
+                                  child: Text(
+                                    t('phone'),
+                                    style: TextStyle(
+                                      color: _usePhone
+                                          ? Colors.white
+                                          : (isDarkMode
+                                                ? AppColors.darkOnBackground
+                                                : AppColors.lightOnBackground),
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -249,7 +261,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
               // Name Field
               Text(
-                'Nom complet',
+                t('fullName'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -274,7 +286,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
               // Email or Phone Field
               Text(
-                _usePhone ? 'Numéro de téléphone' : 'Email',
+                _usePhone ? t('phoneNumberLabel') : t('email'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -287,7 +299,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                       initialCountryCode: 'CM',
                       onChanged: (phone) {
-                        // Store full number if needed, or rely on controller text + country code
+                        _fullPhone = phone.completeNumber;
                       },
                     )
                   : TextField(
@@ -310,7 +322,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
               // Password Field
               Text(
-                'Mot de passe',
+                t('password'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -347,7 +359,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
               // Confirm Password Field
               Text(
-                'Confirmer le mot de passe',
+                t('confirmPassword'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -387,7 +399,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
               // Register Button
               GradientButton(
-                    label: _isLoading ? 'Inscription...' : 'S\'inscrire',
+                    label: _isLoading ? t('registering') : t('signUpButton'),
                     onPressed: _handleRegister,
                     isLoading: _isLoading,
                   )
@@ -401,7 +413,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                     child: TextButton(
                       onPressed: () => context.go('/login'),
                       child: Text(
-                        'Vous avez un compte ? Se connecter',
+                        t('haveAccountLogin'),
                         style: TextStyle(
                           color: isDarkMode
                               ? AppColors.darkPrimary

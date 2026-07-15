@@ -635,5 +635,105 @@
       "Arroser modérément avec eau claire"
     ],
     "aliases": ["Damping Off"]
+  },
+  {
+    "id": "corn-brown-spots",
+    "name": "Taches brunes",
+    "scientificName": "Colletotrichum graminicola / Cercospora spp.",
+    "affectedPlants": ["Maïs"],
+    "symptoms": [
+      "Petites taches rondes ou allongées brun foncé",
+      "Taches progressives avec concentriques",
+      "Coalescence des lésions avec progression rapide",
+      "Pourriture des épis en condition très humide"
+    ],
+    "actions": [
+      "Utiliser des variétés résistantes si disponibles",
+      "Éliminer les résidus de culture infectés",
+      "Pratiquer la rotation des cultures",
+      "Appliquer des fongicides en début d'infection",
+      "Améliorer la ventilation des cultures"
+    ],
+    "aliases": ["Brown Spots", "Corn Leaf Spots"]
+  },
+  {
+    "id": "corn-mildew",
+    "name": "Mildiou du maïs",
+    "scientificName": "Sclerophthora macrospora",
+    "affectedPlants": ["Maïs"],
+    "symptoms": [
+      "Bandes chlorotiques allongées sur feuilles",
+      "Enroulement des feuilles",
+      "Croissance rabougrie et anormale",
+      "Dépérissement général de la plante"
+    ],
+    "actions": [
+      "Utiliser des semences certifiées",
+      "Drainer les sols à mauvais drainage",
+      "Éloigner de la source d'humidité excessive",
+      "Rotation des cultures obligatoire",
+      "Traitement fongicide préventif en conditions favorables"
+    ],
+    "aliases": ["Mildiou", "Downy Mildew of Maize"]
+  },
+  {
+    "id": "corn-stripe-virus",
+    "name": "Virus des raies du maïs",
+    "scientificName": "Maize stripe virus",
+    "affectedPlants": ["Maïs"],
+    "symptoms": [
+      "Bandes chlorotiques alternées sur les feuilles",
+      "Motif de rayures jaunes et vertes",
+      "Feuilles mottled ou déformées",
+      "Réduction du rendement et de la croissance"
+    ],
+    "actions": [
+      "Pratiquer la rotation des cultures",
+      "Contrôler les vecteurs (insectes)",
+      "Utiliser des variétés résistantes",
+      "Éliminer les mauvaises herbes hôtes",
+      "Détruire les résidus de culture infectés"
+    ],
+    "aliases": ["Stripe Virus", "Maize stripe"]
+  },
+  {
+    "id": "corn-yellowing",
+    "name": "Jaunissement du maïs",
+    "scientificName": "Virus de la jaunisse nanisante du maïs",
+    "affectedPlants": ["Maïs"],
+    "symptoms": [
+      "Jaunissement progressif du feuillage",
+      "Nanisme et retard de croissance",
+      "Feuilles rougeâtres ou pourpres",
+      "Épis mal remplis ou avortés"
+    ],
+    "actions": [
+      "Utiliser des variétés tolérantes ou résistantes",
+      "Contrôler les aphides vecteurs",
+      "Pratiquer la rotation des cultures",
+      "Éliminer les plantes malades précocement",
+      "Traitement insecticide si nécessaire"
+    ],
+    "aliases": ["Yellowing", "Maize dwarf mosaic", "MCDV"]
+  },
+  {
+    "id": "corn-leaf-blight",
+    "name": "Brûlure des feuilles du maïs",
+    "scientificName": "Exserohilum turcicum / Bipolaris maydis",
+    "affectedPlants": ["Maïs"],
+    "symptoms": [
+      "Lésions elliptiques allongées gris-brun",
+      "Taches progressives avec bordure sombre",
+      "Coalescence des lésions avec perte progressive de feuilles",
+      "Réduction importante du rendement"
+    ],
+    "actions": [
+      "Pratiquer la rotation des cultures sur 2-3 ans",
+      "Éliminer résidus de culture infectés",
+      "Utiliser variétés résistantes quand disponibles",
+      "Espacer les plants pour améliorer ventilation",
+      "Appliquer fongicides en début de symptômes"
+    ],
+    "aliases": ["Leaf Blight", "Northern corn leaf blight", "NCLB"]
   }
 ]

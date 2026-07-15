@@ -5,9 +5,9 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/widgets/gradient_button.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
 import '../../../services/auth_service.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/locale_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../core/validation/validators.dart';
 // password hashing/verification handled by AuthService
@@ -25,6 +25,10 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _isPhone = true; // Default to phone as requested
+  // Numéro complet avec indicatif pays, capturé via IntlPhoneField.onChanged —
+  // c'est ce qui a été stocké à l'inscription, donc c'est ce qu'il faut
+  // rechercher ici plutôt que le seul numéro local du contrôleur.
+  String _fullPhone = '';
 
   @override
   void initState() {
@@ -41,17 +45,24 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() {
-    final input = _identifierController.text.trim();
-    final emailErr = input.contains('@')
-        ? Validators.validateEmail(input)
-        : Validators.validatePhone(input);
+    final rawInput = _identifierController.text.trim();
+    // Se base sur le mode réellement sélectionné par l'utilisateur (toggle
+    // Téléphone/Email), pas sur le contenu du champ — évite une validation
+    // incohérente si le texte et le mode affiché venaient à diverger.
+    final identifierErr = _isPhone
+        ? Validators.validatePhone(rawInput)
+        : Validators.validateEmail(rawInput);
     final passErr = Validators.validatePassword(_passwordController.text);
-    if (emailErr != null || passErr != null) {
+    if (identifierErr != null || passErr != null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(emailErr ?? passErr ?? '')));
+      ).showSnackBar(SnackBar(content: Text(identifierErr ?? passErr ?? '')));
       return;
     }
+
+    final input = _isPhone
+        ? (_fullPhone.isNotEmpty ? _fullPhone : rawInput)
+        : rawInput;
 
     setState(() => _isLoading = true);
     Future.delayed(const Duration(milliseconds: 500), () async {
@@ -63,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (mounted) {
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Identifiants invalides')),
+            SnackBar(content: Text(context.read<LocaleProvider>().t('invalidCredentials'))),
           );
         }
         return;
@@ -83,12 +94,12 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final t = context.watch<LocaleProvider>().t;
 
     return Scaffold(
       backgroundColor: isDarkMode
           ? AppColors.darkBackground
           : AppColors.lightBackground,
-      appBar: CustomAppBar(title: 'Connexion', isDarkMode: isDarkMode),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
@@ -98,28 +109,44 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: double.infinity,
-                height: 200,
-                decoration: BoxDecoration(
-                  gradient: isDarkMode
-                      ? AppColors.darkGradient
-                      : AppColors.lightGradient,
-                  borderRadius: BorderRadius.circular(
-                    AppConstants.radiusXLarge,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.eco,
-                    size: 80,
-                    color: Colors.white,
-                  ).animate().scale(duration: AppConstants.animationNormal),
+              // Logo + wordmark de marque, centrés
+              Center(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 88,
+                      height: 88,
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color.fromRGBO(0, 0, 0, 0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        isDarkMode ? 'assets/images/logo_dark.png' : 'assets/images/logo_white.png',
+                      ),
+                    ).animate().scale(duration: AppConstants.animationNormal),
+                    const SizedBox(height: 12),
+                    Text(
+                      'GREEN',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                    ),
+                  ],
                 ),
               ).animate().fadeIn(duration: AppConstants.animationNormal),
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
               Text(
-                    'Bienvenue',
+                    t('welcomeSimple'),
                     style: Theme.of(context).textTheme.displayMedium,
                   )
                   .animate()
@@ -127,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   .slideX(begin: -20, end: 0),
               const SizedBox(height: 8),
               Text(
-                    'Connectez-vous pour accéder à l\'application',
+                    t('loginToAccess'),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: isDarkMode
                           ? AppColors.darkHint
@@ -137,59 +164,41 @@ class _LoginScreenState extends State<LoginScreen> {
                   .animate()
                   .fadeIn(delay: const Duration(milliseconds: 150))
                   .slideX(begin: -20, end: 0),
-              const SizedBox(height: 32),
-              const SizedBox(height: 32),
-              
-              // Toggle Email/Phone
-              Center(
-                child: SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment<bool>(
-                      value: true,
-                      label: Text('Téléphone'),
-                      icon: Icon(Icons.phone),
-                    ),
-                    ButtonSegment<bool>(
-                      value: false,
-                      label: Text('Email'),
-                      icon: Icon(Icons.email),
-                    ),
-                  ],
-                  selected: {_isPhone},
-                  onSelectionChanged: (Set<bool> newSelection) {
-                    setState(() {
-                      _isPhone = newSelection.first;
-                      _identifierController.clear();
-                    });
-                  },
-                  style: ButtonStyle(
-                    backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                      (Set<MaterialState> states) {
-                        if (states.contains(MaterialState.selected)) {
-                          return isDarkMode
-                              ? AppColors.darkPrimary
-                              : AppColors.lightPrimary;
-                        }
-                        return Colors.transparent;
-                      },
-                    ),
-                    foregroundColor: MaterialStateProperty.resolveWith<Color>(
-                      (Set<MaterialState> states) {
-                        if (states.contains(MaterialState.selected)) {
-                          return Colors.white;
-                        }
-                        return isDarkMode
-                            ? AppColors.darkHint
-                            : AppColors.lightHint;
-                      },
-                    ),
+              const SizedBox(height: 28),
+
+              // Toggle Téléphone/Email (pilule pleine largeur)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? AppColors.darkSurface : AppColors.lightChipNeutralBg,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
+                  border: Border.all(
+                    color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
                   ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(child: _buildToggleSegment(context, t('phone'), _isPhone, isDarkMode, () {
+                      setState(() {
+                        _isPhone = true;
+                        _identifierController.clear();
+                        _fullPhone = '';
+                      });
+                    })),
+                    Expanded(child: _buildToggleSegment(context, t('email'), !_isPhone, isDarkMode, () {
+                      setState(() {
+                        _isPhone = false;
+                        _identifierController.clear();
+                        _fullPhone = '';
+                      });
+                    })),
+                  ],
                 ),
               ).animate().fadeIn(duration: AppConstants.animationNormal),
               const SizedBox(height: 24),
 
               Text(
-                _isPhone ? 'Numéro de téléphone' : 'Adresse Email',
+                _isPhone ? t('phoneNumberLabel') : t('emailAddressLabel'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -202,15 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       initialCountryCode: 'CM', // Default to Cameroon
                       onChanged: (phone) {
-                        // We might need to handle the full number logic
-                        // But since the controller is shared, let's keep it simple.
-                        // Ideally we should store the full number. 
-                        // But _identifierController only holds the text.
-                        // For login, we might need the country code.
-                        // Let's assume the user enters the local number and we prefix it 
-                        // if we want to support full international format.
-                        // However, standard IntlPhoneField usage usually involves 
-                        // getting the full number from 'phone.completeNumber'.
+                        _fullPhone = phone.completeNumber;
                       },
                     )
                   : TextField(
@@ -231,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   .slideY(begin: 10, end: 0),
               const SizedBox(height: 24),
               Text(
-                'Mot de passe',
+                t('password'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -271,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextButton(
                       onPressed: () => context.push('/forgot-password'),
                       child: Text(
-                        'Mot de passe oublié?',
+                        t('forgotPassword'),
                         style: TextStyle(
                           color: isDarkMode
                               ? AppColors.darkPrimary
@@ -287,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   .slideX(begin: 20, end: 0),
               const SizedBox(height: 20),
               GradientButton(
-                    label: _isLoading ? 'Connexion...' : 'Se connecter',
+                    label: _isLoading ? t('loggingIn') : t('loginButton'),
                     onPressed: _handleLogin,
                     isLoading: _isLoading,
                   )
@@ -299,7 +300,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextButton(
                       onPressed: () => context.go('/register'),
                       child: Text(
-                        'Pas de compte ? S\'inscrire',
+                        t('noAccountSignUp'),
                         style: TextStyle(
                           color: isDarkMode
                               ? AppColors.darkPrimary
@@ -314,6 +315,40 @@ class _LoginScreenState extends State<LoginScreen> {
                   .fadeIn(delay: const Duration(milliseconds: 350))
                   .slideY(begin: 10, end: 0),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleSegment(
+    BuildContext context,
+    String label,
+    bool selected,
+    bool isDarkMode,
+    VoidCallback onTap,
+  ) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: AppConstants.animationFast,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary) : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: selected ? Colors.white : (isDarkMode ? AppColors.darkHint : AppColors.lightHint),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ),
       ),

@@ -218,7 +218,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Cameroun',
         priceMin: 8000,
         priceMax: 15000,
-        imageUrl: 'assets/images/logo_green.png',
+        imageUrl: ProductModel.defaultImage,
         tags: ['insecticide', 'ravageurs', 'protection'],
         rating: 0,
         reviewCount: 0,
@@ -241,7 +241,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Cameroun',
         priceMin: 22000,
         priceMax: 35000,
-        imageUrl: 'assets/images/logo_green.png',
+        imageUrl: ProductModel.defaultImage,
         tags: ['pulvérisateur', 'équipement', 'manuel'],
         rating: 0,
         reviewCount: 0,
@@ -304,7 +304,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Cameroun',
         priceMin: 30000,
         priceMax: 60000,
-        imageUrl: 'https://www.facebook.com/camcocameroonltd/',
+        imageUrl: 'assets/images/12 kit irrigation.jpg',
         tags: ['irrigation', 'goutte-à-goutte', 'économique'],
         rating: 0,
         reviewCount: 0,
@@ -328,7 +328,13 @@ class MarketplaceProvider with ChangeNotifier {
     }
   }
 
-  Future<bool> placeOrder(String productId, int quantity) async {
+  Future<bool> placeOrder(
+    String productId,
+    int quantity, {
+    String paymentMethod = '',
+    String deliveryMethod = '',
+    double deliveryFee = 0,
+  }) async {
     final product = getProductById(productId);
     if (product == null) return false;
 
@@ -338,9 +344,12 @@ class MarketplaceProvider with ChangeNotifier {
       productName: product.name,
       quantity: quantity,
       price: product.price,
-      totalPrice: product.price * quantity,
+      totalPrice: (product.price * quantity) + deliveryFee,
       orderedAt: DateTime.now(),
       status: 'pending',
+      paymentMethod: paymentMethod,
+      deliveryMethod: deliveryMethod,
+      deliveryFee: deliveryFee,
     );
 
     _orders.insert(0, order);

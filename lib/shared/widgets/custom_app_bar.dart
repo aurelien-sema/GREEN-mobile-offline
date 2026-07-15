@@ -20,7 +20,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       title: Text(title, style: Theme.of(context).appBarTheme.titleTextStyle),
-      centerTitle: true,
+      centerTitle: false,
       backgroundColor: isDarkMode
           ? AppColors.darkSurface
           : AppColors.lightSurface,
@@ -32,18 +32,31 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             padding: const EdgeInsets.only(right: 16.0),
             child: Center(
               child: GestureDetector(
-                onTap: () => context.go('/profile'),
-                child: Icon(
-                  Icons.person,
-                  color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                  size: 24,
+                // Transmet la route courante pour que le bouton retour du
+                // Profil y ramène (au lieu de forcer /home quel que soit
+                // l'écran d'où l'on vient : Caméra, Chat, Marketplace...).
+                onTap: () => context.go(
+                  '/profile',
+                  extra: {'from': GoRouterState.of(context).uri.toString()},
+                ),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
+                  ),
+                  child: Icon(
+                    Icons.person_outline,
+                    color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
           ),
       ],
-      elevation: 2,
-      shadowColor: const Color.fromRGBO(0, 0, 0, 0.1),
+      elevation: 0,
     );
   }
 

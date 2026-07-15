@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Compatibility wrapper: use `PopScope` when available in the SDK,
-/// otherwise fall back to `WillPopScope` while keeping the same API.
-///
-/// This avoids hard requirement on a newer Flutter SDK while letting
-/// us centralize the future migration.
+/// Wrapper autour de `PopScope` qui conserve l'API `onWillPop` (façon
+/// `WillPopScope`) utilisée dans tout le reste de l'app : une fonction async
+/// qui renvoie `true` pour laisser le retour se faire, ou `false` après avoir
+/// géré elle-même la navigation (ex: changer d'onglet, afficher une
+/// confirmation). `PopScope` gère nativement le geste de retour prédictif
+/// d'Android 13+, contrairement à `WillPopScope`.
 class AppPopScope extends StatelessWidget {
   final Widget child;
   final Future<bool> Function()? onWillPop;
@@ -13,9 +14,18 @@ class AppPopScope extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Keep using WillPopScope internally for backward compatibility.
-    // Suppress deprecation warning centrally so other files don't need to.
-    // ignore: deprecated_member_use
-    return WillPopScope(onWillPop: onWillPop, child: child);
+    return PopScope(
+      // Si onWillPop est fourni, on intercepte toujours le pop pour pouvoir
+      // évaluer la condition async avant de décider ; sinon comportement par défaut.
+      canPop: onWillPop == null,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop || onWillPop == null) return;
+        final shouldPop = await onWillPop!();
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).maybePop();
+        }
+      },
+      child: child,
+    );
   }
 }

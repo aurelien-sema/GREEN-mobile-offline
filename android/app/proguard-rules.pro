@@ -41,6 +41,9 @@
 # Keep @Parcelize annotated classes
 -keep @kotlinx.parcelize.Parcelize class * extends android.os.Parcelable
 
+# ONNX Runtime
+-keep class ai.onnxruntime.** { *; }
+
 # General
 -keep class **.R$* {
     <fields>;

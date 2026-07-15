@@ -6,7 +6,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routing/app_router.dart';
 import 'providers/theme_provider.dart';
-import 'providers/app_settings_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/font_size_provider.dart';
@@ -16,6 +15,7 @@ import 'services/rag_service.dart';
 import 'providers/scan_provider.dart';
 import 'providers/diseases_provider.dart';
 import 'providers/marketplace_provider.dart';
+import 'providers/cart_provider.dart';
 import 'utils/french_translator.dart';
 
 final StorageService storageService = StorageService();
@@ -226,10 +226,10 @@ class GreenApp extends StatelessWidget {
         ChangeNotifierProvider<AuthProvider>(create: (_) => authProvider ?? AuthProvider()),
         ChangeNotifierProvider<LocaleProvider>(create: (_) => localeProvider ?? LocaleProvider()),
         ChangeNotifierProvider<FontSizeProvider>(create: (_) => fontSizeProvider ?? FontSizeProvider()),
-        ChangeNotifierProvider(create: (_) => AppSettingsProvider()),
         ChangeNotifierProvider(create: (_) => ScanProvider()),
         ChangeNotifierProvider(create: (_) => DiseasesProvider()),
         ChangeNotifierProvider(create: (_) => MarketplaceProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
       child: Consumer2<ThemeProvider, LocaleProvider>(
         builder: (context, themeProvider, localeProvider, child) {

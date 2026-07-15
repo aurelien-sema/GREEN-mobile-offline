@@ -20,18 +20,12 @@ class ScanResultModel {
     required this.affectedPlants,
   });
 
-  /// Calcul du niveau de gravité en fonction de la confiance
-  /// Formule : ((confidence - 0.55) * 100) / 0.45
-  /// Plage de résultat : 0 à 100 (%)
-  double get severityLevel {
-    final confidenceThreshold = 0.4;
-    final range = 0.45;
-    if (confidence < confidenceThreshold) {
-      return 0;
-    }
-    final severity = ((confidence - confidenceThreshold) * 100) / range;
-    return severity > 100 ? 100 : severity;
-  }
+  /// Niveau de gravité affiché (0 à 100 %) : correspond exactement au niveau
+  /// de confiance du modèle, sans reformulation ni seuil supplémentaire — le
+  /// filtrage des diagnostics peu fiables est déjà fait en amont par
+  /// VisionService (diseaseId == 'uncertain' en dessous du seuil), donc ici
+  /// la confiance disponible reflète directement la gravité à afficher.
+  double get severityLevel => (confidence * 100).clamp(0, 100);
 
   factory ScanResultModel.fromJson(Map<String, dynamic> json) {
     return ScanResultModel(

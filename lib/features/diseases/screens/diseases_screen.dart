@@ -9,9 +9,11 @@ import '../../../services/history_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../shared/widgets/animation_effects.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/custom_scroll_physics.dart';
+import '../../../core/utils/disease_status.dart';
 
 class DiseasesScreen extends StatefulWidget {
   const DiseasesScreen({super.key});
@@ -92,7 +94,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    context.read<ThemeProvider>();
+    final t = context.watch<LocaleProvider>().t;
 
     return AppPopScope(
       onWillPop: () async {
@@ -107,7 +109,8 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
             ? AppColors.darkBackground
             : AppColors.lightBackground,
         appBar: AppBar(
-          title: const Text('Maladies'),
+          title: Text(t('diseasesTitle')),
+          centerTitle: false,
           elevation: 0,
           backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
           leading: IconButton(
@@ -120,10 +123,18 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
               child: Center(
                 child: GestureDetector(
                   onTap: () => context.go('/profile'),
-                  child: Icon(
-                    Icons.person,
-                    color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                    size: 24,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
+                    ),
+                    child: Icon(
+                      Icons.person_outline,
+                      color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                      size: 20,
+                    ),
                   ),
                 ),
               ),
@@ -143,7 +154,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
                       controller: _searchController,
                       onChanged: _filterDiseases,
                       decoration: InputDecoration(
-                        hintText: 'Rechercher une maladie...',
+                        hintText: t('searchDiseaseHint'),
                         prefixIcon: Icon(
                           Icons.search,
                           color: isDarkMode
@@ -183,7 +194,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Aucune maladie trouvée',
+                              t('noDiseaseFound'),
                               style: Theme.of(context).textTheme.headlineSmall,
                             ),
                           ],
@@ -220,6 +231,20 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
     int index,
     bool isDarkMode,
   ) {
+    final t = context.read<LocaleProvider>().t;
+    final bool healthy = isHealthyDiseaseName(disease.name);
+    final Color statusBg = healthy
+        ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
+        : (isDarkMode ? AppColors.darkChipAmberBg : AppColors.lightChipAmberBg);
+    final Color statusFg = healthy
+        ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)
+        : (isDarkMode ? AppColors.darkChipAmberText : AppColors.lightChipAmberText);
+    final Color chipBg = healthy
+        ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
+        : (isDarkMode ? AppColors.darkChipAmberBg : AppColors.lightChipAmberBg);
+    final Color chipFg = healthy
+        ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)
+        : (isDarkMode ? AppColors.darkChipAmberText : AppColors.lightChipAmberText);
     return GradientCard(
           isDarkMode: isDarkMode,
           opacity: 0.12,
@@ -235,14 +260,12 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        gradient: isDarkMode
-                            ? AppColors.darkGradient
-                            : AppColors.lightGradient,
+                        color: statusBg,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.eco,
-                        color: Colors.white,
+                      child: Icon(
+                        healthy ? Icons.check_circle : Icons.warning_amber_rounded,
+                        color: statusFg,
                         size: 24,
                       ),
                     ),
@@ -263,6 +286,7 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
                                 color: isDarkMode
                                     ? AppColors.darkHint
                                     : AppColors.lightHint,
+                                fontStyle: FontStyle.italic,
                               ),
                         ),
                       ],
@@ -272,25 +296,31 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
               ),
               const SizedBox(height: AppConstants.paddingMedium),
               Text(
-                'Plantes affectées:',
+                '${t('affectedPlantsLabel')}:',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 8,
                 runSpacing: 6,
-                children: disease.affectedPlants.map((p) => Chip(label: Text(p))).toList(),
+                children: disease.affectedPlants
+                    .map((p) => Chip(
+                          label: Text(p, style: TextStyle(color: chipFg)),
+                          backgroundColor: chipBg,
+                          side: BorderSide.none,
+                        ))
+                    .toList(),
               ),
               const SizedBox(height: 12),
               Text(
-                'Symptômes principaux:',
+                '${t('mainSymptomsLabel')}:',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 6),
               ...disease.symptoms.map((s) => Text('- $s', style: Theme.of(context).textTheme.bodySmall)),
               const SizedBox(height: 12),
               Text(
-                'Actions recommandées:',
+                '${t('recommendedActions')}:',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 6),

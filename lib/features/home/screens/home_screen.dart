@@ -6,11 +6,13 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../services/weather_service.dart';
 import '../../../services/history_service.dart';
 import '../../../utils/date_formatter.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/custom_scroll_physics.dart';
+import '../../../core/utils/disease_status.dart';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -24,7 +26,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late Future<WeatherData> _weatherFuture;
-  
+  // Position obtenue via "Activer Localisation", transmise à l'écran météo
+  // détaillé ("Voir plus") pour qu'il affiche le même lieu plutôt que de
+  // revenir silencieusement sur Douala en dur.
+  double? _lat;
+  double? _lon;
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +39,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _enableLocation() async {
+    final t = context.read<LocaleProvider>().t;
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(t('gpsDisabled')),
+            action: SnackBarAction(
+              label: t('activate'),
+              onPressed: () => Geolocator.openLocationSettings(),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     final status = await Permission.location.request();
     if (status.isGranted) {
       if (mounted) {
@@ -42,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Permission de localisation refusée')),
+          SnackBar(content: Text(t('locationPermissionDenied'))),
         );
       }
     }
@@ -51,14 +75,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<WeatherData> _fetchWeatherWithLocation() async {
     try {
       final pos = await Geolocator.getCurrentPosition();
+      _lat = pos.latitude;
+      _lon = pos.longitude;
       return await weatherService.fetchWeatherForCoordinates(pos.latitude, pos.longitude);
     } catch (e) {
+      _lat = null;
+      _lon = null;
       return weatherService.fetchWeatherForCity('Douala');
     }
   }
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+    final t = context.watch<LocaleProvider>().t;
     return Scaffold(
       body: GradientBackground(
         isDarkMode: isDarkMode,
@@ -97,7 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Bienvenue !',
+                              t('welcomeBang'),
                               style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(
                                     color: Colors.white,
@@ -106,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Scannez vos plantes',
+                              t('scanYourPlants'),
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: const Color.fromRGBO(255, 255, 255, 0.9),
@@ -171,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Text(
-                                          user?.name ?? 'Mon Profil',
+                                          user?.name ?? t('myProfile'),
                                           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                             color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                                           ),
@@ -180,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          user?.phone ?? user?.email ?? 'Non renseigné',
+                                          user?.phone ?? user?.email ?? t('notProvided'),
                                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -206,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Section Title
                 Text(
-                      'Fonctionnalités principales',
+                      t('mainFeatures'),
                       style: Theme.of(context).textTheme.headlineMedium,
                     )
                     .animate()
@@ -243,7 +272,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               const SizedBox(),
                               Text(
-                                'Chargement...',
+                                t('loading'),
                                 style: const TextStyle(
                                   color: Colors.white, // Always white
                                 ),
@@ -257,12 +286,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Icon(
-                                Icons.error, 
+                                Icons.error,
                                 color: Colors.white, // Always white
                               ),
-                              const Text(
-                                'Erreur météo',
-                                style: TextStyle(
+                              Text(
+                                t('weatherError'),
+                                style: const TextStyle(
                                   color: Colors.white, // Always white
                                 ),
                               ),
@@ -280,9 +309,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   TextButton.icon(
                                     onPressed: _enableLocation,
                                     icon: const Icon(Icons.location_on, color: Colors.white, size: 16),
-                                    label: const Text(
-                                      'Activer Localisation',
-                                      style: TextStyle(color: Colors.white, fontSize: 12),
+                                    label: Text(
+                                      t('enableLocation'),
+                                      style: const TextStyle(color: Colors.white, fontSize: 12),
                                     ),
                                     style: TextButton.styleFrom(
                                       padding: EdgeInsets.zero,
@@ -291,8 +320,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                   TextButton(
-                                    onPressed: () => context.go('/weather'),
-                                    child: const Text('Voir plus', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                    onPressed: () => context.go(
+                                      '/weather',
+                                      extra: (_lat != null && _lon != null)
+                                          ? {'lat': _lat, 'lon': _lon}
+                                          : null,
+                                    ),
+                                    child: Text(t('seeMore'), style: const TextStyle(color: Colors.white, fontSize: 12)),
                                     style: TextButton.styleFrom(
                                       padding: EdgeInsets.zero,
                                       minimumSize: const Size(0, 30),
@@ -471,8 +505,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? AppColors.darkGradient
                               : AppColors.lightGradient,
                           icon: Icons.camera_alt,
-                          title: 'Scanner',
-                          subtitle: 'Analyser une plante',
+                          title: t('scanner'),
+                          subtitle: t('analyzeAPlant'),
                         ),
                         SizedBox(width: horizontalSpacing),
                         buildAction(
@@ -481,8 +515,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               ? AppColors.darkGradient
                               : AppColors.lightGradient,
                           icon: Icons.chat_bubble,
-                          title: 'Green Bot',
-                          subtitle: 'Conseils et diagnostics IA',
+                          title: t('greenBot'),
+                          subtitle: t('aiAdviceAndDiagnostics'),
                         ),
                       ],
                     );
@@ -495,12 +529,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Consulter l\'historique',
+                      t('viewHistory'),
                       style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     TextButton(
                       onPressed: () => context.go('/history'),
-                      child: const Text('Voir tout'),
+                      child: Text(t('seeAll')),
                     ),
                   ],
                 ),
@@ -512,7 +546,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       future: historyService.getRecentScans(3),
                       builder: (context, snap) {
                         if (snap.connectionState == ConnectionState.waiting) {
-                          return const Text('Chargement...');
+                          return Text(t('loading'));
                         }
                         final list = snap.data ?? [];
                         if (list.isEmpty) {
@@ -535,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'Aucun scan pour le moment',
+                                      t('noScansYet'),
                                       style: Theme.of(context).textTheme.bodyMedium
                                           ?.copyWith(
                                             color: isDarkMode
@@ -554,17 +588,41 @@ class _HomeScreenState extends State<HomeScreen> {
                         return Column(
                           children: list.map((item) {
                             final s = item as dynamic;
-                            return ListTile(
-                              leading: CircleAvatar(
-                                child: Text(
-                                  s.diseaseName.isNotEmpty
-                                      ? s.diseaseName[0]
-                                      : '?',
+                            final bool healthy = isHealthyDiseaseName(s.diseaseName as String);
+                            final Color avatarBg = healthy
+                                ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
+                                : (isDarkMode ? AppColors.darkChipAmberBg : AppColors.lightChipAmberBg);
+                            final Color avatarFg = healthy
+                                ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)
+                                : (isDarkMode ? AppColors.darkChipAmberText : AppColors.lightChipAmberText);
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: AppConstants.paddingSmall),
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+                                borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? const Color.fromRGBO(66, 66, 66, 0.3)
+                                      : const Color.fromRGBO(224, 224, 224, 0.5),
                                 ),
                               ),
-                              title: Text(s.diseaseName),
-                              subtitle: Text(
-                                'Analysée: ${formatDateFrench(s.scannedAt)}',
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: avatarBg,
+                                  child: Text(
+                                    s.diseaseName.isNotEmpty ? s.diseaseName[0].toUpperCase() : '?',
+                                    style: TextStyle(color: avatarFg, fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                                title: Text(s.diseaseName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                subtitle: Text(
+                                  formatDateFrench(s.scannedAt, context.read<LocaleProvider>().locale),
+                                  style: TextStyle(color: isDarkMode ? AppColors.darkHint : AppColors.lightHint),
+                                ),
+                                trailing: Icon(
+                                  Icons.chevron_right,
+                                  color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
+                                ),
                               ),
                             );
                           }).toList(),

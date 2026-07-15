@@ -12,8 +12,10 @@ class ProfileImageService {
 
   final ImagePicker _picker = ImagePicker();
 
-  /// Pick and save profile image
-  Future<String?> pickAndSaveImage(ImageSource source) async {
+  /// Pick and save profile image. [cropTitle] localise le titre de la barre
+  /// d'outils du recadrage natif (image_cropper), à fournir par l'appelant
+  /// qui a accès à la locale courante.
+  Future<String?> pickAndSaveImage(ImageSource source, {String cropTitle = 'Recadrer la photo'}) async {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -35,14 +37,14 @@ class ProfileImageService {
           maxHeight: 500,
           uiSettings: [
             AndroidUiSettings(
-              toolbarTitle: 'Recadrer la photo',
+              toolbarTitle: cropTitle,
               toolbarColor: const Color(0xFF2E8B57),
               toolbarWidgetColor: Colors.white,
               initAspectRatio: CropAspectRatioPreset.square,
               lockAspectRatio: true,
             ),
             IOSUiSettings(
-              title: 'Recadrer la photo',
+              title: cropTitle,
               aspectRatioLockEnabled: true,
               resetAspectRatioEnabled: false,
             ),

@@ -39,16 +39,6 @@ class ScanProvider with ChangeNotifier {
     }
   }
 
-  /// Charger l'historique des scans
-  Future<void> loadScanHistory() async {
-    try {
-      _scanHistory = await _visionService.getScanHistory();
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Erreur de chargement de l\'historique: $e');
-    }
-  }
-
   /// Effacer le résultat actuel
   void clearCurrentResult() {
     _currentScanResult = null;

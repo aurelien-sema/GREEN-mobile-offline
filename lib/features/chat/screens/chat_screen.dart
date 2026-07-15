@@ -8,6 +8,7 @@ import '../../../services/chat_history_service.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../shared/models/message.dart';
 import '../../../shared/widgets/animated_chat_message.dart';
 import '../../../shared/widgets/gradient_background.dart';
@@ -80,7 +81,8 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _loadSession(String sessionId) async {
     await chatHistoryService.switchToSession(sessionId);
     final session = await chatHistoryService.getSessionById(sessionId);
-    if (session != null && mounted) {
+    if (!mounted) return;
+    if (session != null) {
       setState(() {
         _messages.clear();
         _messages.addAll(
@@ -99,6 +101,22 @@ class _ChatScreenState extends State<ChatScreen> {
     Navigator.pop(context); // Close drawer
   }
 
+  /// Supprime une session et, si c'est celle actuellement affichée à
+  /// l'écran, réinitialise la conversation visible pour éviter qu'elle ne
+  /// continue d'apparaître (alors qu'elle n'existe plus en stockage) puis
+  /// ne soit re-persistée par erreur dans une nouvelle session au prochain
+  /// message envoyé.
+  Future<void> _deleteSession(ChatSession session) async {
+    final wasCurrent = chatHistoryService.getCurrentSession()?.id == session.id;
+    await chatHistoryService.deleteSession(session.id);
+    if (!mounted) return;
+    if (wasCurrent) {
+      setState(() => _messages.clear());
+      await chatHistoryService.clearCurrentSession();
+    }
+    await _loadSessions();
+  }
+
   Future<void> _fetchInitialGreeting() async {
     // Message d'accueil par défaut désactivé
     // Les utilisateurs peuvent maintenant commencer une conversation vierge
@@ -113,6 +131,7 @@ class _ChatScreenState extends State<ChatScreen> {
       isUser: true,
       timestamp: DateTime.now(),
     );
+    final translate = context.read<LocaleProvider>().t;
 
     setState(() {
       _messages.add(userMessage);
@@ -137,8 +156,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (connectivity == ConnectivityResult.none) {
           final offlineMsg = Message(
             id: DateTime.now().toString(),
-            content:
-                'Vous êtes hors-ligne — le chat IA nécessite une connexion internet.',
+            content: translate('offlineChatMessage'),
             isUser: false,
             timestamp: DateTime.now(),
           );
@@ -214,7 +232,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Message(
                 id: DateTime.now().toString(),
                 content:
-                    'Erreur lors de la communication avec le service IA: $e',
+                    _buildFriendlyErrorMessage(e, translate),
                 isUser: false,
                 timestamp: DateTime.now(),
               ),
@@ -225,6 +243,17 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       }
     }();
+  }
+
+  String _buildFriendlyErrorMessage(Object error, String Function(String) t) {
+    final message = error.toString().toLowerCase();
+    if (message.contains('network') || message.contains('socket') || message.contains('connection')) {
+      return t('networkErrorMessage');
+    }
+    if (message.contains('api') || message.contains('key') || message.contains('forbidden')) {
+      return t('serviceUnavailableMessage');
+    }
+    return '${t('aiServiceErrorPrefix')}: ${t('genericErrorMessage')}';
   }
 
   // Removed predefined responses: Gemini is now the only source of replies when online.
@@ -244,21 +273,21 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    context.read<ThemeProvider>();
+    final t = context.watch<LocaleProvider>().t;
 
     return Scaffold(
       backgroundColor: isDarkMode
           ? AppColors.darkBackground
           : AppColors.lightBackground,
       appBar: CustomAppBar(
-        title: 'Green Bot',
+        title: t('greenBot'),
         isDarkMode: isDarkMode,
         showProfileIcon: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _startNewChat,
-            tooltip: 'Nouvelle discussion',
+            tooltip: t('newDiscussion'),
           ),
         ],
       ),
@@ -270,68 +299,109 @@ class _ChatScreenState extends State<ChatScreen> {
           child: Column(
             children: [
               Container(
-                height: 120,
                 width: double.infinity,
                 padding: const EdgeInsets.all(AppConstants.paddingLarge),
                 decoration: BoxDecoration(
-                  gradient: isDarkMode
-                      ? AppColors.darkGradient
-                      : AppColors.lightGradient,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.history, color: Colors.white, size: 28),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Historique',
-                      style: TextStyle(
-                        color: Colors.white, 
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
                     ),
-                  ],
+                  ),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
+                        ),
+                        child: Icon(
+                          Icons.history,
+                          color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: AppConstants.paddingMedium),
+                      Text(
+                        t('history'),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Expanded(
                 child: _sessions.isEmpty
                     ? Center(
                         child: Text(
-                          'Aucune discussion',
+                          t('noDiscussionYet'),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       )
                     : ListView.builder(
+                        padding: const EdgeInsets.all(AppConstants.paddingMedium),
                         itemCount: _sessions.length,
                         itemBuilder: (context, idx) {
                           final session = _sessions[idx];
                           final isActive =
                               chatHistoryService.getCurrentSession()?.id ==
                                   session.id;
-                          return ListTile(
-                            title: Text(
-                              session.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: isActive
-                                    ? FontWeight.w700
-                                    : FontWeight.w400,
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: AppConstants.paddingSmall),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
+                                  : (isDarkMode ? AppColors.darkSurface : AppColors.lightSurface),
+                              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                              border: Border.all(
+                                color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
                               ),
                             ),
-                            subtitle: Text(
-                              '${session.messages.length} messages',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            onTap: () => _loadSession(session.id),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () {
-                                chatHistoryService.deleteSession(session.id);
-                                _loadSessions();
-                              },
+                            child: ListTile(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
+                              ),
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
+                                ),
+                                child: Icon(
+                                  Icons.chat_bubble_outline,
+                                  size: 18,
+                                  color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                                ),
+                              ),
+                              title: Text(
+                                session.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontWeight: isActive
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${session.messages.length} messages',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
+                                ),
+                              ),
+                              onTap: () => _loadSession(session.id),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 20),
+                                onPressed: () => _deleteSession(session),
+                              ),
                             ),
                           );
                         },
@@ -354,16 +424,22 @@ class _ChatScreenState extends State<ChatScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              size: 80,
-                              color: isDarkMode
-                                  ? AppColors.darkHint
-                                  : AppColors.lightHint,
+                            Container(
+                              width: 88,
+                              height: 88,
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
+                                borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
+                              ),
+                              child: Icon(
+                                Icons.chat_bubble_outline,
+                                size: 36,
+                                color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
+                              ),
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'Aucun message',
+                              t('noMessages'),
                               style: Theme.of(context).textTheme.headlineSmall,
                             ),
                           ],
@@ -389,7 +465,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 child: Row(
                                   children: [
                                     Text(
-                                      'Green Bot écrit...',
+                                      t('greenBotTyping'),
                                       style: TextStyle(
                                         color: isDarkMode
                                             ? AppColors.darkHint
@@ -438,7 +514,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         enabled: !_isLoading,
                         maxLines: null,
                         decoration: InputDecoration(
-                          hintText: 'Écrivez un message...',
+                          hintText: t('writeMessageHint'),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(
                               AppConstants.radiusMedium,

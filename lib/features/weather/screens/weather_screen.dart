@@ -11,7 +11,12 @@ import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/app_pop_scope.dart';
 
 class WeatherScreen extends StatefulWidget {
-  const WeatherScreen({super.key});
+  /// Coordonnées transmises depuis l'accueil quand l'utilisateur a activé la
+  /// localisation ; si absentes, on retombe sur la ville par défaut.
+  final double? lat;
+  final double? lon;
+
+  const WeatherScreen({super.key, this.lat, this.lon});
 
   @override
   State<WeatherScreen> createState() => _WeatherScreenState();
@@ -19,11 +24,13 @@ class WeatherScreen extends StatefulWidget {
 
 class _WeatherScreenState extends State<WeatherScreen> {
   Future<WeatherData>? _weatherFuture;
-  
-  // Hardcoded city for now, or could pass as argument. 
-  // Ideally this screen receives coords or city.
-  // For now let's use the same default as home or fetch dynamically if we had global state.
-  final String _city = 'Douala';
+
+  static const String _defaultCity = 'Douala';
+
+  bool get _hasCoordinates => widget.lat != null && widget.lon != null;
+
+  String get _locationLabel =>
+      _hasCoordinates ? context.read<LocaleProvider>().t('myLocation') : _defaultCity;
 
   @override
   void initState() {
@@ -42,7 +49,9 @@ class _WeatherScreenState extends State<WeatherScreen> {
   void _loadWeather() {
     final locale = context.read<LocaleProvider>().locale;
     setState(() {
-      _weatherFuture = weatherService.fetchWeatherForCity(_city, lang: locale);
+      _weatherFuture = _hasCoordinates
+          ? weatherService.fetchWeatherForCoordinates(widget.lat!, widget.lon!, lang: locale)
+          : weatherService.fetchWeatherForCity(_defaultCity, lang: locale);
     });
   }
 
@@ -53,6 +62,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+    final t = context.watch<LocaleProvider>().t;
 
     return AppPopScope(
       onWillPop: () async {
@@ -63,7 +73,8 @@ class _WeatherScreenState extends State<WeatherScreen> {
       child: Scaffold(
         backgroundColor: isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
         appBar: AppBar(
-          title: const Text('Météo détaillée'),
+          title: Text(t('detailedWeather')),
+          centerTitle: false,
           elevation: 0,
           backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
           leading: IconButton(
@@ -88,7 +99,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Erreur: ${snapshot.error}'));
+                  return Center(child: Text('${t('errorPrefix')}: ${snapshot.error}'));
                 }
                 
                 final w = snapshot.data!;
@@ -106,7 +117,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                         child: Column(
                           children: [
                             Text(
-                              _city,
+                              _locationLabel,
                               style: Theme.of(context).textTheme.headlineMedium,
                             ),
                             const SizedBox(height: 16),
@@ -143,32 +154,36 @@ class _WeatherScreenState extends State<WeatherScreen> {
                         childAspectRatio: 1.5,
                         children: [
                           _buildDetailCard(
-                            context, 
-                            'Humidité', 
-                            '${w.humidity}%', 
-                            Icons.water_drop, 
-                            isDarkMode
+                            context,
+                            t('humidity'),
+                            '${w.humidity}%',
+                            Icons.water_drop,
+                            isDarkMode,
+                            iconColor: const Color(0xFF2196F3),
                           ),
                           _buildDetailCard(
-                            context, 
-                            'Vent', 
-                            '${w.windSpeed} m/s', 
-                            Icons.air, 
-                            isDarkMode
+                            context,
+                            t('wind'),
+                            '${w.windSpeed} m/s',
+                            Icons.air,
+                            isDarkMode,
+                            iconColor: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                           ),
                           _buildDetailCard(
-                            context, 
-                            'Pression', 
+                            context,
+                            t('pressure'),
                             '1012 hPa', // Mocked as not in WeatherData yet
-                            Icons.speed, 
-                            isDarkMode
+                            Icons.speed,
+                            isDarkMode,
+                            iconColor: const Color(0xFF9C27B0),
                           ),
                           _buildDetailCard(
-                            context, 
-                            'Visibilité', 
+                            context,
+                            t('visibility'),
                             '10 km', // Mocked
-                            Icons.visibility, 
-                            isDarkMode
+                            Icons.visibility,
+                            isDarkMode,
+                            iconColor: isDarkMode ? AppColors.darkPriceAccent : AppColors.lightPriceAccent,
                           ),
                         ],
                       ).animate(delay: 200.ms).fadeIn().slideY(begin: 20, end: 0),
@@ -183,7 +198,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
     );
   }
 
-  Widget _buildDetailCard(BuildContext context, String label, String value, IconData icon, bool isDarkMode) {
+  Widget _buildDetailCard(BuildContext context, String label, String value, IconData icon, bool isDarkMode, {Color? iconColor}) {
     return Container(
       decoration: BoxDecoration(
         color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
@@ -195,7 +210,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary),
+          Icon(icon, color: iconColor ?? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)),
           const SizedBox(height: 8),
           Text(
             value,

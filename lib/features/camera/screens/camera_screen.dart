@@ -7,6 +7,7 @@ import 'dart:io';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../providers/scan_provider.dart';
 import '../../../services/history_service.dart';
 import 'package:green_app/models/scan_result_model.dart';
@@ -56,6 +57,7 @@ class _CameraScreenState extends State<CameraScreen> {
     if (_selectedImage == null) return;
     setState(() => _isLoading = true);
 
+    final t = context.read<LocaleProvider>().t;
     final file = File(_selectedImage!.path);
 
     // Use the ScanProvider which calls the VisionService (remote or mock)
@@ -70,12 +72,21 @@ class _CameraScreenState extends State<CameraScreen> {
             final ScanResultModel? result = scanProvider.currentScanResult;
             if (result != null) {
               if (result.diseaseId == 'unknown') {
-                _showUnknownImageDialog();
+                _showUnknownImageDialog(message: result.treatment);
               } else {
                 // Persist to local history for offline access
+                bool saved = true;
                 try {
                   await historyService.addScan(result);
-                } catch (_) {}
+                } catch (_) {
+                  saved = false;
+                }
+                if (!mounted) return;
+                if (!saved) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(t('historySaveFailed'))),
+                  );
+                }
                 // Naviguer vers la fiche terrain (offline) au lieu d'une pop-up
                 Navigator.push(
                   context,
@@ -86,16 +97,14 @@ class _CameraScreenState extends State<CameraScreen> {
               }
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Analyse terminée, aucun résultat disponible.'),
-                ),
+                SnackBar(content: Text(t('noResultAvailable'))),
               );
             }
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  'Échec de l\'analyse: ${scanProvider.error ?? 'Erreur inconnue'}',
+                  '${t('analysisFailedPrefix')}: ${scanProvider.error ?? t('unknownError')}',
                 ),
               ),
             );
@@ -105,14 +114,15 @@ class _CameraScreenState extends State<CameraScreen> {
           if (!mounted) return;
           setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur lors de l\'analyse: $e')),
+            SnackBar(content: Text('${t('analysisErrorPrefix')}: $e')),
           );
         });
   }
 
   // Résultats d'analyse: affichage remplacé par la Fiche terrain (FieldSheetScreen) pour être entièrement offline et plus conviviale.
-  void _showUnknownImageDialog() {
+  void _showUnknownImageDialog({String? message}) {
     final isDarkMode = context.read<ThemeProvider>().isDarkMode;
+    final t = context.read<LocaleProvider>().t;
 
     showDialog(
       context: context,
@@ -125,7 +135,7 @@ class _CameraScreenState extends State<CameraScreen> {
               const Icon(Icons.help_outline, size: 48, color: Colors.orange),
               const SizedBox(height: 16),
               Text(
-                'Image non reconnue',
+                t('imageNotRecognized'),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: isDarkMode ? Colors.white : Colors.black87,
@@ -138,8 +148,7 @@ class _CameraScreenState extends State<CameraScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "Désolé, l'analyse n'est pas parvenue à identifier une plante ou une maladie connue. "
-              "Assurez-vous que l'image est bien éclairée et que la plante est centrée.",
+              message ?? t('imageNotRecognizedExplanation'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isDarkMode ? Colors.white70 : Colors.black54,
@@ -147,7 +156,7 @@ class _CameraScreenState extends State<CameraScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              "Il est possible que cette plante ne soit pas encore répertoriée dans notre base de données.",
+              t('imageNotRecognizedHint'),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontStyle: FontStyle.italic,
@@ -167,7 +176,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 setState(() => _selectedImage = null);
               },
               icon: const Icon(Icons.refresh),
-              label: const Text('Réessayer'),
+              label: Text(t('retry')),
               style: ElevatedButton.styleFrom(
                 backgroundColor: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
                 foregroundColor: Colors.white,
@@ -182,7 +191,7 @@ class _CameraScreenState extends State<CameraScreen> {
             width: double.infinity,
             child: TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Fermer'),
+              child: Text(t('closeDialog')),
             ),
           ),
         ],
@@ -194,20 +203,18 @@ class _CameraScreenState extends State<CameraScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    context.read<ThemeProvider>();
+    final t = context.watch<LocaleProvider>().t;
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        context.go('/home');
-      },
-      child: Scaffold(
+    // Pas de PopScope local ici : le retour (geste système ou bouton) doit
+    // remonter jusqu'à AppPopScope dans MainNavigationShell, qui applique la
+    // même logique de navigation/sortie que pour les autres onglets (Chat,
+    // Marketplace) plutôt qu'un saut silencieux vers Home.
+    return Scaffold(
         backgroundColor: isDarkMode
             ? AppColors.darkBackground
             : AppColors.lightBackground,
         appBar: CustomAppBar(
-          title: 'Scanner',
+          title: t('scanner'),
           isDarkMode: isDarkMode,
           showProfileIcon: true,
         ),
@@ -229,26 +236,26 @@ class _CameraScreenState extends State<CameraScreen> {
 
                 // Instructions Section
                 GradientSection(
-                      title: 'Instructions',
+                      title: t('instructions'),
                       isDarkMode: isDarkMode,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildInstructionItem(
                             '1',
-                            'Prenez une photo claire de la plante',
+                            t('instructionStep1'),
                             isDarkMode,
                           ).slideUpIn(delayMs: 100),
                           const SizedBox(height: 12),
                           _buildInstructionItem(
                             '2',
-                            'Assurez-vous d\'avoir une bonne lumière',
+                            t('instructionStep2'),
                             isDarkMode,
                           ).slideUpIn(delayMs: 150),
                           const SizedBox(height: 12),
                           _buildInstructionItem(
                             '3',
-                            'Centrez la plante dans le cadre',
+                            t('instructionStep3'),
                             isDarkMode,
                           ).slideUpIn(delayMs: 200),
                         ],
@@ -265,7 +272,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     _buildActionButton(
                           context: context,
                           icon: Icons.camera_alt,
-                          title: 'Prendre une photo',
+                          title: t('takePicture'),
                           onTap: _pickImageFromCamera,
                           isDarkMode: isDarkMode,
                         )
@@ -276,7 +283,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     _buildActionButton(
                           context: context,
                           icon: Icons.photo_library,
-                          title: 'Sélectionner une photo',
+                          title: t('selectPicture'),
                           onTap: _pickImageFromGallery,
                           isDarkMode: isDarkMode,
                         )
@@ -299,7 +306,7 @@ class _CameraScreenState extends State<CameraScreen> {
                           : AppColors.lightPrimary,
                     ),
                     label: Text(
-                      'Consulter les maladies',
+                      t('viewDiseases'),
                       style: TextStyle(
                         fontSize: 14,
                         color: isDarkMode
@@ -321,10 +328,11 @@ class _CameraScreenState extends State<CameraScreen> {
           ),
         ),
       ),
-    ));
+    );
   }
 
   Widget _buildImagePreview(BuildContext context, bool isDarkMode) {
+    final t = context.watch<LocaleProvider>().t;
     return GradientCard(
       isDarkMode: isDarkMode,
       opacity: 0.1,
@@ -346,21 +354,27 @@ class _CameraScreenState extends State<CameraScreen> {
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.image_search,
-                    size: 80,
-                    color: isDarkMode
-                        ? AppColors.darkPrimary
-                        : AppColors.lightPrimary,
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
+                      borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
+                    ),
+                    child: Icon(
+                      Icons.image_search,
+                      size: 32,
+                      color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Sélectionnez une image',
+                    t('selectAnImage'),
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Prenez une photo ou choisissez-en une dans votre galerie',
+                    t('takeOrChoosePhoto'),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: isDarkMode
@@ -382,16 +396,14 @@ class _CameraScreenState extends State<CameraScreen> {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            gradient: isDarkMode
-                ? AppColors.darkGradient
-                : AppColors.lightGradient,
+            color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
             shape: BoxShape.circle,
           ),
           child: Center(
             child: Text(
               number,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -415,6 +427,7 @@ class _CameraScreenState extends State<CameraScreen> {
     required VoidCallback onTap,
     required bool isDarkMode,
   }) {
+    final t = context.watch<LocaleProvider>().t;
     return GestureDetector(
       onTap: _isLoading ? null : onTap,
       child: BounceAnimation(
@@ -429,12 +442,14 @@ class _CameraScreenState extends State<CameraScreen> {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  gradient: isDarkMode
-                      ? AppColors.darkGradient
-                      : AppColors.lightGradient,
-                  shape: BoxShape.circle,
+                  color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
                 ),
-                child: Icon(icon, color: Colors.white, size: 24),
+                child: Icon(
+                  icon,
+                  color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
+                  size: 24,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -444,7 +459,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     Text(title, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 4),
                     Text(
-                      _isLoading ? 'Analyse...' : 'Appuyez pour sélectionner',
+                      _isLoading ? t('analyzingShort') : t('tapToSelect'),
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: isDarkMode
                             ? AppColors.darkHint

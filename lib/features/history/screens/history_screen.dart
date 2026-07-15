@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../services/history_service.dart';
 import '../../../models/scan_result_model.dart';
 import '../../../providers/theme_provider.dart';
+import '../../../providers/locale_provider.dart';
 import '../../../utils/date_formatter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -32,7 +33,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Future<void> _load() async {
     final all = await historyService.getAllScans();
     setState(() {
-      _items = all;
+      // getAllScans() renvoie une List.unmodifiable — en faire une copie
+      // mutable est indispensable puisque _applySort() appelle .sort() en
+      // place ; sans cette copie, .sort() lève une exception à l'intérieur
+      // même de setState(), qui empêche silencieusement tout rafraîchissement
+      // de l'écran (page vide, boutons de tri sans effet apparent).
+      _items = List<ScanResultModel>.from(all);
       _applySort();
     });
   }
@@ -67,6 +73,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildScanDetailSheet(ScanResultModel scan, bool isDark) {
+    final t = context.read<LocaleProvider>().t;
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.7,
@@ -92,7 +99,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Détails du scan',
+                t('scanDetails'),
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -133,7 +140,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // Maladie
               _buildDetailSection(
                 context,
-                'Maladie détectée',
+                t('detectedDisease'),
                 scan.diseaseName,
                 isDark,
               ),
@@ -142,10 +149,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // Plantes affectées
               _buildDetailSection(
                 context,
-                'Plantes affectées',
+                t('affectedPlantsLabel'),
                 scan.affectedPlants.isNotEmpty
                     ? scan.affectedPlants.join(', ')
-                    : 'Non spécifiée',
+                    : t('notSpecified'),
                 isDark,
               ),
               const SizedBox(height: 16),
@@ -153,7 +160,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // Confiance
               _buildDetailSection(
                 context,
-                'Niveau de confiance',
+                t('confidenceLevel'),
                 '${(scan.confidence * 100).toStringAsFixed(1)}%',
                 isDark,
               ),
@@ -162,8 +169,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // Date du scan
               _buildDetailSection(
                 context,
-                'Date du scan',
-                formatDateFrench(scan.scannedAt),
+                t('scanDate'),
+                formatDateFrench(scan.scannedAt, context.read<LocaleProvider>().locale),
                 isDark,
               ),
               const SizedBox(height: 16),
@@ -171,7 +178,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // Traitement/Recommandation
               _buildDetailSection(
                 context,
-                'Recommandations',
+                t('recommendationsLabel'),
                 scan.treatment,
                 isDark,
               ),
@@ -184,7 +191,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.close),
-                      label: const Text('Fermer'),
+                      label: Text(t('closeDialog')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isDark
                             ? AppColors.darkHint
@@ -199,13 +206,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () async {
                         await historyService.removeScan(scan.id);
+                        if (!mounted) return;
                         setState(() {
                           _items.removeWhere((e) => e.id == scan.id);
                         });
                         Navigator.pop(context);
                       },
                       icon: const Icon(Icons.delete),
-                      label: const Text('Supprimer'),
+                      label: Text(t('delete')),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         foregroundColor: Colors.white,
@@ -262,14 +270,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDarkMode;
+    final t = context.watch<LocaleProvider>().t;
     return AppPopScope(
       onWillPop: () async {
-        context.go('/camera');
+        // Cohérent avec la flèche de l'AppBar : /history n'est ouvert que
+        // depuis /home (bouton "Voir l'historique"), donc les deux contrôles
+        // de retour doivent mener au même endroit.
+        context.go('/home');
         return false;
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Historique'),
+          title: Text(t('history')),
+          centerTitle: false,
           elevation: 0,
           backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
           leading: IconButton(
@@ -286,14 +299,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    const Text(
-                      'Trier par : ',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                    Text(
+                      t('sortBy'),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(width: 8),
                     _sortButton(
                       context,
-                      'Date ↓',
+                      t('sortDateDesc'),
                       _sort == HistorySort.dateDesc,
                       () => _updateSort(HistorySort.dateDesc),
                       isDark,
@@ -301,7 +314,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     const SizedBox(width: 6),
                     _sortButton(
                       context,
-                      'Date ↑',
+                      t('sortDateAsc'),
                       _sort == HistorySort.dateAsc,
                       () => _updateSort(HistorySort.dateAsc),
                       isDark,
@@ -309,7 +322,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     const SizedBox(width: 6),
                     _sortButton(
                       context,
-                      'Nom A-Z',
+                      t('sortNameAZ'),
                       _sort == HistorySort.nameAsc,
                       () => _updateSort(HistorySort.nameAsc),
                       isDark,
@@ -317,7 +330,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     const SizedBox(width: 6),
                     _sortButton(
                       context,
-                      'Nom Z-A',
+                      t('sortNameZA'),
                       _sort == HistorySort.nameDesc,
                       () => _updateSort(HistorySort.nameDesc),
                       isDark,
@@ -330,7 +343,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: _items.isEmpty
                     ? Center(
                         child: Text(
-                          'Aucun scan pour le moment',
+                          t('noScansYet'),
                           style: TextStyle(
                             color: isDark ? AppColors.darkHint : AppColors.lightHint,
                           ),
@@ -422,7 +435,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            'Plantes: ${it.affectedPlants.join(", ")}',
+                                            '${t('plantsPrefix')}: ${it.affectedPlants.join(", ")}',
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodySmall,
@@ -431,7 +444,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            '${formatDateFrench(it.scannedAt)} • ${(it.confidence * 100).toStringAsFixed(0)}%',
+                                            '${formatDateFrench(it.scannedAt, context.read<LocaleProvider>().locale)} • ${(it.confidence * 100).toStringAsFixed(0)}%',
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodySmall

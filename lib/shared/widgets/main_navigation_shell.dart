@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/locale_provider.dart';
 import 'app_drawer.dart';
 import 'app_pop_scope.dart';
 
@@ -71,8 +72,8 @@ class _MainNavigationShellState extends State<MainNavigationShell>
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+    final t = context.watch<LocaleProvider>().t;
 
-    // Migrate to PopScope to support Android predictive back gesture.
     return AppPopScope(
       onWillPop: () async {
         // If not on home tab, switch to home instead of exiting
@@ -86,16 +87,16 @@ class _MainNavigationShellState extends State<MainNavigationShell>
         final shouldExit = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Quitter'),
-            content: const Text('Voulez-vous quitter l\'application ?'),
+            title: Text(t('quit')),
+            content: Text(t('quitAppConfirm')),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('Annuler'),
+                child: Text(t('cancel')),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text('Quitter'),
+                child: Text(t('quit')),
               ),
             ],
           ),
@@ -154,7 +155,7 @@ class _MainNavigationShellState extends State<MainNavigationShell>
                           ),
                           child: const Icon(Icons.home),
                         ),
-                        label: 'Accueil',
+                        label: t('home'),
                       ),
                       BottomNavigationBarItem(
                         icon: ScaleTransition(
@@ -166,7 +167,7 @@ class _MainNavigationShellState extends State<MainNavigationShell>
                           ),
                           child: const Icon(Icons.camera_alt),
                         ),
-                        label: 'Scanner',
+                        label: t('scanner'),
                       ),
                       BottomNavigationBarItem(
                         icon: ScaleTransition(
@@ -178,7 +179,7 @@ class _MainNavigationShellState extends State<MainNavigationShell>
                           ),
                           child: const Icon(Icons.chat_bubble),
                         ),
-                        label: 'Green Bot',
+                        label: t('greenBot'),
                       ),
                       BottomNavigationBarItem(
                         icon: ScaleTransition(
@@ -190,7 +191,7 @@ class _MainNavigationShellState extends State<MainNavigationShell>
                           ),
                           child: const Icon(Icons.shopping_bag),
                         ),
-                        label: 'Marketplace',
+                        label: t('marketplaceTitle'),
                       ),
                     ],
                   ), // BottomNavigationBar

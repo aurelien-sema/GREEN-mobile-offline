@@ -8,7 +8,11 @@ extension StringExtensions on String {
     return length >= 8;
   }
 
-  bool get isNotEmpty {
+  // Nommé isNotBlank (et non isNotEmpty) car Dart n'autorise pas qu'une
+  // extension masque un membre déjà déclaré par le type étendu — une
+  // méthode isNotEmpty ici ne serait jamais appelée, String.isNotEmpty natif
+  // (sans trim) prenant systématiquement le dessus silencieusement.
+  bool get isNotBlank {
     return trim().isNotEmpty;
   }
 

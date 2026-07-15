@@ -4,10 +4,10 @@ class Validators {
   static final RegExp nameReg = RegExp(r"^[A-Za-zÀ-ÖØ-öø-ÿ '\-\.]{1,64}$");
 
   // Simple email validation (RFC-compliant regex is long); this covers common cases
-  static final RegExp emailReg = RegExp(r"^[\w\.-]+@[\w\.-]+\.[a-zA-Z]{2,}");
+  static final RegExp emailReg = RegExp(r"^[\w\.-]+@[\w\.-]+\.[a-zA-Z]{2,}$");
 
   // Phone numbers: allows +, digits, spaces, dashes, parentheses
-  static final RegExp phoneReg = RegExp(r"^[+]?([0-9 ()-]){6,20}");
+  static final RegExp phoneReg = RegExp(r"^[+]?([0-9 ()-]){6,20}$");
 
   // Password: at least 8 chars, allow special and accented characters
   static final RegExp passwordReg = RegExp(r"^.{8,}$", unicode: true);

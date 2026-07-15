@@ -5,6 +5,8 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 
+enum RegisterResult { success, emailTaken, phoneTaken }
+
 class UserModel {
   final String id;
   final String name;
@@ -72,18 +74,21 @@ class AuthService {
   }
 
   // Register with plaintext password; stores PBKDF2 hashed password with salt.
-  Future<bool> registerWithPassword(UserModel user, String password) async {
+  // Renvoie la raison précise d'un éventuel échec, pour que l'écran affiche
+  // un message correspondant à ce qui a réellement été saisi (email vs
+  // téléphone) plutôt qu'un message générique "email" quel que soit le cas.
+  Future<RegisterResult> registerWithPassword(UserModel user, String password) async {
     await _load();
     // Prevent registering with an email or phone that already exists (if provided)
     final emailLower = user.email.trim().toLowerCase();
     final phoneTrim = user.phone.trim();
     if (emailLower.isNotEmpty &&
         _users.any((u) => u.email.toLowerCase() == emailLower)) {
-      return false;
+      return RegisterResult.emailTaken;
     }
     if (phoneTrim.isNotEmpty &&
         _users.any((u) => u.phone.trim() == phoneTrim)) {
-      return false;
+      return RegisterResult.phoneTaken;
     }
     final hashed = _hashPassword(password);
     final stored = UserModel(
@@ -94,6 +99,37 @@ class AuthService {
       passwordHash: hashed,
     );
     _users.add(stored);
+    await _save();
+    return RegisterResult.success;
+  }
+
+  /// Variante async sûre de [getUserByIdentifier] : garantit que les
+  /// utilisateurs ont bien été chargés depuis le disque avant la recherche
+  /// (contrairement à la version synchrone, utilisable seulement après un
+  /// premier appel qui a déjà déclenché [_load]).
+  Future<UserModel?> findUserByIdentifier(String identifier) async {
+    await _load();
+    return getUserByIdentifier(identifier);
+  }
+
+  /// Réinitialise le mot de passe d'un utilisateur retrouvé par email ou
+  /// téléphone. Utilisé par l'écran "mot de passe oublié" : en l'absence de
+  /// tout backend/email/SMS, la seule vérification d'identité possible ici
+  /// est la connaissance de l'identifiant d'inscription (l'app est locale à
+  /// l'appareil — il n'y a pas de tiers distant à authentifier).
+  Future<bool> resetPasswordForIdentifier(String identifier, String newPassword) async {
+    await _load();
+    final user = getUserByIdentifier(identifier);
+    if (user == null) return false;
+    final index = _users.indexWhere((u) => u.id == user.id);
+    if (index == -1) return false;
+    _users[index] = UserModel(
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      passwordHash: _hashPassword(newPassword),
+    );
     await _save();
     return true;
   }

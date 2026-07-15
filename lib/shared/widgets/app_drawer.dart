@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../providers/auth_provider.dart';
 
 class AppDrawer extends StatelessWidget {
   final VoidCallback? onThemeToggle;
@@ -14,6 +15,7 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
+    final t = context.watch<LocaleProvider>().t;
 
     return SafeArea(
       child: Drawer(
@@ -55,7 +57,7 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Naturellement Intelligent',
+                    t('appSlogan'),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: const Color.fromRGBO(255, 255, 255, 0.8),
                     ),
@@ -68,7 +70,7 @@ class AppDrawer extends StatelessWidget {
             _buildDrawerItem(
               context,
               icon: Icons.home,
-              title: 'Accueil',
+              title: t('home'),
               onTap: () {
                 Navigator.pop(context);
                 context.go('/home');
@@ -78,7 +80,7 @@ class AppDrawer extends StatelessWidget {
             _buildDrawerItem(
               context,
               icon: Icons.camera_alt,
-              title: 'Scanner',
+              title: t('scanner'),
               onTap: () {
                 Navigator.pop(context);
                 context.go('/camera');
@@ -88,7 +90,7 @@ class AppDrawer extends StatelessWidget {
             _buildDrawerItem(
               context,
               icon: Icons.chat_bubble,
-              title: 'Chat IA',
+              title: t('chatAI'),
               onTap: () {
                 Navigator.pop(context);
                 context.go('/chat');
@@ -98,7 +100,7 @@ class AppDrawer extends StatelessWidget {
             _buildDrawerItem(
               context,
               icon: Icons.person,
-              title: 'Profil',
+              title: t('profile'),
               onTap: () {
                 Navigator.pop(context);
                 context.go('/profile');
@@ -115,7 +117,7 @@ class AppDrawer extends StatelessWidget {
                 vertical: AppConstants.paddingSmall,
               ),
               child: Text(
-                'PARAMÈTRES',
+                t('settingsSectionHeader'),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                   fontWeight: FontWeight.w600,
@@ -130,7 +132,7 @@ class AppDrawer extends StatelessWidget {
             _buildDrawerItem(
               context,
               icon: Icons.language,
-              title: 'Langue',
+              title: t('language'),
               onTap: () {
                 Navigator.pop(context);
                 _showLanguageDialog(context);
@@ -142,7 +144,7 @@ class AppDrawer extends StatelessWidget {
             _buildDrawerItem(
               context,
               icon: Icons.settings,
-              title: 'Préférences',
+              title: t('preferences'),
               onTap: () {
                 Navigator.pop(context);
                 context.push('/preferences');
@@ -154,7 +156,7 @@ class AppDrawer extends StatelessWidget {
             _buildDrawerItem(
               context,
               icon: Icons.settings,
-              title: 'Paramètres',
+              title: t('settingsLabel'),
               onTap: () {
                 Navigator.pop(context);
                 context.push('/settings');
@@ -171,7 +173,7 @@ class AppDrawer extends StatelessWidget {
                 vertical: AppConstants.paddingSmall,
               ),
               child: Text(
-                'SUPPORT',
+                t('supportSectionHeader'),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                   color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
                   fontWeight: FontWeight.w600,
@@ -183,7 +185,7 @@ class AppDrawer extends StatelessWidget {
             _buildDrawerItem(
               context,
               icon: Icons.info,
-              title: 'À propos',
+              title: t('about'),
               onTap: () {
                 Navigator.pop(context);
                 _showAboutDialog(context);
@@ -195,11 +197,11 @@ class AppDrawer extends StatelessWidget {
             _buildDrawerItem(
               context,
               icon: Icons.help,
-              title: 'Aide',
+              title: t('help'),
               onTap: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Centre d\'aide - À venir')),
+                  SnackBar(content: Text(t('helpCenterComingSoon'))),
                 );
               },
               isDarkMode: isDarkMode,
@@ -211,7 +213,7 @@ class AppDrawer extends StatelessWidget {
             _buildDrawerItem(
               context,
               icon: Icons.logout,
-              title: 'Déconnexion',
+              title: t('logout'),
               onTap: () {
                 Navigator.pop(context);
                 _showLogoutDialog(context);
@@ -255,6 +257,7 @@ class AppDrawer extends StatelessWidget {
 
   Widget _buildThemeToggle(BuildContext context, bool isDarkMode) {
     final themeProvider = context.read<ThemeProvider>();
+    final t = context.read<LocaleProvider>().t;
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -275,7 +278,7 @@ class AppDrawer extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                'Thème sombre',
+                t('darkTheme'),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
@@ -298,13 +301,14 @@ class AppDrawer extends StatelessWidget {
 
   void _showLanguageDialog(BuildContext context) {
     final isDarkMode = context.read<ThemeProvider>().isDarkMode;
+    final t = context.read<LocaleProvider>().t;
 
     showDialog(
       context: context,
       builder: (context) {
         final localeProvider = context.read<LocaleProvider>();
         return AlertDialog(
-          title: const Text('Sélectionner la langue'),
+          title: Text(t('selectLanguageTitle')),
           backgroundColor: isDarkMode
               ? AppColors.darkSurface
               : AppColors.lightSurface,
@@ -330,50 +334,53 @@ class AppDrawer extends StatelessWidget {
     return ListTile(
       title: Text(name),
       onTap: () async {
+        final message = context.read<LocaleProvider>().t('languageChangedTo').replaceAll('{name}', name);
         await localeProvider.setLocale(code);
+        if (!context.mounted) return;
         Navigator.pop(context);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Langue changée en $name')));
+        ).showSnackBar(SnackBar(content: Text(message)));
       },
     );
   }
 
   void _showAboutDialog(BuildContext context) {
     final isDarkMode = context.read<ThemeProvider>().isDarkMode;
+    final t = context.read<LocaleProvider>().t;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('À propos de Green'),
+        title: Text(t('aboutGreen')),
         backgroundColor: isDarkMode
             ? AppColors.darkSurface
             : AppColors.lightSurface,
-        content: const SingleChildScrollView(
+        content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Green - Naturellement Intelligent',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                t('greenSubtitleFull'),
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
-              SizedBox(height: 12),
-              Text('Version: 1.0.0'),
-              SizedBox(height: 8),
-              Text('Détection intelligente de maladies des plantes avec IA'),
-              SizedBox(height: 16),
-              Text('Utilisant:', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text('• Flutter 3.10+'),
-              Text('• Google Gemini 1.5 Flash'),
-              Text('• Technologies d\'apprentissage automatique'),
+              const SizedBox(height: 12),
+              Text('${t('version')}: 1.0.0'),
+              const SizedBox(height: 8),
+              Text(t('smartDiseaseDetectionDesc')),
+              const SizedBox(height: 16),
+              Text('${t('usingLabel')}:', style: const TextStyle(fontWeight: FontWeight.bold)),
+              const Text('• Flutter 3.10+'),
+              const Text('• Google Gemini 2.5 Flash'),
+              Text('• ${t('mlTechnologies')}'),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Fermer'),
+            child: Text(t('closeDialog')),
           ),
         ],
       ),
@@ -381,24 +388,31 @@ class AppDrawer extends StatelessWidget {
   }
 
   void _showLogoutDialog(BuildContext context) {
+    final t = context.read<LocaleProvider>().t;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Déconnexion'),
-        content: const Text('Êtes-vous sûr de vouloir vous déconnecter?'),
+        title: Text(t('logout')),
+        content: Text(t('confirmLogoutMessage')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text(t('cancel')),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              // Invalider la session avant de naviguer — sinon l'utilisateur
+              // reste authentifié et splash_screen le renvoie directement sur
+              // /home au prochain lancement (même bug que profile_screen,
+              // corrigé ici aussi).
+              await context.read<AuthProvider>().logout();
+              if (!context.mounted) return;
               Navigator.pop(context);
               context.go('/login');
             },
-            child: const Text(
-              'Déconnexion',
-              style: TextStyle(color: Colors.red),
+            child: Text(
+              t('logout'),
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ],
