@@ -1,30 +1,57 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:green_app/shared/widgets/gradient_button.dart';
 
-import 'package:green_app/main.dart';
+Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const GreenApp());
+  group('GradientButton', () {
+    testWidgets('renders its label', (tester) async {
+      await tester.pumpWidget(_wrap(
+        GradientButton(label: 'Valider', onPressed: () {}),
+      ));
+      expect(find.text('Valider'), findsOneWidget);
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    testWidgets('invokes onPressed when tapped', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(_wrap(
+        GradientButton(label: 'Valider', onPressed: () => taps++),
+      ));
+      await tester.tap(find.text('Valider'));
+      await tester.pump();
+      expect(taps, 1);
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    testWidgets('does not invoke onPressed when disabled', (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(_wrap(
+        GradientButton(
+          label: 'Valider',
+          onPressed: () => taps++,
+          disabled: true,
+        ),
+      ));
+      await tester.tap(find.text('Valider'));
+      await tester.pump();
+      expect(taps, 0);
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    testWidgets('shows a progress indicator and blocks taps while loading',
+        (tester) async {
+      var taps = 0;
+      await tester.pumpWidget(_wrap(
+        GradientButton(
+          label: 'Valider',
+          onPressed: () => taps++,
+          isLoading: true,
+        ),
+      ));
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Valider'), findsNothing);
+      await tester.tap(find.byType(GradientButton));
+      await tester.pump();
+      expect(taps, 0);
+    });
   });
 }
