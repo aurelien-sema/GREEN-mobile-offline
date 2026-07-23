@@ -84,7 +84,9 @@ class _LoginScreenState extends State<LoginScreen> {
         try {
           final authProv = Provider.of<AuthProvider>(context, listen: false);
           authProv.setCurrentUserFromService(user);
-        } catch (_) {}
+        } catch (e) {
+          debugPrint('LoginScreen: échec de la mise à jour du provider auth: $e');
+        }
         setState(() => _isLoading = false);
         context.go('/home');
       }

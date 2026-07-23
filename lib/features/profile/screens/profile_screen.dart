@@ -364,7 +364,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // renvoie directement sur /home au prochain lancement.
           await context.read<AuthProvider>().logout();
           if (!context.mounted) return;
-          context.go(route);
+          context.go('/login');
           return;
         }
         if (route != null) {

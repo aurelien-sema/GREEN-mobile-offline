@@ -166,7 +166,11 @@ ${ragContext.isNotEmpty ? '\n📚 INFOS UTILES:\n$ragContext' : ''}''';
       if (cached != null && cached.isNotEmpty) {
          return cached; // Return offline/cached version
       }
-    } catch (_) {}
+    } catch (e) {
+      // Un cache illisible ne doit pas bloquer la génération, mais on trace
+      // l'erreur au lieu de la masquer complètement.
+      debugPrint('GeminiService: lecture du cache échouée pour $storageKey: $e');
+    }
 
     // If not found, generate
     final response = await generateResponse(prompt);
@@ -175,7 +179,9 @@ ${ragContext.isNotEmpty ? '\n📚 INFOS UTILES:\n$ragContext' : ''}''';
     if (response.isNotEmpty && !response.contains('Error')) {
       try {
         await StorageService().setString(storageKey, response);
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('GeminiService: écriture du cache échouée pour $storageKey: $e');
+      }
     }
     return response;
   }

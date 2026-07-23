@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 enum RegisterResult { success, emailTaken, phoneTaken }
@@ -61,7 +61,12 @@ class AuthService {
       final content = await file.readAsString();
       final list = jsonDecode(content) as List<dynamic>;
       _users = list.map((e) => UserModel.fromJson(e)).toList();
-    } catch (_) {
+    } catch (e, st) {
+      // Un fichier users.json corrompu/illisible ne doit pas planter l'app,
+      // mais on trace l'erreur : sinon la connexion échouerait "sans raison"
+      // (liste vide) et le problème serait impossible à diagnostiquer.
+      debugPrint('AuthService: échec du chargement de $_fileName, liste vide utilisée: $e');
+      debugPrint('$st');
       _users = [];
     }
   }
@@ -164,7 +169,9 @@ class AuthService {
       if (user != null && _verifyPassword(password, user.passwordHash)) {
         return user;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AuthService: erreur inattendue lors de la connexion par identifiant: $e');
+    }
     return null;
   }
 
@@ -179,7 +186,9 @@ class AuthService {
         (u) => u.email.toLowerCase() == email.toLowerCase(),
       );
       if (_verifyPassword(password, user.passwordHash)) return user;
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AuthService: erreur inattendue lors de la connexion par email: $e');
+    }
     return null;
   }
 

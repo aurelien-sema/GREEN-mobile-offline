@@ -58,7 +58,11 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
             ));
           }
         }
-      } catch (_) {}
+      } catch (e) {
+        // L'historique est un enrichissement optionnel du catalogue : en cas
+        // d'échec on garde les maladies du provider, mais on trace l'erreur.
+        debugPrint('DiseasesScreen: échec de la fusion de l\'historique: $e');
+      }
 
       if (mounted) {
         setState(() {
@@ -66,7 +70,9 @@ class _DiseasesScreenState extends State<DiseasesScreen> {
           _filteredDiseases = _diseases;
         });
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('DiseasesScreen: échec du chargement des maladies: $e');
+    }
   }
 
   @override
