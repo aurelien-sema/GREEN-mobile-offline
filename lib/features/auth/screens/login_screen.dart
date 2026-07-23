@@ -10,6 +10,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/locale_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../core/validation/validators.dart';
+import '../../../core/extensions/context_extensions.dart';
 // password hashing/verification handled by AuthService
 
 class LoginScreen extends StatefulWidget {
@@ -54,9 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
         : Validators.validateEmail(rawInput);
     final passErr = Validators.validatePassword(_passwordController.text);
     if (identifierErr != null || passErr != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(identifierErr ?? passErr ?? '')));
+      context.showSnackBarMessage(identifierErr ?? passErr ?? '');
       return;
     }
 
@@ -73,8 +72,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (user == null) {
         if (mounted) {
           setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.read<LocaleProvider>().t('invalidCredentials'))),
+          context.showSnackBarMessage(
+            context.read<LocaleProvider>().t('invalidCredentials'),
           );
         }
         return;

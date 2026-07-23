@@ -16,6 +16,7 @@ import '../../../shared/widgets/animation_effects.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/custom_scroll_physics.dart';
 import 'field_sheet_screen.dart';
+import '../../../core/extensions/context_extensions.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
@@ -83,9 +84,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 }
                 if (!mounted) return;
                 if (!saved) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(t('historySaveFailed'))),
-                  );
+                  context.showSnackBarMessage(t('historySaveFailed'));
                 }
                 // Naviguer vers la fiche terrain (offline) au lieu d'une pop-up
                 Navigator.push(
@@ -96,26 +95,18 @@ class _CameraScreenState extends State<CameraScreen> {
                 );
               }
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(t('noResultAvailable'))),
-              );
+              context.showSnackBarMessage(t('noResultAvailable'));
             }
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  '${t('analysisFailedPrefix')}: ${scanProvider.error ?? t('unknownError')}',
-                ),
-              ),
+            context.showSnackBarMessage(
+              '${t('analysisFailedPrefix')}: ${scanProvider.error ?? t('unknownError')}',
             );
           }
         })
         .catchError((e) {
           if (!mounted) return;
           setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${t('analysisErrorPrefix')}: $e')),
-          );
+          context.showSnackBarMessage('${t('analysisErrorPrefix')}: $e');
         });
   }
 

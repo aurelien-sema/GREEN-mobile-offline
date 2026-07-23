@@ -6,6 +6,7 @@ import '../../core/constants/app_constants.dart';
 import '../../models/product_model.dart';
 import '../../providers/cart_provider.dart';
 import '../../providers/locale_provider.dart';
+import '../../core/extensions/context_extensions.dart';
 
 /// Carte produit réutilisée par la Marketplace (carrousel horizontal) et par
 /// l'écran "Voir tout" d'une catégorie (grille), pour éviter de dupliquer le
@@ -122,9 +123,7 @@ class ProductCard extends StatelessWidget {
       onTap: () {
         context.read<CartProvider>().addItem(product, quantity: 1);
         final t = context.read<LocaleProvider>().t;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${product.name} ${t('addedToCartSuffix')}')),
-        );
+        context.showSnackBarMessage('${product.name} ${t('addedToCartSuffix')}');
       },
       child: Container(
         width: 32,

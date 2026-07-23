@@ -15,6 +15,7 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../../services/profile_image_service.dart';
 import '../../../shared/widgets/app_pop_scope.dart';
+import '../../../core/extensions/context_extensions.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String? from;
@@ -90,8 +91,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       debugPrint('Error in profile screen pick image: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.read<LocaleProvider>().t('imagePickErrorMessage'))),
+        context.showSnackBarMessage(
+          context.read<LocaleProvider>().t('imagePickErrorMessage'),
         );
       }
     }
@@ -532,8 +533,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           await authService.deleteUserByIdentifier(contact);
       if (!deleted) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.read<LocaleProvider>().t('userNotFoundError'))),
+          context.showSnackBarMessage(
+            context.read<LocaleProvider>().t('userNotFoundError'),
           );
         }
         return;
@@ -547,8 +548,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${context.read<LocaleProvider>().t('errorPrefix')}: $e')),
+        context.showSnackBarMessage(
+          '${context.read<LocaleProvider>().t('errorPrefix')}: $e',
         );
       }
     }

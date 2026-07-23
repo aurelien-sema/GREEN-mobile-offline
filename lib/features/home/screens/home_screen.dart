@@ -13,6 +13,7 @@ import '../../../utils/date_formatter.dart';
 import '../../../shared/widgets/gradient_background.dart';
 import '../../../shared/widgets/custom_scroll_physics.dart';
 import '../../../core/utils/disease_status.dart';
+import '../../../core/extensions/context_extensions.dart';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -43,13 +44,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(t('gpsDisabled')),
-            action: SnackBarAction(
-              label: t('activate'),
-              onPressed: () => Geolocator.openLocationSettings(),
-            ),
+        context.showSnackBarMessage(
+          t('gpsDisabled'),
+          action: SnackBarAction(
+            label: t('activate'),
+            onPressed: () => Geolocator.openLocationSettings(),
           ),
         );
       }
@@ -65,9 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t('locationPermissionDenied'))),
-        );
+        context.showSnackBarMessage(t('locationPermissionDenied'));
       }
     }
   }

@@ -12,6 +12,7 @@ import '../../../providers/locale_provider.dart';
 import 'package:provider/provider.dart';
 import '../../../core/validation/validators.dart';
 import '../../../core/utils/text_input_formatters.dart';
+import '../../../core/extensions/context_extensions.dart';
 // password hashing handled by AuthService (PBKDF2)
 
 class RegisterScreen extends StatefulWidget {
@@ -69,11 +70,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         emailErr != null ||
         passErr != null ||
         phoneErr != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(nameErr ?? emailErr ?? phoneErr ?? passErr ?? ''),
-        ),
-      );
+      context.showSnackBarMessage(nameErr ?? emailErr ?? phoneErr ?? passErr ?? '');
       return;
     }
 
@@ -100,9 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           final message = result == RegisterResult.phoneTaken
               ? t('duplicatePhoneAccount')
               : t('duplicateEmailAccount');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
+          context.showSnackBarMessage(message);
         }
         return;
       }
