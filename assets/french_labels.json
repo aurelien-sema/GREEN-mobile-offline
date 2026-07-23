@@ -1,56 +1,56 @@
 [
   {
-    "label_original": "Cassava_Mosaic",
+    "label_original": "Cassava Mosaic",
     "plante": "Manioc",
     "maladie": "Mosaïque du manioc"
   },
   {
-    "label_original": "Corn_Brown_Spots",
+    "label_original": "Corn Brown Spots",
     "plante": "Maïs",
-    "maladie": "Tache foliaire fongique"
+    "maladie": "Taches brunes du maïs"
   },
   {
-    "label_original": "Corn_Healthy",
+    "label_original": "Corn Healthy",
     "plante": "Maïs",
     "maladie": "Saine"
   },
   {
-    "label_original": "Corn_Leaf_Blight",
-    "plante": "Maïs",
-    "maladie": "Helminthosporiose du maïs (brûlure des feuilles)"
-  },
-  {
-    "label_original": "Corn_Mildew",
+    "label_original": "Corn Mildew",
     "plante": "Maïs",
     "maladie": "Mildiou du maïs"
   },
   {
-    "label_original": "Corn_Streak",
+    "label_original": "Corn Streak",
     "plante": "Maïs",
     "maladie": "Virus de la strie du maïs"
   },
   {
-    "label_original": "Corn_Stripe",
+    "label_original": "Corn Stripe",
     "plante": "Maïs",
     "maladie": "Virus des raies du maïs"
   },
   {
-    "label_original": "Corn_Yellowing",
+    "label_original": "Corn Yellowing",
     "plante": "Maïs",
     "maladie": "Jaunissement du maïs"
   },
   {
-    "label_original": "Tomato_Brown_Spots",
-    "plante": "Tomate",
-    "maladie": "Alternariose (brûlure précoce)"
+    "label_original": "Corn leaf blight",
+    "plante": "Maïs",
+    "maladie": "Helminthosporiose du maïs (brûlure des feuilles)"
   },
   {
-    "label_original": "Tomato_Blight_Leaf",
+    "label_original": "Tomato Brown Spots",
     "plante": "Tomate",
-    "maladie": "Mildiou"
+    "maladie": "Alternariose de la tomate (brûlure précoce)"
   },
   {
-    "label_original": "Tomato_Healthy",
+    "label_original": "Tomato blight leaf",
+    "plante": "Tomate",
+    "maladie": "Mildiou de la tomate"
+  },
+  {
+    "label_original": "Tomato healthy",
     "plante": "Tomate",
     "maladie": "Saine"
   }

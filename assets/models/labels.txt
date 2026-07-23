@@ -1,11 +1,11 @@
-Cassava_Mosaic
-Corn_Brown_Spots
-Corn_Healthy
-Corn_Leaf_Blight
-Corn_Mildew
-Corn_Streak
-Corn_Stripe
-Corn_Yellowing
-Tomato_Brown_Spots
-Tomato_Blight_Leaf
-Tomato_Healthy
+Cassava Mosaic
+Corn Brown Spots
+Corn Healthy
+Corn Mildew
+Corn Streak
+Corn Stripe
+Corn Yellowing
+Corn leaf blight
+Tomato Brown Spots
+Tomato blight leaf
+Tomato healthy

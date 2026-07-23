@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:green_app/core/constants/app_constants.dart';
 import 'package:green_app/models/scan_result_model.dart';
-import 'package:green_app/services/tflite_service.dart';
+import 'package:green_app/services/onnx_service.dart';
 import 'package:green_app/utils/french_translator.dart';
 import 'package:uuid/uuid.dart';
 
-/// Service pour l'intégration du modèle de vision par ordinateur (TFLite, offline)
+/// Service pour l'intégration du modèle de vision par ordinateur (ONNX, offline)
 class VisionService {
   final Uuid _uuid = const Uuid();
 
@@ -14,14 +14,14 @@ class VisionService {
   /// partagée avec ScanResultModel.severityLevel pour rester cohérentes).
   static const double confidenceThreshold = AppConstants.visionConfidenceThreshold;
 
-  /// Analyser une image de plante avec le modèle de vision (TFLite Offline)
+  /// Analyser une image de plante avec le modèle de vision (ONNX Offline)
   Future<ScanResultModel> analyzePlantImage(File imageFile) async {
     try {
-      final tfliteResult = await tfliteService.classifyImage(imageFile);
+      final onnxResult = await onnxService.classifyImage(imageFile);
 
-      if (tfliteResult != null) {
-        final String label = tfliteResult['label'] as String;
-        final double confidence = tfliteResult['confidence'] as double;
+      if (onnxResult != null) {
+        final String label = onnxResult['label'] as String;
+        final double confidence = onnxResult['confidence'] as double;
 
         if (confidence < confidenceThreshold) {
           return ScanResultModel(
@@ -49,16 +49,18 @@ class VisionService {
           diseaseName = translation['maladie'] ?? 'Inconnu';
         } else {
           // Filet de sécurité si un label n'a pas (encore) de traduction dans
-          // french_labels.json : on tente d'abord l'ancienne convention
-          // PlantVillage "Plante___Maladie" (triple underscore), puis la
-          // convention actuelle "Culture_Maladie" (underscore simple).
-          List<String> parts = label.split('___');
-          if (parts.length < 2) {
-            final idx = label.indexOf('_');
-            parts = idx == -1 ? [label] : [label.substring(0, idx), label.substring(idx + 1)];
+          // french_labels.json : le premier mot est la culture ("Corn Brown
+          // Spots" -> Corn / Brown Spots). On tolère aussi les anciennes
+          // conventions à underscores ("Plante___Maladie" / "Culture_Maladie").
+          final normalized = label.replaceAll('___', ' ').replaceAll('_', ' ').trim();
+          final idx = normalized.indexOf(' ');
+          if (idx == -1) {
+            plantName = normalized;
+            diseaseName = 'Inconnu';
+          } else {
+            plantName = normalized.substring(0, idx);
+            diseaseName = normalized.substring(idx + 1);
           }
-          plantName = parts.isNotEmpty ? parts[0].replaceAll('_', ' ') : 'Inconnu';
-          diseaseName = parts.length > 1 ? parts[1].replaceAll('_', ' ') : 'Inconnu';
         }
 
         return ScanResultModel(

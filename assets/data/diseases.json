@@ -3,637 +3,253 @@
     "id": "healthy",
     "name": "Saine",
     "scientificName": "N/A",
-    "affectedPlants": ["Toutes les plantes"],
+    "affectedPlants": [
+      "Maïs",
+      "Tomate",
+      "Toutes les plantes"
+    ],
     "symptoms": [],
     "actions": [
-      "Continuez l'observation régulière",
-      "Maintenez une bonne hygiène du jardin",
-      "Assurez un arrosage adapté",
-      "Pratiquez la rotation des cultures"
+      "Continuez à surveiller la plante régulièrement",
+      "Maintenez une bonne hygiène au champ (enlevez les mauvaises herbes)",
+      "Arrosez de façon adaptée, sans excès",
+      "Pratiquez la rotation des cultures d'une saison à l'autre"
     ],
-    "aliases": ["Healthy", "Healthy Plant"]
-  },
-  {
-    "id": "mildiou",
-    "name": "Mildiou",
-    "scientificName": "Phytophthora infestans",
-    "affectedPlants": ["Tomate", "Pomme de terre", "Poivre", "Aubergine"],
-    "symptoms": [
-      "Taches brunes huileuses sur les feuilles",
-      "Taches sombres avec auréole jaune",
-      "Taches sombres sur les fruits",
-      "Feuilles flétrissantes et nécrosées",
-      "Pourriture à la base des tiges"
-    ],
-    "actions": [
-      "Retirer et détruire les parties infectées",
-      "Améliorer le drainage et diminuer l'humidité",
-      "Éviter l'arrosage par le haut",
-      "Appliquer un fongicide (cuivre ou mancozèbe selon recommandation locale)",
-      "Alterner les cultures et pratiquer une rotation de 3-4 ans",
-      "Espacer les plants pour améliorer la ventilation"
-    ],
-    "aliases": ["Late Blight", "Phytophtora"]
-  },
-  {
-    "id": "oidium",
-    "name": "Oïdium",
-    "scientificName": "Erysiphales (gén.)",
-    "affectedPlants": ["Courgette", "Vigne", "Céréales", "Pois", "Haricot", "Melon"],
-    "symptoms": [
-      "Poudre blanche farineuse sur la surface des feuilles",
-      "Distorsion des jeunes tissus",
-      "Feuilles jaunissantes et desséchées",
-      "Présence de petits points noirs (cléistothèques) en fin de saison"
-    ],
-    "actions": [
-      "Supprimer feuilles fortement touchées",
-      "Favoriser l'aération et éclaircissement de la plante",
-      "Éviter trop d'azote qui favorise la maladie",
-      "Utiliser traitement à base de soufre ou fongicide adapté",
-      "Pulvériser dès les premiers symptômes",
-      "Arroser à la base pour éviter l'humidité foliaire"
-    ],
-    "aliases": ["Powdery Mildew"]
-  },
-  {
-    "id": "rouille",
-    "name": "Rouille",
-    "scientificName": "Pucciniales",
-    "affectedPlants": ["Blé", "Maïs", "Orge", "Plantes ornementales", "Hortensia", "Bégonias"],
-    "symptoms": [
-      "Pustules orange/rouille sur la face inférieure des feuilles",
-      "Taches jaunes ou chlorotiques sur la face supérieure",
-      "Perte de vigueur et chute précoce des feuilles",
-      "Pustules noires en fin de saison"
-    ],
-    "actions": [
-      "Enlever débris végétaux et éviter l'humidité prolongée",
-      "Planter des variétés résistantes si disponibles",
-      "Appliquer fongicides à base de cuivre en prévention",
-      "Améliorer l'aération des feuillages",
-      "Arrosage par le bas uniquement",
-      "Rotation cultures de 2-3 ans minimum"
-    ],
-    "aliases": ["Rust", "Rust Disease"]
-  },
-  {
-    "id": "anthracnose",
-    "name": "Anthracnose",
-    "scientificName": "Colletotrichum spp.",
-    "affectedPlants": ["Fruits", "Légumes", "Arbres fruitiers", "Manioc", "Haricot", "Pois"],
-    "symptoms": [
-      "Taches nécrotiques anguleuses sur feuilles",
-      "Taches noires ou pourriture sur fruits",
-      "Branches mortes ou dépérissantes",
-      "Chancres sur branches et troncs",
-      "Spores rosées en condition humide"
-    ],
-    "actions": [
-      "Éliminer les parties atteintes et réduire l'humidité",
-      "Éviter les blessures aux plantes",
-      "Appliquer traitements fongicides de contact",
-      "Utiliser semences certifiées saines",
-      "Désinfecter outils de coupe",
-      "Rotation des cultures obligatoire"
-    ],
-    "aliases": ["Anthracnose"]
-  },
-  {
-    "id": "fusariose",
-    "name": "Fusariose (Flétrissement fusarien)",
-    "scientificName": "Fusarium spp.",
-    "affectedPlants": ["Tomate", "Bananier", "Plantes ornementales", "Cacao", "Cotonnier"],
-    "symptoms": [
-      "Jaunissement uni-latéral des feuilles",
-      "Pourriture racinaire ou collet",
-      "Dépérissement progressif de la plante",
-      "Coloration brun-rouge interne du système vasculaire",
-      "Flètrissement soudain lors de chaleurs"
-    ],
-    "actions": [
-      "Utiliser plants sains et sol bien drainé",
-      "Éviter excès d'arrosage",
-      "Rotation des cultures de 3-4 ans minimum",
-      "Désinfection du sol si possible (solarisation)",
-      "Planter variétés résistantes",
-      "Éliminer plants infectés complètement"
-    ],
-    "aliases": ["Fusarium Wilt"]
-  },
-  {
-    "id": "bacterial-wilt",
-    "name": "Flétrissement bactérien",
-    "scientificName": "Ralstonia solanacearum",
-    "affectedPlants": ["Tomate", "Aubergine", "Banane", "Cacao", "Poivre", "Pomme de terre"],
-    "symptoms": [
-      "Flétrissement rapide sans jaunissement du feuillage",
-      "Décoloration marron du tissu vasculaire",
-      "Dépérissement complet de la plante",
-      "Écoulement de sécrétions visqueuses",
-      "Mort soudaine de plantations entières"
-    ],
-    "actions": [
-      "Utiliser plants certifiés sains",
-      "Éviter l'excès d'humidité du sol",
-      "Rotation de cultures obligatoire (au moins 2-3 ans)",
-      "Éliminer plants malades complètement",
-      "Nettoyer et désinfecter tous les outils",
-      "Quarantaine stricte de nouvelles plantations",
-      "Maintenir sol bien drainé"
-    ],
-    "aliases": ["Brown Rot", "Bacterial Wilt"]
-  },
-  {
-    "id": "black-sigatoka",
-    "name": "Sigatoka noir",
-    "scientificName": "Pseudocercospora fijiensis",
-    "affectedPlants": ["Bananier", "Plantain"],
-    "symptoms": [
-      "Petites taches foliaires sombres longues et étroites",
-      "Taches devenant noires progressivement",
-      "Feuilles noircissantes conduisant à perte de rendement",
-      "Défaut de maturation des fruits",
-      "Défoliation complète en absence de traitement"
-    ],
-    "actions": [
-      "Enlever feuilles très atteintes régulièrement",
-      "Améliorer la ventilation des parcelles",
-      "Appliquer traitements fongicides prescrits localement",
-      "Utiliser variétés tolérantes",
-      "Gestion stricte des débris végétaux",
-      "Pulvérisations préventives dès apparition premiers foyers"
-    ],
-    "aliases": ["Black Sigatoka", "Sigatoka Noir"]
-  },
-  {
-    "id": "cassava-mosaic",
-    "name": "Cassava Mosaic Disease",
-    "scientificName": "Geminiviridae",
-    "affectedPlants": ["Manioc"],
-    "symptoms": [
-      "Mosaïque de feuilles (zones chlorotiques)",
-      "Rétrécissement des feuilles",
-      "Retard de croissance et diminution de rendement"
-    ],
-    "actions": [
-      "Planter matériel sain certifié",
-      "Éliminer plants infectés",
-      "Contrôle des vecteurs (insectes)"
-    ],
-    "aliases": []
-  },
-  {
-    "id": "maize-streak",
-    "name": "Maize Streak Virus",
-    "scientificName": "Mastrevirus",
-    "affectedPlants": ["Maïs"],
-    "symptoms": [
-      "Lignes chlorotiques parallèles sur feuilles",
-      "Jaunissement et réduction de la croissance",
-      "Diminution significative du rendement"
-    ],
-    "actions": [
-      "Utiliser variétés résistantes",
-      "Contrôler les cicadelles (vecteurs)",
-      "Retirer plants gravement infectés"
-    ],
-    "aliases": []
-  },
-  {
-    "id": "coffee-leaf-rust",
-    "name": "Rouille du café",
-    "scientificName": "Hemileia vastatrix",
-    "affectedPlants": ["Caféier"],
-    "symptoms": [
-      "Poudre jaune/orange sous les feuilles",
-      "Défoliation avancée et baisse de productivité",
-      "Branches affaiblies"
-    ],
-    "actions": [
-      "Élaguer pour réduire l'humidité",
-      "Planter variétés résistantes si disponible",
-      "Appliquer traitements fongicides selon recommandations"
-    ],
-    "aliases": ["Coffee Leaf Rust"]
-  },
-  {
-    "id": "bacterial-wilt",
-    "name": "Flétrissement bactérien",
-    "scientificName": "Ralstonia solanacearum",
-    "affectedPlants": ["Tomate", "Aubergine", "Banane", "Cacao"],
-    "symptoms": [
-      "Flétrissement rapide sans jaunissement du feuillage",
-      "Décoloration marron du tissu vasculaire",
-      "Dépérissement complet de la plante"
-    ],
-    "actions": [
-      "Utiliser plants certifiés sains",
-      "Éviter l'excès d'humidité du sol",
-      "Rotation de cultures obligatoire",
-      "Éliminer plants malades et nettoyer outils"
-    ],
-    "aliases": ["Brown Rot", "Bacterial Wilt"]
-  },
-  {
-    "id": "early-blight",
-    "name": "Alternariose (Brûlure précoce)",
-    "scientificName": "Alternaria solani",
-    "affectedPlants": ["Tomate", "Pomme de terre", "Aubergine"],
-    "symptoms": [
-      "Petites taches brunes concentriques sur feuilles",
-      "Lésions en cibles avec anneaux nécrotiques",
-      "Feuilles jaunissantes et chute prématurée",
-      "Apparition d'abord sur feuilles basses",
-      "Taches circulaires avec crête noire"
-    ],
-    "actions": [
-      "Améliorer l'aération et réduire l'arrosage par le haut",
-      "Retirer feuilles infra-infectées régulièrement",
-      "Appliquer fongicides préventifs dès début saison",
-      "Désinfecter outils et matériel",
-      "Éviter l'humidité foliaire prolongée",
-      "Paillage pour éviter éclaboussure du sol"
-    ],
-    "aliases": ["Alternaria Blight", "Early Blight"]
-  },
-  {
-    "id": "leaf-spot-fungi",
-    "name": "Tache foliaire fongique",
-    "scientificName": "Cercospora spp., Bipolaris spp.",
-    "affectedPlants": ["Maïs", "Sorgho", "Blé", "Riz"],
-    "symptoms": [
-      "Taches rectangulaires ou circulaires gris-brun",
-      "Centre de tache pâle avec bordure foncée",
-      "Chute des feuilles et réduction de la photosynthèse"
-    ],
-    "actions": [
-      "Choisir variétés résistantes",
-      "Éviter accumulat humidité",
-      "Appliquer fongicides à base de cuivre",
-      "Rotation des cultures sur 2-3 ans"
-    ],
-    "aliases": ["Cercospora Leaf Spot"]
+    "aliases": [
+      "Healthy",
+      "Corn Healthy",
+      "Tomato healthy",
+      "Plante saine"
+    ]
   },
   {
     "id": "cassava-mosaic",
     "name": "Mosaïque du manioc",
-    "scientificName": "Geminiviridae",
-    "affectedPlants": ["Manioc"],
+    "scientificName": "Cassava mosaic virus (CMV / ACMV)",
+    "affectedPlants": [
+      "Manioc"
+    ],
     "symptoms": [
-      "Mosaïque de zones chlorotiques sur feuilles",
-      "Rétrécissement des feuilles",
-      "Retard de croissance important"
+      "Feuilles marbrées de jaune et de vert (mosaïque)",
+      "Feuilles déformées, tordues et plus petites",
+      "Plante rabougrie avec une faible croissance",
+      "Racines de manioc petites et peu nombreuses"
     ],
     "actions": [
-      "Planter boutures certifiées saines",
-      "Éliminer plants infectés",
-      "Contrôle des insectes vecteurs (mouches blanches)",
-      "Quarantaine de nouvelles boutures"
+      "Arrachez et brûlez les plants très atteints",
+      "Plantez uniquement des boutures saines issues de plants sains",
+      "Utilisez des variétés résistantes à la mosaïque si disponibles",
+      "Luttez contre les mouches blanches qui transmettent le virus",
+      "Nettoyez les outils entre chaque champ"
     ],
-    "aliases": ["Cassava Mosaic"]
+    "aliases": [
+      "Cassava Mosaic",
+      "Cassava_Mosaic",
+      "Cassava Mosaic Disease"
+    ]
   },
   {
-    "id": "maize-streak-virus",
+    "id": "corn-brown-spots",
+    "name": "Taches brunes du maïs",
+    "scientificName": "Physoderma maydis / taches foliaires fongiques",
+    "affectedPlants": [
+      "Maïs"
+    ],
+    "symptoms": [
+      "Petites taches brunes à brun-rouge sur les feuilles",
+      "Taches qui se rejoignent quand l'attaque avance",
+      "Feuilles qui sèchent en partant du bas de la plante"
+    ],
+    "actions": [
+      "Enlevez et brûlez les feuilles très tachées",
+      "Évitez d'arroser sur les feuilles, arrosez au pied",
+      "Espacez bien les plants pour que l'air circule",
+      "Faites la rotation avec une culture qui n'est pas du maïs",
+      "Appliquez un fongicide au cuivre si l'attaque est forte"
+    ],
+    "aliases": [
+      "Corn Brown Spots",
+      "Corn_Brown_Spots",
+      "Tache foliaire fongique"
+    ]
+  },
+  {
+    "id": "corn-mildew",
+    "name": "Mildiou du maïs",
+    "scientificName": "Peronosclerospora spp. (mildiou / downy mildew)",
+    "affectedPlants": [
+      "Maïs"
+    ],
+    "symptoms": [
+      "Bandes ou stries jaunes le long des feuilles",
+      "Duvet blanc sur le dessous des feuilles par temps humide",
+      "Plante rabougrie, épis mal formés ou absents"
+    ],
+    "actions": [
+      "Arrachez et détruisez les plants malades dès que possible",
+      "Drainez bien le champ, évitez l'eau stagnante",
+      "Semez des semences traitées et des variétés résistantes",
+      "Faites la rotation des cultures",
+      "Traitez tôt avec un fongicide adapté si l'attaque est forte"
+    ],
+    "aliases": [
+      "Corn Mildew",
+      "Corn_Mildew",
+      "Mildiou du mais"
+    ]
+  },
+  {
+    "id": "corn-streak",
     "name": "Virus de la strie du maïs",
-    "scientificName": "Mastrevirus",
-    "affectedPlants": ["Maïs"],
+    "scientificName": "Maize streak virus (MSV)",
+    "affectedPlants": [
+      "Maïs"
+    ],
     "symptoms": [
-      "Lignes chlorotiques parallèles sur feuilles",
-      "Jaunissement et nécrose des feuilles",
-      "Réduction importante du rendement"
+      "Fines stries jaunes régulières le long des nervures",
+      "Feuilles de plus en plus pâles",
+      "Plante rabougrie si elle est atteinte jeune",
+      "Épis petits ou vides"
     ],
     "actions": [
-      "Utiliser variétés résistantes",
-      "Contrôler cicadelles (vecteurs) avec insecticides",
-      "Retirer plants gravement infectés",
-      "Semer plus tard après 1ère génération cicadelles"
+      "Arrachez et brûlez les plants atteints",
+      "Semez tôt et en même temps que les voisins pour éviter les pics de cicadelles",
+      "Luttez contre les cicadelles qui transmettent le virus",
+      "Utilisez des variétés résistantes au MSV si disponibles",
+      "Enlevez les repousses et les graminées sauvages autour du champ"
     ],
-    "aliases": ["Maize Streak"]
+    "aliases": [
+      "Corn Streak",
+      "Corn_Streak",
+      "Maize Streak Virus"
+    ]
   },
   {
-    "id": "cocoa-frosty-pod",
-    "name": "Frosty Pod Rot du cacao",
-    "scientificName": "Moniliophthora roreri",
-    "affectedPlants": ["Cacao"],
+    "id": "corn-stripe",
+    "name": "Virus des raies du maïs",
+    "scientificName": "Maize stripe virus (MStV)",
+    "affectedPlants": [
+      "Maïs"
+    ],
     "symptoms": [
-      "Pourriture blanche givrée sur gousses",
-      "Désséchement complet des gousses",
-      "Perte totale du rendement de la plante"
+      "Larges raies jaunes et vertes le long de la feuille",
+      "Feuilles centrales qui blanchissent",
+      "Croissance ralentie et plante chétive"
     ],
     "actions": [
-      "Enlever toutes gousses infectées ou mortes",
-      "Maintenir une bonne santé général de la plante",
-      "Améliorer aération en élagage léger",
-      "Utiliser fongicides recommandés"
+      "Arrachez et détruisez les plants malades",
+      "Luttez contre les insectes piqueurs (delphacides, cicadelles)",
+      "Semez tôt et évitez les semis échelonnés",
+      "Enlevez les mauvaises herbes graminées qui abritent le virus",
+      "Choisissez des variétés tolérantes si possible"
     ],
-    "aliases": ["Frosty Pod Rot"]
+    "aliases": [
+      "Corn Stripe",
+      "Corn_Stripe"
+    ]
   },
   {
-    "id": "rice-blast",
-    "name": "Pyriculariose du riz",
-    "scientificName": "Magnaporthe grisea",
-    "affectedPlants": ["Riz"],
+    "id": "corn-yellowing",
+    "name": "Jaunissement du maïs",
+    "scientificName": "Chlorose (carence en azote / excès d'eau)",
+    "affectedPlants": [
+      "Maïs"
+    ],
     "symptoms": [
-      "Lésions spindle-shaped gris-brun",
-      "Ceinturage des tiges et panicules",
-      "Baisse dramatique de rendement"
+      "Feuilles qui jaunissent, souvent en commençant par le bas",
+      "Jaunissement partant de la pointe et du centre de la feuille",
+      "Croissance lente et plante moins vigoureuse"
     ],
     "actions": [
-      "Utiliser variétés résistantes",
-      "Éviter fertilisation azotée excessive",
-      "Appliquer fongicides en début épiaison",
-      "Enlever résidus de culture après moisson"
+      "Apportez de l'engrais azoté (urée ou NPK) selon les besoins",
+      "Vérifiez le drainage : trop d'eau fait jaunir les feuilles",
+      "Ajoutez du compost ou du fumier bien décomposé",
+      "Désherbez pour réduire la concurrence pour les éléments nutritifs",
+      "Arrosez régulièrement mais sans noyer les racines"
     ],
-    "aliases": ["Rice Blast"]
+    "aliases": [
+      "Corn Yellowing",
+      "Corn_Yellowing"
+    ]
   },
   {
-    "id": "citrus-canker",
-    "name": "Chancre bactérien des agrumes",
-    "scientificName": "Xanthomonas citri",
-    "affectedPlants": ["Citrus", "Citron", "Orange"],
+    "id": "corn-leaf-blight",
+    "name": "Helminthosporiose du maïs (brûlure des feuilles)",
+    "scientificName": "Exserohilum turcicum (Northern corn leaf blight)",
+    "affectedPlants": [
+      "Maïs"
+    ],
     "symptoms": [
-      "Lésions surélevées avec auréole jaune",
-      "Ulcérations sur fruits et feuilles",
-      "Défoliation et diminution de productivité"
+      "Longues taches allongées gris-vert à brunes en forme de cigare",
+      "Taches qui grandissent et se rejoignent",
+      "Feuilles qui sèchent comme brûlées, en commençant par le bas"
     ],
     "actions": [
-      "Planter plants indemnes certifiés",
-      "Éviter excès d'humidité foliaire",
-      "Pratiquer élagage sanitaire sévère",
-      "Appliquer cuivre oxychlorure préventvif"
+      "Enlevez et brûlez les feuilles et résidus atteints",
+      "Faites la rotation avec une culture autre que le maïs",
+      "Semez des variétés résistantes à l'helminthosporiose",
+      "Espacez bien les plants pour aérer le feuillage",
+      "Appliquez un fongicide (mancozèbe ou cuivre) dès les premières taches"
     ],
-    "aliases": ["Citrus Canker"]
+    "aliases": [
+      "Corn leaf blight",
+      "Corn_Leaf_Blight",
+      "Corn Leaf Blight",
+      "Brûlure des feuilles du maïs"
+    ]
   },
   {
-    "id": "downy-mildew",
-    "name": "Mildiou blanc",
-    "scientificName": "Plasmopara viticola, Peronospora",
-    "affectedPlants": ["Vigne", "Houblon", "Laitue"],
+    "id": "tomato-early-blight",
+    "name": "Alternariose de la tomate (brûlure précoce)",
+    "scientificName": "Alternaria solani (early blight)",
+    "affectedPlants": [
+      "Tomate"
+    ],
     "symptoms": [
-      "Duvet blanc grisâtre sur face inférieure des feuilles",
-      "Taches huileuses sur face supérieure",
-      "Flétrissement et chute des feuilles"
+      "Taches brunes avec des cercles concentriques (comme une cible)",
+      "Taches d'abord sur les vieilles feuilles du bas",
+      "Halo jaune autour des taches",
+      "Feuilles qui jaunissent et tombent"
     ],
     "actions": [
-      "Améliorer ventilation et aération",
-      "Éviter humidité excessive et rosée prolongée",
-      "Appliquer fongicides à base de cuivre",
-      "Enlever débris infectés"
+      "Enlevez et brûlez les feuilles atteintes du bas",
+      "Arrosez au pied, jamais sur les feuilles",
+      "Paillez le sol pour éviter les éclaboussures de terre",
+      "Faites la rotation, ne remettez pas de tomate au même endroit",
+      "Traitez avec un fongicide au cuivre ou au mancozèbe si nécessaire"
     ],
-    "aliases": ["Downy Mildew"]
+    "aliases": [
+      "Tomato Brown Spots",
+      "Tomato_Brown_Spots",
+      "Alternariose (brûlure précoce)",
+      "Early Blight"
+    ]
   },
   {
-    "id": "scale-insects",
-    "name": "Cochenilles",
-    "scientificName": "Hemiptera - Coccoidea",
-    "affectedPlants": ["Cacao", "Caféier", "Agrumes", "Manguier"],
+    "id": "tomato-late-blight",
+    "name": "Mildiou de la tomate",
+    "scientificName": "Phytophthora infestans (late blight)",
+    "affectedPlants": [
+      "Tomate"
+    ],
     "symptoms": [
-      "Petits insectes écailleux recouvrant branches et feuilles",
-      "Feuilles collantes (miellée)",
-      "Ralentissement croissance et dépérissement"
+      "Grandes taches brunes à noires humides sur les feuilles",
+      "Duvet blanc sous les feuilles par temps humide",
+      "Taches brunes qui pourrissent sur les tiges et les fruits",
+      "La plante peut se dessécher très vite"
     ],
     "actions": [
-      "Nettoyer branches infectées avec brosse",
-      "Appliquer savon insecticide ou huile minérale",
-      "Utiliser insecticides systémiques si nécessaire",
-      "Favoriser insectes prédateurs"
+      "Arrachez et brûlez les plants très atteints tout de suite",
+      "Évitez d'arroser sur les feuilles et le soir",
+      "Espacez les plants et tuteurez pour aérer",
+      "Traitez de façon préventive au cuivre par temps humide",
+      "Ne cultivez pas tomate et pomme de terre côte à côte"
     ],
-    "aliases": ["Scale Insects"]
-  },
-  {
-    "id": "root-knot-nematode",
-    "name": "Nématode des racines",
-    "scientificName": "Meloidogyne spp.",
-    "affectedPlants": ["Tomate", "Aubergine", "Concombre", "Carotte"],
-    "symptoms": [
-      "Nodosités ou renflements sur racines",
-      "Flétrissement des parties aériennes",
-      "Ralentissement de croissance",
-      "Réduction du rendement"
-    ],
-    "actions": [
-      "Rotation des cultures (3-4 ans)",
-      "Planter variétés résistantes",
-      "Améliorer drainage du sol",
-      "Solarisation du sol si possible"
-    ],
-    "aliases": ["Root Knot Nematode"]
-  },
-  {
-    "id": "cotton-leaf-curl",
-    "name": "Recroquevillement de feuille du coton",
-    "scientificName": "Begomovirus",
-    "affectedPlants": ["Cotonnier"],
-    "symptoms": [
-      "Recourbement des bords foliaires",
-      "Jaunissement et chlorose",
-      "Réduction sévère de rendement"
-    ],
-    "actions": [
-      "Contrôler mouches blanches vecteurs",
-      "Planter variétés tolérantes",
-      "Enlever plants fortement infectés",
-      "Appliquer insecticides systémiques"
-    ],
-    "aliases": ["Cotton Leaf Curl"]
-  },
-  {
-    "id": "banana-xanthom",
-    "name": "Flétrissement bactérien de la banane",
-    "scientificName": "Xanthomonas campestris pv. musacearum",
-    "affectedPlants": ["Bananier"],
-    "symptoms": [
-      "Jaunissement des feuilles",
-      "Sécrétion de gouttelettes rougeâtres",
-      "Dépérissement rapide de la plante"
-    ],
-    "actions": [
-      "Utiliser plants de pépinière sain",
-      "Désinfecter les outils de coupe",
-      "Éliminer plants malades complètement",
-      "Quarantaine de nouvelles plantations"
-    ],
-    "aliases": ["Banana Xanthomonas"]
-  },
-  {
-    "id": "bean-anthracnose",
-    "name": "Anthracnose du haricot",
-    "scientificName": "Colletotrichum lindemuthianum",
-    "affectedPlants": ["Haricot", "Pois"],
-    "symptoms": [
-      "Taches circulaires brun foncé sur feuilles",
-      "Lésions sur gousses et graines",
-      "Perte de viabilité des semences"
-    ],
-    "actions": [
-      "Utiliser semences certifiées saines",
-      "Éviter l'humidité foliaire",
-      "Appliquer fongicides en début de culture",
-      "Rotation des cultures obligatoire"
-    ],
-    "aliases": ["Bean Anthracnose"]
-  },
-  {
-    "id": "peanut-aflatoxin",
-    "name": "Aflatoxine de l'arachide",
-    "scientificName": "Aspergillus flavus",
-    "affectedPlants": ["Arachide", "Maïs"],
-    "symptoms": [
-      "Pourriture pré-récolte des gousses",
-      "Contamination de la récolte par moisissures",
-      "Décoloration et décomposition"
-    ],
-    "actions": [
-      "Récolter au moment optimal",
-      "Sécher rapidement et correctement",
-      "Stocker dans endroit sec et frais",
-      "Éviter humidité excessive pendant la culture"
-    ],
-    "aliases": ["Aflatoxin"]
-  },
-  {
-    "id": "whiteflies",
-    "name": "Mouches blanches",
-    "scientificName": "Bemisia tabaci",
-    "affectedPlants": ["Tomate", "Chou", "Courges", "Coton"],
-    "symptoms": [
-      "Jaunissement et taches jaunes sur feuilles",
-      "Miellée (sécrétion collante)",
-      "Transmission de virus"
-    ],
-    "actions": [
-      "Utiliser pièges jaunes pour monitoring",
-      "Appliquer insecticides systémiques",
-      "Utiliser filets anti-insectes si possible",
-      "Contrôler les mauvaises herbes hôtes"
-    ],
-    "aliases": ["Whiteflies"]
-  },
-  {
-    "id": "stem-borer",
-    "name": "Foreurs des tiges",
-    "scientificName": "Lepidoptera - Noctuidae",
-    "affectedPlants": ["Maïs", "Sorgho", "Riz"],
-    "symptoms": [
-      "Larves à l'intérieur des tiges et feuilles",
-      "Trous de sortie visibles sur tiges",
-      "Casse des tiges et flétrissement apical"
-    ],
-    "actions": [
-      "Utiliser plants résistants si disponibles",
-      "Retirer tiges infectées à la main",
-      "Appliquer insecticides au collet",
-      "Enfouir résidus de culture"
-    ],
-    "aliases": ["Stem Borer"]
-  },
-  {
-    "id": "armyworm",
-    "name": "Légionnaire d'automne",
-    "scientificName": "Spodoptera frugiperda",
-    "affectedPlants": ["Maïs", "Sorgho", "Riz", "Coton"],
-    "symptoms": [
-      "Défoliation complète des jeunes plants",
-      "Trous importants dans feuillage",
-      "Mortalité des plantules"
-    ],
-    "actions": [
-      "Monitoring régulier des champs",
-      "Application insecticides en début infestation",
-      "Utiliser pièges à phéromones",
-      "Enfouir résidus de culture"
-    ],
-    "aliases": ["Fall Armyworm", "Légionnaire"]
-  },
-  {
-    "id": "locusts",
-    "name": "Criquets",
-    "scientificName": "Acrididae",
-    "affectedPlants": ["Toutes les cultures", "Herbes"],
-    "symptoms": [
-      "Défoliation totale des cultures",
-      "Destruction complète des feuillages",
-      "Invasions massives rapides"
-    ],
-    "actions": [
-      "Alerte précoce des services agricoles",
-      "Arrosage insecticide aérien si possible",
-      "Creuser fossés barrière",
-      "Couverture du sol avec géotextiles"
-    ],
-    "aliases": ["Locusts", "Criquets"]
-  },
-  {
-    "id": "termites",
-    "name": "Termites",
-    "scientificName": "Isoptera",
-    "affectedPlants": ["Arbres", "Cultures pérennes"],
-    "symptoms": [
-      "Galeries et terriers dans tronc",
-      "Dépérissement progressif des branches",
-      "Chute complète de la plante"
-    ],
-    "actions": [
-      "Badigeon du tronc avec insecticides",
-      "Retrait du bois mort et débris",
-      "Traitement du sol autour du tronc",
-      "Aération du sol pour réduire humidité"
-    ],
-    "aliases": ["Termites", "Termites"]
-  },
-  {
-    "id": "spider-mites",
-    "name": "Acariens",
-    "scientificName": "Acarina",
-    "affectedPlants": ["Cacao", "Tomate", "Courges", "Haricot"],
-    "symptoms": [
-      "Feuilles tachetées et pointillées",
-      "Toiles fines visibles sous feuilles",
-      "Décoloration et desséchement"
-    ],
-    "actions": [
-      "Appliquer savons insecticides",
-      "Utiliser huile minérale ou neem",
-      "Augmenter humidité si possible",
-      "Éviter excès d'azote"
-    ],
-    "aliases": ["Spider Mites", "Acariens"]
-  },
-  {
-    "id": "blight-disease",
-    "name": "Brûlure bactérienne",
-    "scientificName": "Xanthomonas spp.",
-    "affectedPlants": ["Riz", "Tomate", "Poivre"],
-    "symptoms": [
-      "Taches brun-rougeâtre avec bordure jaune",
-      "Encroûtement et perforations",
-      "Dépérissement du feuillage"
-    ],
-    "actions": [
-      "Utiliser graines certifiées saines",
-      "Éviter l'humidité excessive",
-      "Appliquer cuivre oxychlorure",
-      "Rotation cultures sur 2 ans"
-    ],
-    "aliases": ["Blight", "Bacterial Blight"]
-  },
-  {
-    "id": "damping-off",
-    "name": "Fonte des semis",
-    "scientificName": "Pythium, Rhizoctonia",
-    "affectedPlants": ["Tomate", "Poivron", "Chou", "Haricot"],
-    "symptoms": [
-      "Dépérissement de plantules à la surface du sol",
-      "Noircissement du collet",
-      "Mort des jeunes plantes après levée"
-    ],
-    "actions": [
-      "Utiliser terreau désinfecté",
-      "Améliorer drainage et aération",
-      "Éviter surhumidité",
-      "Arroser modérément avec eau claire"
-    ],
-    "aliases": ["Damping Off"]
+    "aliases": [
+      "Tomato blight leaf",
+      "Tomato_Blight_Leaf",
+      "Mildiou",
+      "Late Blight"
+    ]
   }
 ]
