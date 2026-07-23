@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class FrenchLabelTranslator {
@@ -29,7 +30,7 @@ class FrenchLabelTranslator {
         };
       }
     } catch (e) {
-      print('Erreur lors du chargement des labels français: $e');
+      debugPrint('Erreur lors du chargement des labels français: $e');
       _translationMap = {};
     }
   }
@@ -38,7 +39,7 @@ class FrenchLabelTranslator {
   /// Returns a map with 'plante' and 'maladie' keys
   Map<String, String>? getTranslation(String originalLabel) {
     if (_translationMap == null) {
-      print('Translator not initialized. Call initialize() first.');
+      debugPrint('Translator not initialized. Call initialize() first.');
       return null;
     }
     return _translationMap![originalLabel];

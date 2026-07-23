@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/scan_result_model.dart';
 import 'user_scope.dart';
@@ -38,9 +39,25 @@ class HistoryService {
       final content = await file.readAsString();
       final List<dynamic> jsonList = jsonDecode(content);
       _cache = jsonList.map((e) => ScanResultModel.fromJson(e)).toList();
-    } catch (_) {
+    } catch (e, st) {
+      // Historique corrompu : on repart sur une liste vide plutôt que de
+      // planter, mais on trace l'erreur pour pouvoir diagnostiquer un
+      // fichier illisible plutôt que de la masquer silencieusement.
+      debugPrint('HistoryService: échec du chargement de $_fileName, historique vidé: $e');
+      debugPrint('$st');
       _cache = [];
     }
+  }
+
+  /// Notifie les abonnés d'un changement. Le [StreamController] ne lève que
+  /// s'il a déjà été fermé ; on garde donc ce cas sous contrôle explicitement
+  /// au lieu d'avaler toutes les exceptions.
+  void _notifyChanged() {
+    if (_onChanged.isClosed) {
+      debugPrint('HistoryService: notification ignorée, le stream est fermé.');
+      return;
+    }
+    _onChanged.add(null);
   }
 
   Future<List<ScanResultModel>> getAllScans() async {
@@ -59,9 +76,7 @@ class HistoryService {
     await _ensureLoaded();
     _cache.add(scan);
     await _save();
-    try {
-      _onChanged.add(null);
-    } catch (_) {}
+    _notifyChanged();
   }
 
   Future<void> _save() async {
@@ -120,18 +135,14 @@ class HistoryService {
     await _ensureLoaded();
     _cache.removeWhere((scan) => scan.id == scanId);
     await _save();
-    try {
-      _onChanged.add(null);
-    } catch (_) {}
+    _notifyChanged();
   }
 
   /// Clear all scans from history
   Future<void> clearAll() async {
     _cache = [];
     await _save();
-    try {
-      _onChanged.add(null);
-    } catch (_) {}
+    _notifyChanged();
   }
 }
 

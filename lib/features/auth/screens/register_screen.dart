@@ -117,7 +117,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             listen: false,
           ).setCurrentUserFromService(stored);
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('RegisterScreen: échec de la mise à jour du provider auth: $e');
+      }
       setState(() => _isLoading = false);
       context.go('/home');
     });

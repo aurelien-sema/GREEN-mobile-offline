@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:tflite_flutter/tflite_flutter.dart';
@@ -43,9 +43,9 @@ class TFLiteService {
       }
 
       _isModelLoaded = true;
-      print('TFLite Model loaded successfully ($outputClasses classes)');
+      debugPrint('TFLite Model loaded successfully ($outputClasses classes)');
     } catch (e) {
-      print('Error loading TFLite model: $e');
+      debugPrint('Error loading TFLite model: $e');
       rethrow;
     }
   }
@@ -171,7 +171,7 @@ class TFLiteService {
       return null;
 
     } catch (e) {
-      print('Error during inference: $e');
+      debugPrint('Error during inference: $e');
       return null;
     }
   }
