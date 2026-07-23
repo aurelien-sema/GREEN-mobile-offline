@@ -42,7 +42,10 @@ class UserModel {
 class AuthService {
   static const _fileName = 'users.json';
   List<UserModel> _users = [];
-  static const _pbkdf2Iterations = 10000;
+  // OWASP recommande >= 210 000 itérations pour PBKDF2-HMAC-SHA256.
+  // La vérification lit le nombre d'itérations stocké dans chaque hash, donc
+  // augmenter cette constante reste rétro-compatible avec les hash existants.
+  static const _pbkdf2Iterations = 210000;
   static const _saltLength = 16;
 
   Future<File> _getFile() async {

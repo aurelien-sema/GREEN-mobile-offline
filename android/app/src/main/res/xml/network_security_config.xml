@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Le trafic en clair (HTTP) est refusé par défaut : tout le trafic de
+         production (Gemini, OpenWeatherMap) passe par HTTPS. -->
+    <base-config cleartextTrafficPermitted="false" />
+
+    <!-- Exception limitée au backend local optionnel (voir backend_example.py) :
+         localhost, boucle locale et l'hôte de l'émulateur Android. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>
