@@ -22,12 +22,16 @@ from pathlib import Path
 app = FastAPI(title="Green App Backend", version="1.0.0")
 
 # CORS Configuration
+# Note: Starlette n'interprète PAS les jokers (*) dans allow_origins comme des
+# motifs — utiliser allow_origin_regex pour autoriser localhost/LAN en dev.
+# On évite aussi allow_methods/allow_headers=["*"] combinés à allow_credentials,
+# qui reviendrait à accepter n'importe quelle requête authentifiée cross-origin.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:*", "http://192.168.1.*", "http://127.0.0.1:*"],
+    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3})(:\d+)?$",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # Models Pydantic
@@ -67,15 +71,24 @@ async def detect_disease(file: UploadFile = File(...)):
     """
     Détecte les maladies des plantes à partir d'une image.
     """
-    if not file.content_type.startswith('image/'):
+    if not file.content_type or not file.content_type.startswith('image/'):
         raise HTTPException(status_code=400, detail="Format de fichier invalide")
     
     try:
         # Sauvegarder l'image
-        upload_dir = Path("uploads")
+        upload_dir = Path("uploads").resolve()
         upload_dir.mkdir(exist_ok=True)
         
-        filepath = upload_dir / file.filename
+        # Ne jamais faire confiance au nom de fichier fourni par le client :
+        # `os.path.basename` supprime toute composante de chemin (../, chemins
+        # absolus) pour éviter une écriture arbitraire hors de `uploads/`.
+        safe_name = os.path.basename(file.filename or "")
+        if not safe_name or safe_name in (".", ".."):
+            raise HTTPException(status_code=400, detail="Nom de fichier invalide")
+        filepath = (upload_dir / safe_name).resolve()
+        # Défense en profondeur : vérifier que la cible reste dans `uploads/`.
+        if upload_dir not in filepath.parents:
+            raise HTTPException(status_code=400, detail="Nom de fichier invalide")
         with open(filepath, "wb") as f:
             f.write(await file.read())
         
@@ -99,6 +112,8 @@ async def detect_disease(file: UploadFile = File(...)):
         detection_history.append(result.dict())
         return result
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
