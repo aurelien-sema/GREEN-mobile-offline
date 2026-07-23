@@ -16,4 +16,18 @@ extension ContextExtensions on BuildContext {
   EdgeInsets get devicePadding => MediaQuery.of(this).padding;
 
   EdgeInsets get deviceViewInsets => MediaQuery.of(this).viewInsets;
+
+  /// Affiche un [SnackBar] simple contenant [message].
+  ///
+  /// Centralise le motif répété
+  /// `ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(...)))`.
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason> showSnackBarMessage(
+    String message, {
+    SnackBarAction? action,
+    Duration duration = const Duration(seconds: 4),
+  }) {
+    return ScaffoldMessenger.of(this).showSnackBar(
+      SnackBar(content: Text(message), action: action, duration: duration),
+    );
+  }
 }

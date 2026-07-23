@@ -13,6 +13,7 @@ import '../../../shared/widgets/app_pop_scope.dart';
 import '../../../shared/widgets/cart_icon_button.dart';
 import '../../../providers/cart_provider.dart';
 import 'seller_chat_screen.dart';
+import '../../../core/extensions/context_extensions.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final String productId;
@@ -517,11 +518,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void _addToCart(BuildContext context, ProductModel product) {
     context.read<CartProvider>().addItem(product, quantity: _quantity);
     final t = context.read<LocaleProvider>().t;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${product.name} ${t('addedToCartSuffix')} ($_quantity)'),
-        action: SnackBarAction(label: t('viewCart'), onPressed: () => context.push('/cart')),
-      ),
+    context.showSnackBarMessage(
+      '${product.name} ${t('addedToCartSuffix')} ($_quantity)',
+      action: SnackBarAction(label: t('viewCart'), onPressed: () => context.push('/cart')),
     );
   }
 }

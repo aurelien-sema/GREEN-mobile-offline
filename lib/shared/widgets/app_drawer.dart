@@ -6,6 +6,7 @@ import '../../core/constants/app_constants.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../core/extensions/context_extensions.dart';
 
 class AppDrawer extends StatelessWidget {
   final VoidCallback? onThemeToggle;
@@ -200,9 +201,7 @@ class AppDrawer extends StatelessWidget {
               title: t('help'),
               onTap: () {
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(t('helpCenterComingSoon'))),
-                );
+                context.showSnackBarMessage(t('helpCenterComingSoon'));
               },
               isDarkMode: isDarkMode,
             ),
@@ -338,9 +337,7 @@ class AppDrawer extends StatelessWidget {
         await localeProvider.setLocale(code);
         if (!context.mounted) return;
         Navigator.pop(context);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
+        context.showSnackBarMessage(message);
       },
     );
   }
