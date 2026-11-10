@@ -10,11 +10,15 @@ class ChatMessage {
   final String content;
   final DateTime timestamp;
 
+  /// 'text' ou 'voice' (message dicté puis transcrit par Gemini).
+  final String kind;
+
   ChatMessage({
     String? id,
     required this.role,
     required this.content,
     DateTime? timestamp,
+    this.kind = 'text',
   })  : id = id ?? const Uuid().v4(),
         timestamp = timestamp ?? DateTime.now();
 
@@ -25,6 +29,7 @@ class ChatMessage {
         timestamp: json['timestamp'] != null
             ? DateTime.parse(json['timestamp'] as String)
             : DateTime.now(),
+        kind: (json['kind'] as String?) ?? 'text',
       );
 
   Map<String, dynamic> toJson() => {
@@ -32,6 +37,7 @@ class ChatMessage {
         'role': role,
         'content': content,
         'timestamp': timestamp.toIso8601String(),
+        'kind': kind,
       };
 }
 
@@ -190,6 +196,18 @@ class ChatHistoryService {
 
   /// Get current session
   ChatSession? getCurrentSession() => _currentSession;
+
+  /// Suppression du compte : efface toutes ses conversations.
+  Future<void> deleteAllFor(String userId) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final f = File('${dir.path}/chat_history_$userId.json');
+    if (await f.exists()) await f.delete();
+    if (_loadedForUserId == userId) {
+      _sessions = [];
+      _currentSession = null;
+      _loaded = false;
+    }
+  }
 
   /// Clear current session (for new chat)
   Future<void> clearCurrentSession() async {

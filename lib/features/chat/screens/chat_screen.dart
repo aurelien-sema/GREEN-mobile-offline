@@ -1,25 +1,45 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../services/gemini/gemini_service.dart';
-import '../../../services/chat_history_service.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../providers/locale_provider.dart';
-import '../../../shared/models/message.dart';
-import '../../../shared/widgets/animated_chat_message.dart';
-import '../../../shared/widgets/gradient_background.dart';
-import '../../../shared/widgets/animation_effects.dart';
-import '../../../shared/widgets/custom_scroll_physics.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
 
+import '../../../providers/auth_provider.dart';
+import '../../../providers/locale_provider.dart';
+import '../../../services/chat_history_service.dart';
+import '../../../services/gemini/gemini_service.dart';
+import '../../../shared/ui/ui.dart';
+import '../../../shared/widgets/custom_app_bar.dart';
+import '../../../utils/date_formatter.dart';
+import '../widgets/voice_record_button.dart';
+
+class _Msg {
+  final String id;
+  final String text;
+  final bool isUser;
+  final bool isVoice;
+  final bool isError;
+  final DateTime at;
+  const _Msg({
+    required this.id,
+    required this.text,
+    required this.isUser,
+    required this.at,
+    this.isVoice = false,
+    this.isError = false,
+  });
+}
+
+/// GreenBot.
+///
+/// - Messages écrits ou vocaux : le bouton micro (maintien, ou glissé vers le
+///   haut pour verrouiller) enregistre ; à l'arrêt, le vocal est transcrit
+///   par Gemini, affiché comme message de l'utilisateur, puis GreenBot répond.
+/// - Barre de saisie toujours visible au-dessus du clavier et de la barre
+///   de navigation (elle était masquée par la barre flottante en v1).
 class ChatScreen extends StatefulWidget {
   final String? initialMessage;
   final String? cacheKey;
   final bool autoSend;
+
   const ChatScreen({super.key, this.initialMessage, this.cacheKey, this.autoSend = true});
 
   @override
@@ -27,567 +47,570 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  late TextEditingController _messageController;
-  late ScrollController _scrollController;
-  final List<Message> _messages = [];
-  bool _isLoading = false;
-  List<ChatSession> _sessions = [];
+  final _input = TextEditingController();
+  final _scroll = ScrollController();
+  final _voice = VoiceRecordController();
+  final List<_Msg> _messages = [];
+  bool _thinking = false;
+  bool _transcribing = false;
 
   @override
   void initState() {
     super.initState();
-    _messageController = TextEditingController();
-    _scrollController = ScrollController();
-    _loadSessions();
-    
-    if (widget.initialMessage != null && widget.initialMessage!.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _messageController.text = widget.initialMessage!;
-        if (widget.autoSend) {
-          _sendMessage(cacheKey: widget.cacheKey);
-        }
-      });
-    } else {
-      _fetchInitialGreeting();
+    _input.addListener(() => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreCurrent());
+  }
+
+  @override
+  void didUpdateWidget(ChatScreen old) {
+    super.didUpdateWidget(old);
+    // Nouvelle question envoyée depuis une fiche terrain alors que l'onglet
+    // GreenBot était déjà ouvert.
+    if (widget.initialMessage != null && widget.initialMessage != old.initialMessage) {
+      _startFromPrompt();
     }
   }
 
   @override
   void dispose() {
-    _messageController.dispose();
-    _scrollController.dispose();
+    _input.dispose();
+    _scroll.dispose();
+    _voice.dispose();
     super.dispose();
   }
 
-  Future<void> _loadSessions() async {
-    final sessions = await chatHistoryService.getAllSessions();
-    if (mounted) {
-      setState(() => _sessions = sessions);
+  Future<void> _restoreCurrent() async {
+    if (widget.initialMessage != null && widget.initialMessage!.isNotEmpty) {
+      await _startFromPrompt();
+      return;
     }
+    final current = chatHistoryService.getCurrentSession();
+    if (current != null) _showSession(current);
   }
 
-  Future<void> _startNewChat() async {
-    // ignore: unused_local_variable
-    final session = await chatHistoryService.createNewSession();
-    if (mounted) {
-      setState(() {
-        _messages.clear();
-        _loadSessions();
-      });
-      _fetchInitialGreeting();
-    }
-  }
-
-  Future<void> _loadSession(String sessionId) async {
-    await chatHistoryService.switchToSession(sessionId);
-    final session = await chatHistoryService.getSessionById(sessionId);
+  Future<void> _startFromPrompt() async {
+    await chatHistoryService.createNewSession();
     if (!mounted) return;
-    if (session != null) {
-      setState(() {
-        _messages.clear();
-        _messages.addAll(
-          session.messages.map(
-            (msg) => Message(
-              id: msg.id,
-              content: msg.content,
-              isUser: msg.role == 'user',
-              timestamp: msg.timestamp,
-            ),
-          ),
-        );
-      });
-      _scrollToBottom();
+    setState(_messages.clear);
+    if (widget.autoSend) {
+      await _send(widget.initialMessage!, cacheKey: widget.cacheKey);
+    } else {
+      _input.text = widget.initialMessage!;
     }
-    Navigator.pop(context); // Close drawer
   }
 
-  /// Supprime une session et, si c'est celle actuellement affichée à
-  /// l'écran, réinitialise la conversation visible pour éviter qu'elle ne
-  /// continue d'apparaître (alors qu'elle n'existe plus en stockage) puis
-  /// ne soit re-persistée par erreur dans une nouvelle session au prochain
-  /// message envoyé.
-  Future<void> _deleteSession(ChatSession session) async {
-    final wasCurrent = chatHistoryService.getCurrentSession()?.id == session.id;
-    await chatHistoryService.deleteSession(session.id);
-    if (!mounted) return;
-    if (wasCurrent) {
-      setState(() => _messages.clear());
-      await chatHistoryService.clearCurrentSession();
-    }
-    await _loadSessions();
-  }
-
-  Future<void> _fetchInitialGreeting() async {
-    // Message d'accueil par défaut désactivé
-    // Les utilisateurs peuvent maintenant commencer une conversation vierge
-  }
-
-  void _sendMessage({String? cacheKey}) {
-    if (_messageController.text.isEmpty) return;
-
-    final userMessage = Message(
-      id: DateTime.now().toString(),
-      content: _messageController.text,
-      isUser: true,
-      timestamp: DateTime.now(),
-    );
-    final translate = context.read<LocaleProvider>().t;
-
+  void _showSession(ChatSession s) {
     setState(() {
-      _messages.add(userMessage);
-      _isLoading = true;
+      _messages
+        ..clear()
+        ..addAll(s.messages.map((m) => _Msg(
+              id: m.id,
+              text: m.content,
+              isUser: m.role == 'user',
+              isVoice: m.kind == 'voice',
+              at: m.timestamp,
+            )));
     });
+    _toBottom(jump: true);
+  }
 
-    _messageController.clear();
-    _scrollToBottom();
+  void _toBottom({bool jump = false}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scroll.hasClients) return;
+      final target = _scroll.position.maxScrollExtent;
+      if (jump || MediaQuery.of(context).disableAnimations) {
+        _scroll.jumpTo(target);
+      } else {
+        _scroll.animateTo(target, duration: const Duration(milliseconds: 250), curve: Easing.standard);
+      }
+    });
+  }
 
-    // Persist user message to chat history
-    () async {
+  String _errorText(Object e, String Function(String) t) {
+    final code = e is GreenBotException ? e.code : 'unknown';
+    return switch (code) {
+      'no-key' => t('serviceUnavailableMessage'),
+      'network' => t('networkErrorMessage'),
+      'quota' => t('botQuotaMessage'),
+      'busy' => t('botBusyMessage'),
+      'blocked' => t('botBlockedMessage'),
+      _ => t('genericErrorMessage'),
+    };
+  }
+
+  Future<void> _send(String raw, {String? cacheKey, bool isVoice = false}) async {
+    final text = raw.trim();
+    if (text.isEmpty || _thinking) return;
+    final l = context.read<LocaleProvider>();
+    final history = _messages.where((m) => !m.isError).map((m) => (isUser: m.isUser, text: m.text)).toList();
+    final userMsg = _Msg(id: UniqueKey().toString(), text: text, isUser: true, isVoice: isVoice, at: DateTime.now());
+    setState(() {
+      _messages.add(userMsg);
+      _thinking = true;
+    });
+    _input.clear();
+    _toBottom();
+    await chatHistoryService.addMessageToCurrentSession(
+      ChatMessage(role: 'user', content: text, timestamp: userMsg.at, kind: isVoice ? 'voice' : 'text'),
+    );
+
+    try {
+      final answer = cacheKey != null
+          ? await geminiService.adviceWithCache(text, cacheKey, language: l.locale)
+          : await geminiService.reply(text, history: history, language: l.locale);
+      final botMsg = _Msg(id: UniqueKey().toString(), text: answer, isUser: false, at: DateTime.now());
       await chatHistoryService.addMessageToCurrentSession(
-        ChatMessage(
-          role: 'user',
-          content: userMessage.content,
-          timestamp: userMessage.timestamp,
-        ),
+        ChatMessage(role: 'assistant', content: answer, timestamp: botMsg.at),
       );
-
-      try {
-        final connectivity = await Connectivity().checkConnectivity();
-        if (connectivity == ConnectivityResult.none) {
-          final offlineMsg = Message(
-            id: DateTime.now().toString(),
-            content: translate('offlineChatMessage'),
-            isUser: false,
-            timestamp: DateTime.now(),
-          );
-
-          if (mounted) {
-            setState(() {
-              _messages.add(offlineMsg);
-              _isLoading = false;
-            });
-            _scrollToBottom();
-          }
-          return;
-        }
-
-        String response;
-        if (cacheKey != null) {
-          response = await geminiService.getAdviceWithCache(
-            userMessage.content,
-            cacheKey,
-          );
-        } else {
-          // Préparer l'historique du chat pour le contexte
-          final chatHistoryForContext = _messages
-              .map((msg) => {
-                    'role': msg.isUser ? 'user' : 'assistant',
-                    'content': msg.content,
-                  })
-              .toList();
-          
-          response = await geminiService.generateResponseWithContext(
-            userMessage.content,
-            chatHistoryForContext,
-          );
-        }
-        final aiResponse = Message(
-          id: DateTime.now().toString(),
-          content: response,
-          isUser: false,
-          timestamp: DateTime.now(),
-        );
-
-        // Persist AI response
-        await chatHistoryService.addMessageToCurrentSession(
-          ChatMessage(
-            role: 'assistant',
-            content: response,
-            timestamp: aiResponse.timestamp,
-          ),
-        );
-
-        // Update session title if this is the first response
-        final current = chatHistoryService.getCurrentSession();
-        if (current != null && current.messages.length == 2) {
-          final titlePreview =
-              userMessage.content.length > 30
-                  ? '${userMessage.content.substring(0, 30)}...'
-                  : userMessage.content;
-          await chatHistoryService
-              .updateCurrentSessionTitle(titlePreview);
-        }
-
-        if (mounted) {
-          setState(() {
-            _messages.add(aiResponse);
-            _isLoading = false;
-          });
-          _scrollToBottom();
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() {
-            _messages.add(
-              Message(
-                id: DateTime.now().toString(),
-                content:
-                    _buildFriendlyErrorMessage(e, translate),
-                isUser: false,
-                timestamp: DateTime.now(),
-              ),
-            );
-            _isLoading = false;
-          });
-          _scrollToBottom();
-        }
+      final current = chatHistoryService.getCurrentSession();
+      if (current != null && current.messages.length <= 2) {
+        await chatHistoryService.updateCurrentSessionTitle(text.length > 40 ? '${text.substring(0, 40)}…' : text);
       }
-    }();
+      if (!mounted) return;
+      setState(() {
+        _messages.add(botMsg);
+        _thinking = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _messages.add(_Msg(id: UniqueKey().toString(), text: _errorText(e, l.t), isUser: false, isError: true, at: DateTime.now()));
+        _thinking = false;
+      });
+    }
+    _toBottom();
   }
 
-  String _buildFriendlyErrorMessage(Object error, String Function(String) t) {
-    final message = error.toString().toLowerCase();
-    if (message.contains('network') || message.contains('socket') || message.contains('connection')) {
-      return t('networkErrorMessage');
+  Future<void> _onVoice(Uint8List wav) async {
+    final l = context.read<LocaleProvider>();
+    setState(() => _transcribing = true);
+    _toBottom();
+    try {
+      final transcript = await geminiService.transcribe(wav, language: l.locale);
+      if (!mounted) return;
+      setState(() => _transcribing = false);
+      if (transcript.inaudible) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l.t('voiceInaudible'))));
+        return;
+      }
+      await _send(transcript.text, isVoice: true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _transcribing = false;
+        _messages.add(_Msg(id: UniqueKey().toString(), text: _errorText(e, l.t), isUser: false, isError: true, at: DateTime.now()));
+      });
+      _toBottom();
     }
-    if (message.contains('api') || message.contains('key') || message.contains('forbidden')) {
-      return t('serviceUnavailableMessage');
-    }
-    return '${t('aiServiceErrorPrefix')}: ${t('genericErrorMessage')}';
   }
 
-  // Removed predefined responses: Gemini is now the only source of replies when online.
+  void _snack(String key) {
+    final t = context.read<LocaleProvider>().t;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(t(key)), duration: const Duration(seconds: 2)));
+  }
 
-  void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: AppConstants.animationNormal,
-          curve: Curves.easeOut,
-        );
-      }
-    });
+  Future<void> _newChat() async {
+    await chatHistoryService.createNewSession();
+    if (mounted) setState(_messages.clear);
+  }
+
+  Future<void> _openSessions() async {
+    final t = context.read<LocaleProvider>().t;
+    final locale = context.read<LocaleProvider>().locale;
+    final sessions = await chatHistoryService.getAllSessions();
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.92,
+        builder: (ctx, scroll) => StatefulBuilder(
+          builder: (ctx, setSheet) => sessions.isEmpty
+              ? EmptyState(icon: Icons.forum_outlined, title: t('noDiscussionYet'))
+              : ListView.builder(
+                  controller: scroll,
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 24),
+                  itemCount: sessions.length + 1,
+                  itemBuilder: (ctx, i) {
+                    if (i == 0) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                        child: Text(t('conversations'), style: Theme.of(ctx).textTheme.titleLarge),
+                      );
+                    }
+                    final s = sessions[i - 1];
+                    final active = chatHistoryService.getCurrentSession()?.id == s.id;
+                    return ListTile(
+                      selected: active,
+                      leading: const Icon(Icons.chat_bubble_outline_rounded),
+                      title: Text(s.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      subtitle: Text(formatDateTime(s.updatedAt, locale)),
+                      onTap: () async {
+                        await chatHistoryService.switchToSession(s.id);
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        _showSession(s);
+                      },
+                      trailing: IconButton(
+                        tooltip: t('delete'),
+                        icon: const Icon(Icons.delete_outline_rounded),
+                        onPressed: () async {
+                          final wasActive = active;
+                          await chatHistoryService.deleteSession(s.id);
+                          setSheet(() => sessions.removeWhere((x) => x.id == s.id));
+                          if (wasActive && mounted) setState(_messages.clear);
+                        },
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
     final t = context.watch<LocaleProvider>().t;
+    final user = context.watch<AuthProvider>().currentUser;
+    final busy = _thinking || _transcribing;
 
     return Scaffold(
-      backgroundColor: isDarkMode
-          ? AppColors.darkBackground
-          : AppColors.lightBackground,
       appBar: CustomAppBar(
         title: t('greenBot'),
-        isDarkMode: isDarkMode,
         showProfileIcon: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _startNewChat,
-            tooltip: t('newDiscussion'),
+          IconButton(tooltip: t('chatHistory'), onPressed: _openSessions, icon: const Icon(Icons.forum_outlined)),
+          IconButton(tooltip: t('newDiscussion'), onPressed: busy ? null : _newChat, icon: const Icon(Icons.add_comment_outlined)),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: _messages.isEmpty && !busy
+                ? _Welcome(onPick: (q) => _send(q), userName: (user?.name ?? '').split(' ').first)
+                : ListView.builder(
+                    controller: _scroll,
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                    itemCount: _messages.length + (busy ? 1 : 0),
+                    itemBuilder: (context, i) {
+                      if (i == _messages.length) {
+                        return _TypingBubble(label: t(_transcribing ? 'transcribing' : 'greenBotTyping'));
+                      }
+                      final m = _messages[i];
+                      return _Bubble(msg: m, voiceLabel: t('voiceMessage'));
+                    },
+                  ),
+          ),
+          _Composer(
+            input: _input,
+            voice: _voice,
+            busy: busy,
+            t: t,
+            onSend: () => _send(_input.text),
+            onVoice: _onVoice,
+            onPermissionDenied: () => _snack('micPermissionDenied'),
+            onPermissionGranted: () => _snack('micPermissionGranted'),
+            onTooShort: () => _snack('holdToRecord'),
           ),
         ],
       ),
-      drawer: Drawer(
-        child: Container(
-          color: isDarkMode
-              ? AppColors.darkBackground
-              : AppColors.lightBackground,
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
+    );
+  }
+}
+
+class _Composer extends StatelessWidget {
+  final TextEditingController input;
+  final VoiceRecordController voice;
+  final bool busy;
+  final String Function(String) t;
+  final VoidCallback onSend;
+  final ValueChanged<Uint8List> onVoice;
+  final VoidCallback onPermissionDenied;
+  final VoidCallback onPermissionGranted;
+  final VoidCallback onTooShort;
+
+  const _Composer({
+    required this.input,
+    required this.voice,
+    required this.busy,
+    required this.t,
+    required this.onSend,
+    required this.onVoice,
+    required this.onPermissionDenied,
+    required this.onPermissionGranted,
+    required this.onTooShort,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final hasText = input.text.trim().isNotEmpty;
+    return Material(
+      color: scheme.surface,
+      elevation: 2,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          child: ListenableBuilder(
+            listenable: voice,
+            builder: (context, _) => Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: voice.isRecording
+                      ? RecordingBar(controller: voice, slideToCancel: t('slideToCancel'), cancelTooltip: t('cancel'))
+                      : TextField(
+                          controller: input,
+                          enabled: !busy,
+                          minLines: 1,
+                          maxLines: 5,
+                          keyboardType: TextInputType.multiline,
+                          textCapitalization: TextCapitalization.sentences,
+                          textInputAction: TextInputAction.newline,
+                          inputFormatters: [LengthLimitingTextInputFormatter(1500)],
+                          decoration: InputDecoration(
+                            hintText: t('askYourQuestion'),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(26)),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(26),
+                              borderSide: BorderSide(color: scheme.outlineVariant),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(26),
+                              borderSide: BorderSide(color: scheme.primary, width: 2),
+                            ),
+                          ),
+                        ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: Center(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 150),
+                      transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                      child: hasText && !voice.isRecording
+                          ? IconButton.filled(
+                              key: const ValueKey('send'),
+                              tooltip: t('send'),
+                              iconSize: 24,
+                              style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+                              onPressed: busy ? null : onSend,
+                              icon: const Icon(Icons.send_rounded),
+                            )
+                          : VoiceRecordButton(
+                              key: const ValueKey('mic'),
+                              controller: voice,
+                              enabled: !busy,
+                              tooltip: t('voiceButtonHint'),
+                              onRecorded: onVoice,
+                              onPermissionDenied: onPermissionDenied,
+                              onPermissionGranted: onPermissionGranted,
+                              onTooShort: onTooShort,
+                            ),
                     ),
                   ),
                 ),
-                child: SafeArea(
-                  bottom: false,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Bubble extends StatelessWidget {
+  final _Msg msg;
+  final String voiceLabel;
+  const _Bubble({required this.msg, required this.voiceLabel});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final user = msg.isUser;
+    final bg = msg.isError
+        ? scheme.errorContainer
+        : user
+            ? scheme.primary
+            : scheme.surfaceContainerHigh;
+    final fg = msg.isError
+        ? scheme.onErrorContainer
+        : user
+            ? scheme.onPrimary
+            : scheme.onSurface;
+    return Align(
+      alignment: user ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.82),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: Radius.circular(user ? 18 : 4),
+              bottomRight: Radius.circular(user ? 4 : 18),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (msg.isVoice)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
-                        ),
-                        child: Icon(
-                          Icons.history,
-                          color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: AppConstants.paddingMedium),
-                      Text(
-                        t('history'),
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      Icon(Icons.mic_rounded, size: 14, color: fg.withValues(alpha: 0.8)),
+                      const SizedBox(width: 4),
+                      Text(voiceLabel, style: theme.textTheme.labelSmall?.copyWith(color: fg.withValues(alpha: 0.8))),
                     ],
                   ),
                 ),
-              ),
-              Expanded(
-                child: _sessions.isEmpty
-                    ? Center(
-                        child: Text(
-                          t('noDiscussionYet'),
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                        itemCount: _sessions.length,
-                        itemBuilder: (context, idx) {
-                          final session = _sessions[idx];
-                          final isActive =
-                              chatHistoryService.getCurrentSession()?.id ==
-                                  session.id;
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: AppConstants.paddingSmall),
-                            decoration: BoxDecoration(
-                              color: isActive
-                                  ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
-                                  : (isDarkMode ? AppColors.darkSurface : AppColors.lightSurface),
-                              borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                              border: Border.all(
-                                color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
-                              ),
-                            ),
-                            child: ListTile(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                              ),
-                              leading: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
-                                ),
-                                child: Icon(
-                                  Icons.chat_bubble_outline,
-                                  size: 18,
-                                  color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                                ),
-                              ),
-                              title: Text(
-                                session.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontWeight: isActive
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                                ),
-                              ),
-                              subtitle: Text(
-                                '${session.messages.length} messages',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                                ),
-                              ),
-                              onTap: () => _loadSession(session.id),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 20),
-                                onPressed: () => _deleteSession(session),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+              SelectableText(msg.text, style: theme.textTheme.bodyLarge?.copyWith(color: fg)),
+              const SizedBox(height: 2),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Text(formatTime(msg.at), style: theme.textTheme.labelSmall?.copyWith(color: fg.withValues(alpha: 0.7))),
               ),
             ],
           ),
         ),
       ),
-      body: GradientBackground(
-        isDarkMode: isDarkMode,
-        opacity: 0.08,
-        child: SafeArea(
-          child: Column(
+    );
+  }
+}
+
+/// Indicateur « GreenBot écrit… » : trois points qui pulsent doucement
+/// (désactivé si les animations sont coupées dans l'accessibilité).
+class _TypingBubble extends StatefulWidget {
+  final String label;
+  const _TypingBubble({required this.label});
+
+  @override
+  State<_TypingBubble> createState() => _TypingBubbleState();
+}
+
+class _TypingBubbleState extends State<_TypingBubble> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.of(context).disableAnimations) {
+      _c.stop();
+    } else if (!_c.isAnimating) {
+      _c.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        liveRegion: true,
+        label: widget.label,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(color: scheme.surfaceContainerHigh, borderRadius: BorderRadius.circular(18)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Messages List
-              Expanded(
-                child: _messages.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 88,
-                              height: 88,
-                              decoration: BoxDecoration(
-                                color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
-                                borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
-                              ),
-                              child: Icon(
-                                Icons.chat_bubble_outline,
-                                size: 36,
-                                color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              t('noMessages'),
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        physics: const SmoothScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppConstants.paddingMedium,
-                        ),
-                        itemCount: _messages.length + (_isLoading ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == _messages.length) {
-                            return Align(
-                              alignment: Alignment.centerLeft,
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                  left: AppConstants.paddingMedium,
-                                  top: AppConstants.paddingSmall,
-                                  bottom: AppConstants.paddingSmall,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      t('greenBotTyping'),
-                                      style: TextStyle(
-                                        color: isDarkMode
-                                            ? AppColors.darkHint
-                                            : AppColors.lightHint,
-                                        fontStyle: FontStyle.italic,
-                                        fontSize: 12,
-                                      ),
-                                    ).animate(onPlay: (c) => c.repeat())
-                                     .fadeIn(duration: 500.ms)
-                                     .then()
-                                     .fadeOut(duration: 500.ms),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
-
-                          return AnimatedChatMessage(
-                            text: _messages[index].content,
-                            isUser: _messages[index].isUser,
-                            index: index,
-                            imageUrl: _messages[index].imageUrl,
-                            avatarUrl: _messages[index].isUser 
-                                ? context.read<AuthProvider>().currentUser?.avatarUrl 
-                                : null,
-                          ).slideUpIn(delayMs: index * 50);
-                        },
-                      ),
-              ),
-
-              // Input Area
-              GradientCard(
-                isDarkMode: isDarkMode,
-                opacity: 0.08,
-                borderRadius: 0,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.paddingMedium,
-                  vertical: AppConstants.paddingSmall,
-                ),
-                margin: EdgeInsets.zero,
-                child: Row(
+              AnimatedBuilder(
+                animation: _c,
+                builder: (context, _) => Row(
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        enabled: !_isLoading,
-                        maxLines: null,
-                        decoration: InputDecoration(
-                          hintText: t('writeMessageHint'),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppConstants.radiusMedium,
-                            ),
-                            borderSide: BorderSide(
-                              color: isDarkMode
-                                  ? const Color.fromRGBO(66, 66, 66, 0.3)
-                                  : const Color.fromRGBO(224, 224, 224, 0.5),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppConstants.radiusMedium,
-                            ),
-                            borderSide: BorderSide(
-                              color: isDarkMode
-                                  ? AppColors.darkPrimary
-                                  : AppColors.lightPrimary,
-                              width: 2,
-                            ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: AppConstants.paddingMedium,
-                            vertical: AppConstants.paddingSmall,
-                          ),
-                          filled: true,
-                          fillColor: isDarkMode
-                              ? const Color.fromRGBO(27, 94, 32, 0.3)
-                              : const Color.fromRGBO(232, 245, 233, 0.5),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppConstants.paddingSmall),
-                    BounceAnimation(
-                      child: Container(
-                        width: 48,
-                        height: 48,
+                    for (var i = 0; i < 3; i++)
+                      Container(
+                        width: 7,
+                        height: 7,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
                         decoration: BoxDecoration(
-                          gradient: isDarkMode
-                              ? AppColors.darkGradient
-                              : AppColors.lightGradient,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color.fromRGBO(0, 0, 0, 0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: _isLoading ? null : _sendMessage,
-                            highlightColor: Colors.transparent,
-                            splashColor: Colors.transparent,
-                            borderRadius: BorderRadius.circular(24),
-                            child: const Icon(
-                              Icons.send,
-                              color: Colors.white,
-                              size: 20,
-                            ),
+                          color: scheme.primary.withValues(
+                            alpha: 0.3 + 0.7 * (((_c.value * 3 - i) % 3) < 1 ? 1 - ((_c.value * 3 - i) % 3) : 0),
                           ),
+                          shape: BoxShape.circle,
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
+              const SizedBox(width: 10),
+              Text(widget.label, style: Theme.of(context).textTheme.bodySmall),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _Welcome extends StatelessWidget {
+  final ValueChanged<String> onPick;
+  final String userName;
+  const _Welcome({required this.onPick, required this.userName});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<LocaleProvider>();
+    final t = l.t;
+    final theme = Theme.of(context);
+    final suggestions = [t('chatSuggestion1'), t('chatSuggestion2'), t('chatSuggestion3'), t('chatSuggestion4')];
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        const SizedBox(height: 24),
+        Icon(Icons.eco_rounded, size: 56, color: theme.colorScheme.primary),
+        const SizedBox(height: 12),
+        Text(
+          userName.isEmpty ? t('botWelcomeTitle') : l.tf('botWelcomeTitleName', {'name': userName}),
+          style: theme.textTheme.titleLarge,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 8),
+        Text(t('botWelcomeText'), style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+        const SizedBox(height: 24),
+        for (final s in suggestions)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(alignment: Alignment.centerLeft, padding: const EdgeInsets.all(14)),
+              onPressed: () => onPick(s),
+              child: Text(s),
+            ),
+          ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.mic_none_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 6),
+            Flexible(child: Text(t('voiceTip'), style: theme.textTheme.bodySmall)),
+          ],
+        ),
+      ],
     );
   }
 }

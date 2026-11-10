@@ -1,60 +1,29 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Construit l'APK release de GREEN, signé avec la clé EXISTANTE.
+# Ce script ne crée JAMAIS de nouvelle clé : une autre clé empêcherait la mise
+# à jour de l'application déjà installée sur les téléphones.
+set -euo pipefail
+cd "$(dirname "$0")"
 
-# Script pour construire l'APK release de Green App
+FLUTTER="${FLUTTER:-flutter}"
+command -v "$FLUTTER" >/dev/null || { echo "Flutter introuvable (variable FLUTTER ou PATH)."; exit 1; }
 
-echo "========================================="
-echo "Green App - APK Release Builder"
-echo "========================================="
-echo ""
+[ -f android/keystore/green_app.jks ] || { echo "Clé absente : android/keystore/green_app.jks (ne pas la régénérer, la restaurer)."; exit 1; }
+[ -f android/key.properties ] || { echo "android/key.properties absent : copiez android/key.properties.example et complétez-le."; exit 1; }
+[ -f assets/.env ] || { echo "assets/.env absent : copiez .env.example en assets/.env et renseignez les clés."; exit 1; }
+for k in GEMINI_API_KEY OPENWEATHER_API_KEY GREEN_WEB_PASSWORD; do
+  grep -Eq "^$k=.+" assets/.env || echo "ATTENTION : $k vide dans assets/.env (fonction correspondante inactive dans l'APK)."
+done
+[ -f assets/models/tflite/plant_classifier_float16.tflite ] || { echo "Modèle absent : assets/models/tflite/plant_classifier_float16.tflite"; exit 1; }
 
-# Vérifier si Flutter est installé
-if ! command -v flutter &> /dev/null; then
-    echo "Erreur: Flutter n'est pas installé ou non trouvé dans le PATH"
-    exit 1
-fi
+echo "Empreinte SHA-256 attendue de la clé : 27:27:BB:98:60:54:7D:26:ED:57:F8:E4:49:73:E7:D2:67:26:5B:C5:E7:4B:FE:AC:92:61:E2:1D:DD:FC:48:DA"
 
-echo "1. Nettoyage des fichiers de build précédents..."
-flutter clean
+"$FLUTTER" pub get
+"$FLUTTER" analyze
+"$FLUTTER" test
+"$FLUTTER" build apk --release --split-per-abi --obfuscate --split-debug-info=build/symbols
 
-echo ""
-echo "2. Récupération des dépendances..."
-flutter pub get
-
-echo ""
-echo "3. Génération des fichiers de configuration..."
-flutter pub run build_runner build --delete-conflicting-outputs 2>/dev/null || true
-
-echo ""
-echo "4. Vérification de la clé de signature..."
-if [ ! -f "./android/keystore/green_app.jks" ]; then
-    echo "La clé de signature n'existe pas. Création..."
-    bash ./generate_keystore.sh
-    if [ $? -ne 0 ]; then
-        echo "Erreur: Impossible de créer la clé de signature"
-        exit 1
-    fi
-fi
-
-echo ""
-echo "5. Construction de l'APK en mode release..."
-echo "(Cela peut prendre quelques minutes...)"
-flutter build apk --release
-
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "========================================="
-    echo "✓ APK généré avec succès!"
-    echo "========================================="
-    echo ""
-    echo "Localisation du fichier APK:"
-    echo "build/app/outputs/flutter-apk/app-release.apk"
-    echo ""
-    echo "Pour installer sur un appareil Android:"
-    echo "adb install build/app/outputs/flutter-apk/app-release.apk"
-else
-    echo ""
-    echo "========================================="
-    echo "✗ Erreur lors de la génération de l'APK"
-    echo "========================================="
-    exit 1
-fi
+echo
+echo "APK générés :"
+ls -lh build/app/outputs/flutter-apk/*-release.apk
+echo "Vérifier la signature : apksigner verify --print-certs build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"

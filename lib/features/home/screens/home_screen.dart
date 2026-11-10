@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../providers/locale_provider.dart';
-import '../../../services/weather_service.dart';
-import '../../../services/history_service.dart';
-import '../../../utils/date_formatter.dart';
-import '../../../shared/widgets/gradient_background.dart';
-import '../../../shared/widgets/custom_scroll_physics.dart';
-import '../../../core/utils/disease_status.dart';
 
-import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
+import '../../../core/theme/spacing.dart';
+import '../../../models/scan_result_model.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/diseases_provider.dart';
+import '../../../providers/locale_provider.dart';
+import '../../../providers/weather_provider.dart';
+import '../../../services/history_service.dart';
+import '../../../shared/ui/ui.dart';
+import '../../../shared/widgets/custom_app_bar.dart';
+import '../../../utils/date_formatter.dart';
+import '../../history/scan_labels.dart';
+import '../../weather/weather_texts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,618 +23,336 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late Future<WeatherData> _weatherFuture;
-  // Position obtenue via "Activer Localisation", transmise à l'écran météo
-  // détaillé ("Voir plus") pour qu'il affiche le même lieu plutôt que de
-  // revenir silencieusement sur Douala en dur.
-  double? _lat;
-  double? _lon;
-
   @override
   void initState() {
     super.initState();
-    _weatherFuture = weatherService.fetchWeatherForCity('Douala');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final w = context.read<WeatherProvider>();
+      if (w.data == null && !w.loading) w.load(lang: context.read<LocaleProvider>().locale);
+    });
   }
 
-  Future<void> _enableLocation() async {
-    final t = context.read<LocaleProvider>().t;
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(t('gpsDisabled')),
-            action: SnackBarAction(
-              label: t('activate'),
-              onPressed: () => Geolocator.openLocationSettings(),
-            ),
-          ),
-        );
-      }
-      return;
-    }
+  Future<void> _refresh() => context.read<WeatherProvider>().load(lang: context.read<LocaleProvider>().locale);
 
-    final status = await Permission.location.request();
-    if (status.isGranted) {
-      if (mounted) {
-        setState(() {
-           _weatherFuture = _fetchWeatherWithLocation();
-        });
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(t('locationPermissionDenied'))),
-        );
-      }
-    }
-  }
-
-  Future<WeatherData> _fetchWeatherWithLocation() async {
-    try {
-      final pos = await Geolocator.getCurrentPosition();
-      _lat = pos.latitude;
-      _lon = pos.longitude;
-      return await weatherService.fetchWeatherForCoordinates(pos.latitude, pos.longitude);
-    } catch (e) {
-      _lat = null;
-      _lon = null;
-      return weatherService.fetchWeatherForCity('Douala');
-    }
-  }
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    final t = context.watch<LocaleProvider>().t;
+    final l = context.watch<LocaleProvider>();
+    final t = l.t;
+    final user = context.watch<AuthProvider>().currentUser;
+    final firstName = (user?.name ?? '').split(' ').first;
+
     return Scaffold(
-      body: GradientBackground(
-        isDarkMode: isDarkMode,
-        opacity: 0.1,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const SmoothScrollPhysics(),
-            padding: const EdgeInsets.all(AppConstants.paddingMedium),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: CustomAppBar(
+        title: firstName.isEmpty ? t('home') : l.tf('helloName', {'name': firstName}),
+        showProfileIcon: true,
+      ),
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView(
+          padding: Spacing.page,
+          children: [
+            const _WeatherCard(),
+            Spacing.gapBlock,
+            _ScanCta(onTap: () => context.go('/camera')),
+            Spacing.gapBlock,
+            Row(
               children: [
-                // Welcome Banner + Profile Card in one row
-                Row(
-                  children: [
-                    // Welcome Card (50% width)
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: isDarkMode
-                              ? AppColors.darkGradient
-                              : AppColors.lightGradient,
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.radiusXLarge,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color.fromRGBO(0, 0, 0, 0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              t('welcomeBang'),
-                              style: Theme.of(context).textTheme.headlineSmall
-                                  ?.copyWith(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              t('scanYourPlants'),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: const Color.fromRGBO(255, 255, 255, 0.9),
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppConstants.paddingMedium),
-                    // Profile Card (50% width) - avec données utilisateur
-                    Expanded(
-                      child: Consumer<AuthProvider>(
-                        builder: (context, auth, _) {
-                          final user = auth.currentUser;
-                          return GestureDetector(
-                            onTap: () => context.go('/profile'),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-                                borderRadius: BorderRadius.circular(
-                                  AppConstants.radiusXLarge,
-                                ),
-                                border: Border.all(
-                                  color: isDarkMode
-                                      ? const Color.fromRGBO(66, 66, 66, 0.3)
-                                      : const Color.fromRGBO(224, 224, 224, 0.5),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color.fromRGBO(0, 0, 0, 0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                              child: Row(
-                                children: [
-                                  // Profile Photo
-                                  Container(
-                                    width: 50,
-                                    height: 50,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: isDarkMode
-                                          ? const Color.fromRGBO(27, 94, 32, 0.2)
-                                          : const Color.fromRGBO(232, 245, 233, 0.2),
-                                    ),
-                                    child: Icon(
-                                      Icons.person,
-                                      color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                                      size: 24,
-                                    ),
-                                  ),
-                                  const SizedBox(width: AppConstants.paddingSmall),
-                                  // Profile Info
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          user?.name ?? t('myProfile'),
-                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                            color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          user?.phone ?? user?.email ?? t('notProvided'),
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                )
-                    .animate()
-                    .fadeIn(duration: AppConstants.animationNormal)
-                    .slideY(begin: 20, end: 0),
-                const SizedBox(height: AppConstants.paddingLarge),
-
-                // Section Title
-                Text(
-                      t('mainFeatures'),
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    )
-                    .animate()
-                    .fadeIn(delay: const Duration(milliseconds: 100))
-                    .slideX(begin: -20, end: 0),
-                const SizedBox(height: AppConstants.paddingLarge),
-
-                // Climate Card (full width)
-                Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      AppConstants.radiusMedium,
-                    ),
+                Expanded(
+                  child: _ShortcutTile(
+                    icon: Icons.chat_bubble_rounded,
+                    label: t('greenBot'),
+                    caption: t('aiAdviceShort'),
+                    onTap: () => context.go('/chat'),
                   ),
-                  color: isDarkMode ? null : null,
-                  child: Container(
-                    width: double.infinity,
-                    // Dynamic height allocation (removed fixed height)
-                    padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                    decoration: BoxDecoration(
-                      gradient: isDarkMode
-                          ? AppColors.darkGradient
-                          : AppColors.lightGradient,
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.radiusMedium,
-                      ),
-                    ),
-                    child: FutureBuilder<WeatherData>(
-                      future: _weatherFuture,
-                      builder: (context, snap) {
-                        if (snap.connectionState == ConnectionState.waiting) {
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const SizedBox(),
-                              Text(
-                                t('loading'),
-                                style: const TextStyle(
-                                  color: Colors.white, // Always white
-                                ),
-                              ),
-                              const SizedBox(),
-                            ],
-                          );
-                        }
-                        if (snap.hasError || snap.data == null) {
-                          return Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Icon(
-                                Icons.error,
-                                color: Colors.white, // Always white
-                              ),
-                              Text(
-                                t('weatherError'),
-                                style: const TextStyle(
-                                  color: Colors.white, // Always white
-                                ),
-                              ),
-                              const SizedBox(),
-                            ],
-                          );
-                        }
-                        final w = snap.data!;
-                        return Column(
-                          children: [
-                             // Header buttons
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  TextButton.icon(
-                                    onPressed: _enableLocation,
-                                    icon: const Icon(Icons.location_on, color: Colors.white, size: 16),
-                                    label: Text(
-                                      t('enableLocation'),
-                                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                                    ),
-                                    style: TextButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: const Size(0, 30),
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => context.go(
-                                      '/weather',
-                                      extra: (_lat != null && _lon != null)
-                                          ? {'lat': _lat, 'lon': _lon}
-                                          : null,
-                                    ),
-                                    child: Text(t('seeMore'), style: const TextStyle(color: Colors.white, fontSize: 12)),
-                                    style: TextButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: const Size(0, 30),
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8), // Added spacing
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                            // Temperature
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.thermostat,
-                                    color: Colors.white, // Always white
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '${w.temperature.toStringAsFixed(1)}°C',
-                                    style: const TextStyle(
-                                      color: Colors.white, // Always white
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Description
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.wb_sunny,
-                                    color: Colors.white, // Always white
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    w.description,
-                                    style: const TextStyle(
-                                      color: Colors.white, // Always white
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Wind
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.air, 
-                                    color: Colors.white, // Always white
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '${w.windSpeed.toStringAsFixed(1)} m/s',
-                                    style: const TextStyle(
-                                      color: Colors.white, // Always white
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    );
-                  },
                 ),
-              ),
-            ),
-
-                const SizedBox(height: AppConstants.paddingLarge),
-
-                // Action buttons (Scanner + Green Bot) in one row, equal size and responsive
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    // Use card's original height (160) for buttons as requested
-                    final buttonHeight = 160.0;
-                    // Width reduced to leave margins and adapt responsively
-                    final horizontalSpacing = AppConstants.paddingMedium;
-                    final maxButtonWidth =
-                        ((constraints.maxWidth - horizontalSpacing) * 0.46)
-                            .clamp(120.0, constraints.maxWidth);
-
-                    Widget buildAction({
-                      required VoidCallback onTap,
-                      required LinearGradient backgroundGradient,
-                      required IconData icon,
-                      required String title,
-                      required String subtitle,
-                    }) {
-                      return ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: maxButtonWidth,
-                          minWidth: 100,
-                        ),
-                        child: SizedBox(
-                          height: buttonHeight,
-                          child: Material(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                            child: InkWell(
-                              onTap: onTap,
-                              borderRadius: BorderRadius.circular(12),
-                              child: Ink(
-                                decoration: BoxDecoration(
-                                  gradient: backgroundGradient,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          icon,
-                                          color: Colors.white,
-                                          size: buttonHeight * 0.28,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          title,
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          subtitle,
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            fontStyle: FontStyle.italic,
-                                            color: Color.fromRGBO(255, 255, 255, 0.8),
-                                          ),
-                                          textAlign: TextAlign.center,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }
-
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        buildAction(
-                          onTap: () => context.go('/camera'),
-                          backgroundGradient: isDarkMode
-                              ? AppColors.darkGradient
-                              : AppColors.lightGradient,
-                          icon: Icons.camera_alt,
-                          title: t('scanner'),
-                          subtitle: t('analyzeAPlant'),
-                        ),
-                        SizedBox(width: horizontalSpacing),
-                        buildAction(
-                          onTap: () => context.go('/chat'),
-                          backgroundGradient: isDarkMode
-                              ? AppColors.darkGradient
-                              : AppColors.lightGradient,
-                          icon: Icons.chat_bubble,
-                          title: t('greenBot'),
-                          subtitle: t('aiAdviceAndDiagnostics'),
-                        ),
-                      ],
-                    );
-                  },
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ShortcutTile(
+                    icon: Icons.history_rounded,
+                    label: t('history'),
+                    caption: t('historyShort'),
+                    onTap: () => context.push('/history'),
+                  ),
                 ),
-                const SizedBox(height: AppConstants.paddingLarge),
-
-                // History header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      t('viewHistory'),
-                      style: Theme.of(context).textTheme.headlineMedium,
-                    ),
-                    TextButton(
-                      onPressed: () => context.go('/history'),
-                      child: Text(t('seeAll')),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppConstants.paddingMedium),
-                StreamBuilder<void>(
-                  stream: historyService.onChanged,
-                  builder: (context, _) {
-                    return FutureBuilder<List<dynamic>>(
-                      future: historyService.getRecentScans(3),
-                      builder: (context, snap) {
-                        if (snap.connectionState == ConnectionState.waiting) {
-                          return Text(t('loading'));
-                        }
-                        final list = snap.data ?? [];
-                        if (list.isEmpty) {
-                          return GradientCard(
-                            isDarkMode: isDarkMode,
-                            opacity: 0.1,
-                            borderRadius: AppConstants.radiusLarge,
-                            child: SizedBox(
-                              height: 120,
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.image_not_supported,
-                                      size: 40,
-                                      color: isDarkMode
-                                          ? AppColors.darkHint
-                                          : AppColors.lightHint,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      t('noScansYet'),
-                                      style: Theme.of(context).textTheme.bodyMedium
-                                          ?.copyWith(
-                                            color: isDarkMode
-                                                ? AppColors.darkHint
-                                                : AppColors.lightHint,
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          )
-                          .animate(delay: const Duration(milliseconds: 400))
-                          .fadeIn(duration: AppConstants.animationNormal);
-                        }
-                        return Column(
-                          children: list.map((item) {
-                            final s = item as dynamic;
-                            final bool healthy = isHealthyDiseaseName(s.diseaseName as String);
-                            final Color avatarBg = healthy
-                                ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
-                                : (isDarkMode ? AppColors.darkChipAmberBg : AppColors.lightChipAmberBg);
-                            final Color avatarFg = healthy
-                                ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)
-                                : (isDarkMode ? AppColors.darkChipAmberText : AppColors.lightChipAmberText);
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: AppConstants.paddingSmall),
-                              decoration: BoxDecoration(
-                                color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-                                borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                                border: Border.all(
-                                  color: isDarkMode
-                                      ? const Color.fromRGBO(66, 66, 66, 0.3)
-                                      : const Color.fromRGBO(224, 224, 224, 0.5),
-                                ),
-                              ),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: avatarBg,
-                                  child: Text(
-                                    s.diseaseName.isNotEmpty ? s.diseaseName[0].toUpperCase() : '?',
-                                    style: TextStyle(color: avatarFg, fontWeight: FontWeight.w700),
-                                  ),
-                                ),
-                                title: Text(s.diseaseName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                subtitle: Text(
-                                  formatDateFrench(s.scannedAt, context.read<LocaleProvider>().locale),
-                                  style: TextStyle(color: isDarkMode ? AppColors.darkHint : AppColors.lightHint),
-                                ),
-                                trailing: Icon(
-                                  Icons.chevron_right,
-                                  color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        );
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: AppConstants.paddingLarge),
               ],
             ),
+            Spacing.gapBlock,
+            Row(
+              children: [
+                Expanded(
+                  child: _ShortcutTile(
+                    icon: Icons.menu_book_rounded,
+                    label: t('diseasesLibrary'),
+                    caption: t('diseasesLibraryShort'),
+                    onTap: () => context.push('/diseases'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ShortcutTile(
+                    icon: Icons.storefront_rounded,
+                    label: t('marketplaceTitle'),
+                    caption: t('marketShort'),
+                    onTap: () => context.go('/marketplace'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(child: Text(t('recentScans'), style: Theme.of(context).textTheme.titleLarge)),
+                TextButton(onPressed: () => context.push('/history'), child: Text(t('seeAll'))),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const _RecentScans(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WeatherCard extends StatelessWidget {
+  const _WeatherCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<LocaleProvider>();
+    final t = l.t;
+    final w = context.watch<WeatherProvider>();
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    Widget body;
+    if (w.loading && w.data == null) {
+      body = const SizedBox(height: 72, child: Center(child: CircularProgressIndicator()));
+    } else if (w.data == null) {
+      body = Row(
+        children: [
+          Icon(Icons.cloud_off_rounded, color: scheme.onPrimaryContainer),
+          const SizedBox(width: 12),
+          Expanded(child: Text(weatherErrorText(w.error, t), style: TextStyle(color: scheme.onPrimaryContainer))),
+          TextButton(onPressed: () => w.load(lang: l.locale), child: Text(t('retry'))),
+        ],
+      );
+    } else {
+      final d = w.data!;
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(weatherIcon(d.condition), size: 44, color: scheme.onPrimaryContainer),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${d.temperature.round()}°C', style: theme.textTheme.headlineMedium?.copyWith(color: scheme.onPrimaryContainer)),
+                    Text(
+                      '${capitalize(d.description)} · ${w.usingLocation ? (d.place.isEmpty ? t('myLocation') : d.place) : WeatherProvider.defaultCity}',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: scheme.onPrimaryContainer),
+            ],
+          ),
+          Spacing.gapBlock,
+          Wrap(
+            spacing: 16,
+            runSpacing: 4,
+            children: [
+              _Metric(icon: Icons.water_drop_outlined, text: '${d.humidity} %'),
+              _Metric(icon: Icons.air_rounded, text: '${(d.windSpeed * 3.6).round()} km/h'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            t(d.sprayingDiscouraged ? 'sprayNo' : 'sprayOk'),
+            style: theme.textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer, fontWeight: FontWeight.w600),
+          ),
+          if (!w.usingLocation)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => w.load(lang: l.locale, requestLocation: true),
+                icon: const Icon(Icons.my_location_rounded, size: 18),
+                label: Text(t('useMyLocation')),
+              ),
+            ),
+        ],
+      );
+    }
+
+    return Card(
+      color: scheme.primaryContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/weather'),
+        child: Padding(padding: Spacing.card, child: body),
+      ),
+    );
+  }
+}
+
+class _Metric extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _Metric({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = Theme.of(context).colorScheme.onPrimaryContainer;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [Icon(icon, size: 18, color: c), const SizedBox(width: 4), Text(text, style: TextStyle(color: c))],
+    );
+  }
+}
+
+class _ScanCta extends StatelessWidget {
+  final VoidCallback onTap;
+  const _ScanCta({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.primary,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              const Icon(Icons.center_focus_strong_rounded, color: Colors.white, size: 40),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(t('scanAPlant'), style: theme.textTheme.titleLarge?.copyWith(color: Colors.white)),
+                    const SizedBox(height: 2),
+                    Text(t('scanAPlantCaption'), style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+            ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ShortcutTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String caption;
+  final VoidCallback onTap;
+  const _ShortcutTile({required this.icon, required this.label, required this.caption, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: theme.colorScheme.primary),
+              const SizedBox(height: 10),
+              Text(label, style: theme.textTheme.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 2),
+              Text(
+                caption,
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RecentScans extends StatelessWidget {
+  const _RecentScans();
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<LocaleProvider>();
+    final t = l.t;
+    final catalog = context.watch<DiseasesProvider>();
+    return StreamBuilder<void>(
+      stream: historyService.onChanged,
+      builder: (context, _) => FutureBuilder<List<ScanResultModel>>(
+        future: historyService.getRecentScans(3),
+        builder: (context, snap) {
+          final items = snap.data ?? const [];
+          if (snap.connectionState == ConnectionState.waiting && items.isEmpty) {
+            return const SizedBox(height: 80, child: Center(child: CircularProgressIndicator()));
+          }
+          if (items.isEmpty) {
+            return SectionCard(
+              child: Row(
+                children: [
+                  Icon(Icons.eco_outlined, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text(t('noScansYetHint'))),
+                ],
+              ),
+            );
+          }
+          return Card(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                for (var i = 0; i < items.length; i++) ...[
+                  if (i > 0) const Divider(height: 1, indent: 76),
+                  _ScanTile(scan: items[i], catalog: catalog, locale: l.locale, t: t),
+                ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ScanTile extends StatelessWidget {
+  final ScanResultModel scan;
+  final DiseasesProvider catalog;
+  final String locale;
+  final String Function(String) t;
+  const _ScanTile({required this.scan, required this.catalog, required this.locale, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final style = scanStatusStyle(scan.status);
+    return ListTile(
+      onTap: () => context.push('/scan/${scan.id}'),
+      leading: LocalImage(path: scan.thumbPath ?? scan.imagePath, width: 52, height: 52, cacheWidth: 160),
+      title: Text(ScanLabels.title(scan, catalog, locale, t), maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text('${ScanLabels.plant(scan, catalog, locale, t)} · ${dayGroupLabel(scan.scannedAt, locale, t)}'),
+      trailing: Icon(style.icon, color: style.color),
     );
   }
 }

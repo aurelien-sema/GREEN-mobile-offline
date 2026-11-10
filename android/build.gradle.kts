@@ -22,20 +22,18 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-// Force all Kotlin compilation tasks to target JVM 17.
-// Then override file_picker, flutter_onnxruntime and tflite_flutter to target JVM 11 to match their Java configs.
+// Chaque plugin compile son Kotlin pour la même JVM que sa partie Java
+// (sinon Gradle refuse : "Inconsistent JVM-target compatibility"). Les
+// plugins ne sont pas homogènes : tflite_flutter et flutter_onnxruntime
+// ciblent Java 11, les autres Java 17. La cible est lue dans la
+// configuration Android de chaque module au lieu d'une liste codée en dur.
 subprojects {
     tasks.withType<KotlinCompile>().configureEach {
-        val projectName = project.name
-        val targetJvm = when {
-            projectName.startsWith("file_picker") ||
-                projectName.startsWith("flutteronnxruntime") ||
-                projectName.startsWith("flutter_onnxruntime") ||
-                projectName.startsWith("tflite_flutter") -> JvmTarget.JVM_11
-            else -> JvmTarget.JVM_17
-        }
+        val android = project.extensions.findByType(com.android.build.gradle.BaseExtension::class.java)
+        // toString() donne "1.8" pour Java 8 (et non "8", refusé par Kotlin), "11", "17"…
+        val target = android?.compileOptions?.targetCompatibility?.toString() ?: "17"
         compilerOptions {
-            jvmTarget.set(targetJvm)
+            jvmTarget.set(JvmTarget.fromTarget(target))
         }
     }
 }

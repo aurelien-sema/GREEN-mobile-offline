@@ -34,6 +34,12 @@ class AppColors {
   static const Color darkChipAmberBg = Color(0xFF3A2E12);
   static const Color darkChipAmberText = Color(0xFFE0B868);
 
+  // Couleurs sémantiques (statut d'une analyse), lisibles en clair et en sombre
+  static const Color success = Color(0xFF2E7D32);
+  static const Color warning = Color(0xFFB26A00);
+  static const Color danger = Color(0xFFC62828);
+  static const Color info = Color(0xFF1565C0);
+
   // Gradients
   // Vert riche et profond (pas pastel) : utilisé sur les éléments "hero"
   // (carte météo, cartes d'action Accueil, en-tête Profil...) d'après la

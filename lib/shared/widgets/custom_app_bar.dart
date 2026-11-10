@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/constants/app_colors.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/auth_provider.dart';
+import '../../providers/locale_provider.dart';
+import '../ui/images.dart';
+
+/// Barre d'application commune. [showProfileIcon] affiche la photo de
+/// profil, qui ouvre le Profil par-dessus l'écran courant (le retour y
+/// ramène naturellement, sans paramètre « from »).
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
-  final bool isDarkMode;
   final bool showProfileIcon;
+  final Widget? leading;
+
+  /// Conservé pour compatibilité ; le thème suffit désormais.
+  final bool isDarkMode;
 
   const CustomAppBar({
     super.key,
@@ -14,49 +24,28 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.actions,
     this.isDarkMode = false,
     this.showProfileIcon = false,
+    this.leading,
   });
 
   @override
   Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+    final user = context.watch<AuthProvider>().currentUser;
     return AppBar(
-      title: Text(title, style: Theme.of(context).appBarTheme.titleTextStyle),
-      centerTitle: false,
-      backgroundColor: isDarkMode
-          ? AppColors.darkSurface
-          : AppColors.lightSurface,
-      leading: null,
+      title: Text(title),
+      leading: leading,
       actions: [
         ...?actions,
         if (showProfileIcon)
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Center(
-              child: GestureDetector(
-                // Transmet la route courante pour que le bouton retour du
-                // Profil y ramène (au lieu de forcer /home quel que soit
-                // l'écran d'où l'on vient : Caméra, Chat, Marketplace...).
-                onTap: () => context.go(
-                  '/profile',
-                  extra: {'from': GoRouterState.of(context).uri.toString()},
-                ),
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
-                  ),
-                  child: Icon(
-                    Icons.person_outline,
-                    color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                    size: 20,
-                  ),
-                ),
-              ),
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              tooltip: t('profile'),
+              onPressed: () => context.push('/profile'),
+              icon: UserAvatar(user: user, radius: 16),
             ),
           ),
       ],
-      elevation: 0,
     );
   }
 

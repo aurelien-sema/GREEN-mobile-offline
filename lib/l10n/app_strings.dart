@@ -1,3 +1,5 @@
+import 'app_strings_v2.dart';
+
 /// Localization constants for the Green app.
 /// Supports: Français (FR), English (EN), Pidgin (PID)
 class AppStrings {
@@ -1026,11 +1028,23 @@ class AppStrings {
 
   /// Get string by key for given locale.
   /// Returns English if key not found in requested locale.
+  /// Textes v2 (app_strings_v2.dart) en priorité, puis v1 ; repli sur
+  /// l'anglais puis le français, et enfin la clé elle-même.
   static String get(String key, [String locale = 'fr']) {
-    return _strings[locale]?[key] ??
+    return appStringsV2[locale]?[key] ??
+        _strings[locale]?[key] ??
+        appStringsV2['en']?[key] ??
         _strings['en']?[key] ??
-        key; // Fallback to key name if not found
+        appStringsV2['fr']?[key] ??
+        _strings['fr']?[key] ??
+        key;
   }
+
+  /// Toutes les clés connues pour une langue (tests de complétude).
+  static Set<String> keysFor(String locale) => {
+        ...?_strings[locale]?.keys,
+        ...?appStringsV2[locale]?.keys,
+      };
 
   /// All available locales.
   static const List<String> availableLocales = ['fr', 'en', 'pid'];

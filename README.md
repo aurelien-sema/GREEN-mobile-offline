@@ -1,339 +1,58 @@
-# 🌿 Green App - Détection de Maladies des Plantes avec IA
+# GREEN — application mobile
 
-<div align="center">
+Détection hors ligne des maladies du maïs, du manioc et de la tomate à partir d'une photo, fiche terrain, base de maladies, assistant GreenBot (texte et vocal), météo du champ et marketplace d'intrants.
 
-**Application Flutter Professionnelle & Moderne**
+Version : **2.1.0 (3)** — voir [CHANGELOG.md](CHANGELOG.md). Construire l'APK : [BUILD_RELEASE.md](BUILD_RELEASE.md).
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.10+-blue.svg)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.10+-blue.svg)](https://dart.dev)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+## Fonctionnement
 
-[📖 Documentation](#-documentation) • [🚀 Démarrage Rapide](#-démarrage-rapide) • [🤝 Contribution](#-contribution)
+| Fonction | Où | Réseau |
+|---|---|---|
+| Analyse d'une photo (classifieur TFLite float16, 9 classes ; moteur ONNX conservé) | Scanner | non |
+| Fiche terrain, historique, base de 62 fiches bilingues | Fiche, Historique, Base des maladies | non |
+| GreenBot (Gemini) avec documents agronomiques (BM25) et messages vocaux | GreenBot | oui |
+| Météo (OpenWeatherMap) | Accueil, Météo | oui |
+| Envoi automatique des analyses (photo + résultat) vers GREEN Web (o2switch), file hors ligne | automatique ; état dans Paramètres > Données et envoi | oui, reprise automatique |
 
-</div>
-
----
-
-## 🎯 Aperçu
-
-**Green App** est une application mobile de pointe pour diagnostiquer les maladies des plantes en temps réel grâce à :
-- 🤖 **Vision par Ordinateur (IA)** - Détection automatique des maladies
-- 💬 **Chatbot Intelligent** - Conseils personnalisés et assistance
-- 📚 **Base de Données Complète** - Catalogue des maladies et traitements
-- 🎨 **Design Premium** - Thème clair/sombre avec animations fluides
-
-## ✨ Fonctionnalités Principales
-
-| Fonctionnalité | Description |
-|---|---|
-| **📸 Scanner Intelligent** | Capture d'images via caméra ou galerie avec analyse IA instantanée |
-| **🔍 Détection Précise** | Identification des maladies avec taux de confiance |
-| **💡 Conseils IA** | Assistant conversationnel pour recommandations personnalisées |
-| **📖 Base de Maladies** | Catalogue complet avec descriptions et traitements |
-| **👤 Profil Utilisateur** | Historique des scans et statistiques |
-| **🌓 Thème Dual** | Basculement dynamique clair/sombre |
-| **✨ Animations** | Transitions fluides et expérience utilisateur premium |
-| **📱 Responsive** | Adaptatif pour tous les appareils Android/iOS |
-
-## 🏗️ Architecture Professionnelle
-
-**Clean Architecture avec Séparation des Responsabilités:**
+## Structure
 
 ```
 lib/
-├── core/
-│   ├── constants/          # Couleurs, constantes, tailles
-│   ├── theme/              # Thèmes clair/sombre
-│   ├── routing/            # Navigation GoRouter
-│   └── extensions/         # Extensions utiles
-├── features/               # Fonctionnalités métier
-│   ├── auth/              # Authentification & Splash
-│   ├── home/              # Accueil
-│   ├── camera/            # Scanner de plantes
-│   ├── chat/              # Chat IA
-│   ├── diseases/          # Base de maladies
-│   └── profile/           # Profil & Paramètres
-├── services/              # Services externes
-│   ├── api/               # Vision & Chatbot APIs
-│   └── storage/           # Stockage local
-├── shared/                # Widgets & Modèles partagés
-└── main.dart              # Point d'entrée
+├── core/            thème, routage, constantes, validation, démarrage, version (app_info.dart)
+├── features/        écrans : auth, home, camera (scanner + fiche terrain), history, chat,
+│                    diseases, weather, profile (profil, paramètres, à propos), marketplace
+├── l10n/            textes FR / EN / Pidgin (app_strings.dart + app_strings_v2.dart)
+├── models/          analyses, fiches maladies, utilisateur, produits
+├── providers/       état partagé (session, langue, thème, taille du texte, météo…)
+├── services/        auth (comptes, registre, hachage), vision (TFLite + ONNX), historique et photos,
+│                    gemini, voice, rag, green_web (envoi o2switch), weather
+└── shared/          composants d'interface communs
+assets/
+├── models/active_model.json   modèle utilisé par l'application (format, fichier, prétraitement)
+├── models/tflite/   plant_classifier_float16.tflite, labels.txt, model_spec.json (fournis avec le modèle)
+├── models/onnx/     efficientnet_11classes.onnx + onnx_model.json (conservé, non embarqué dans l'APK)
+├── data/diseases.json   base de maladies v2 (modelLabels relie chaque classe à sa fiche)
+└── rag/chunks.json      extraits de documents agronomiques pour GreenBot
 ```
 
-## 🔌 Intégration Python
+## Données et confidentialité
 
-### Prérequis
+Stockage privé de l'application : comptes (`users.json`, secrets hachés en PBKDF2), registre des comptes du téléphone (`account_registry.json`), historique et photos par compte, file d'envoi (`upload_outbox.json`).
 
-- Flutter SDK (>=3.10.1)
-- Dart SDK
-- Android Studio / Xcode (pour émulateurs)
+Depuis la 2.1, chaque analyse (photo réduite à 1600 px, sans EXIF ni GPS, + date de prise) est envoyée automatiquement, en HTTPS, au compte GREEN Web par défaut défini dans `assets/.env` (`GREEN_WEB_EMAIL`/`GREEN_WEB_PHONE`/`GREEN_WEB_PASSWORD`). L'envoi n'est pas désactivable ; l'inscription l'annonce. Hors ligne, l'analyse attend dans la file (stockage privé, pas le cache) et part au retour du réseau. Seul le jeton JWT est conservé (stockage chiffré Android) ; le mot de passe reste dans l'APK.
 
-### Installation
+## Changer de modèle de vision
 
-1. Cloner le projet
-```bash
-cd green_app
-```
+Le code ne contient aucune constante propre à un modèle : tout est dans `assets/models/active_model.json`.
 
-2. Installer les dépendances
-```bash
-flutter pub get
-```
+- **Modèle actif (2.1)** : `plant_classifier_float16.tflite`, entrée `[1, 224, 224, 3]` float32 en pixels bruts 0–255 (RGB), redimensionnement bilinéaire direct, sortie = 9 probabilités dans l'ordre de `labels.txt`.
+- **Repasser au modèle ONNX** : copier le contenu de `assets/models/onnx/onnx_model.json` dans `assets/models/active_model.json`, remplacer `- assets/models/tflite/` par `- assets/models/onnx/` dans `pubspec.yaml`, puis `flutter pub get`.
+- **Nouveau modèle** : déposer le fichier et son `labels.txt`, décrire l'entrée (`layout` nhwc/nchw, `width`, `height`, `pixels` raw_0_255/unit_0_1/imagenet, `resize` stretch_bilinear/shorter_side_center_crop) et la sortie (`probabilities`/`logits`), ajouter les classes dans `modelLabels` de `assets/data/diseases.json`. Au chargement, la forme des tenseurs est vérifiée contre ce fichier : un modèle mal décrit est refusé au lieu de donner de fausses prédictions. Les tests `vision_pipeline_test.dart` et `diseases_catalog_test.dart` signalent une classe sans fiche.
 
-3. Configurer les APIs Python (optionnel)
-
-Modifier `lib/config/api_config.dart` avec vos URLs d'API :
-
-```dart
-static const String visionBaseUrl = 'http://votre-api-vision:8001';
-static const String chatbotBaseUrl = 'http://votre-api-chatbot:8002';
-```
-
-### Lancement
+## Tests
 
 ```bash
-flutter run
+flutter test                                              # tests hors ligne (107)
+GREEN_LIVE=1 flutter test test/live --tags live           # vraie clé Gemini + vrai serveur GREEN Web
+GREEN_SNAPSHOTS=1 flutter test test/snapshots --tags snapshots   # captures d'écran → build/snapshots/
 ```
-
-## 🎨 Thèmes
-
-L'application supporte deux thèmes :
-
-- **Thème Clair** : Fond blanc avec accents verts
-- **Thème Sombre** : Fond vert foncé avec accents verts clairs
-
-Le changement de thème est accessible via le bouton dans l'AppBar.
-
-## 🔌 Intégration Python
-
-L'application communique avec deux services Python indépendants :
-
-### 1️⃣ Vision Service (Détection de Maladies)
-```python
-POST http://localhost:8000/api/vision/detect
-- Request: multipart/form-data (image)
-- Response: { diseaseId, diseaseName, confidence, treatments, severity }
-```
-
-### 2️⃣ Chatbot Service (Assistant IA)
-```python
-POST http://localhost:8000/api/chat/message
-- Request: { message, context, image_url }
-- Response: { id, response, image_url }
-```
-
-📚 **[Documentation Backend →](./PYTHON_BACKEND.md)**
-📚 **[Exemple Backend →](./backend_example.py)**
-
-## 🚀 Démarrage Rapide
-
-### Prérequis
-- **Flutter**: 3.10.1+
-- **Dart**: 3.10.1+
-- **Python**: 3.8+ (pour le backend)
-- **Android Studio** ou **Xcode** (optionnel)
-
-### Installation
-
-```bash
-# 1. Cloner le projet
-cd green_app
-
-# 2. Installer les dépendances Flutter
-flutter pub get
-
-# 3. Lancer l'application
-flutter run
-
-# 4. (Optionnel) Générer les fichiers GoRouter
-dart run build_runner build
-```
-
-### Lancer le Backend
-
-```bash
-# 1. Installer les dépendances Python
-pip install -r requirements.txt  # ou voir backend_example.py
-
-# 2. Lancer le serveur
-python3 backend_example.py
-
-# 3. Tester sur http://localhost:8000/docs
-```
-
-## 🎨 Design & Thèmes
-
-### Palette de Couleurs
-
-| Thème | Primaire | Secondaire | Surface |
-|-------|----------|-----------|---------|
-| **Clair** | #2E8B57 | #90EE90 | #FFFFFF |
-| **Sombre** | #4CAF50 | #66BB6A | #1E1E1E |
-
-### Typography
-- **Police**: Google Fonts (Poppins)
-- **Tailles**: 12px - 28px avec hiérarchie cohérente
-
-## 📲 Écrans
-
-| Écran | Description | Route |
-|-------|-------------|-------|
-| **Splash** | Démarrage avec animation | `/` |
-| **Login** | Connexion utilisateur | `/login` |
-| **Register** | Inscription | `/register` |
-| **Home** | Tableau de bord & accueil | `/home` |
-| **Camera** | Scanner de plantes | `/camera` |
-| **Chat** | Assistant IA | `/chat` |
-| **Diseases** | Base de maladies | `/diseases` |
-| **Profile** | Profil utilisateur | `/profile` |
-| **Settings** | Paramètres | `/settings` |
-| **Notifications** | Notifications | `/notifications` |
-| **Preferences** | Préférences | `/preferences` |
-
-## 🎯 Bonnes Pratiques Implémentées
-
-✅ **Architecture Clean** - Séparation des responsabilités  
-✅ **State Management** - Provider Pattern efficace  
-✅ **Responsive Design** - Adaptive pour tous les appareils  
-✅ **Animations Fluides** - flutter_animate pour transitions  
-✅ **Navigation Moderne** - GoRouter avec routes typées  
-✅ **Thème Dual** - Clair/Sombre persistant  
-✅ **API Integration** - Services découplés et testables  
-✅ **Code Modulaire** - Fichiers réutilisables et maintenables  
-
-📖 **[Lire les Bonnes Pratiques →](./BEST_PRACTICES.md)**
-
-## 🔧 Configuration
-
-### Variables d'Environnement (.env)
-```env
-API_BASE_URL=http://localhost:8000
-API_TIMEOUT=30000
-ENABLE_ANALYTICS=true
-```
-
-Copier `.env.example` en `.env` et adapter.
-
-## 🧪 Tests
-
-```bash
-# Tests unitaires
-flutter test
-
-# Tests d'intégration
-flutter test integration_test/
-
-# Tests avec couverture
-flutter test --coverage
-```
-
-## 📦 Build Production
-
-### Android
-```bash
-flutter build apk --release
-flutter build appbundle --release  # Pour Google Play
-```
-
-### iOS
-```bash
-flutter build ios --release
-```
-
-## 🤝 Contribution
-
-Les contributions sont bienvenues! 
-
-```bash
-# 1. Fork le projet
-# 2. Créer une branche feature
-git checkout -b feature/amazing-feature
-
-# 3. Commit les changements
-git commit -m 'Add amazing feature'
-
-# 4. Push vers la branche
-git push origin feature/amazing-feature
-
-# 5. Ouvrir une Pull Request
-```
-
-## 📚 Documentation
-
-- **[🏗️ Architecture Détaillée](./ARCHITECTURE.md)** - Guide complet de la structure
-- **[🐍 Backend Python](./PYTHON_BACKEND.md)** - Intégration des APIs
-- **[✨ Bonnes Pratiques](./BEST_PRACTICES.md)** - Conventions et patterns
-
-## 🐛 Troubleshooting
-
-### "Android Gradle Error"
-```bash
-flutter clean
-flutter pub get
-flutter run
-```
-
-### "iOS Pods Error"
-```bash
-cd ios
-rm -rf Pods
-rm -rf Podfile.lock
-cd ..
-flutter pub get
-flutter run
-```
-
-### "API Connexion Timeout"
-- Vérifier que le backend Python est lancé
-- Vérifier l'adresse IP: `http://localhost:8000` ou `http://192.168.x.x:8000`
-- Vérifier les logs: `flutter run --verbose`
-
-## 📊 Statistiques du Projet
-
-| Métrique | Valeur |
-|----------|--------|
-| **Écrans** | 11 |
-| **Widgets Personnalisés** | 8+ |
-| **Fichiers Dart** | 30+ |
-| **Lignes de Code** | 3000+ |
-| **Architecture** | Clean + MVVM |
-| **State Management** | Provider |
-
-## 🌟 Fonctionnalités Futures
-
-- [ ] Notifications push
-- [ ] Synchronisation cloud
-- [ ] Authentification OAuth
-- [ ] Localisation multilingue
-- [ ] Offline mode amélioré
-- [ ] Widget iOS
-- [ ] Apple Watch app
-
-## 📞 Support & Contact
-
-Pour toute question ou problème:
-- 📧 Email: support@greenapp.dev
-- 🐛 Issues: [GitHub Issues](https://github.com/greenapp/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/greenapp/discussions)
-
-## 👨‍💻 À Propos
-
-**Green App** a été développée avec passion par une équipe d'experts Flutter pour offrir la meilleure expérience utilisateur dans la détection et le traitement des maladies des plantes.
-
-Construit avec ❤️ en utilisant **Flutter** et **Python**.
-
-## 📄 Licence
-
-MIT License - Voir [LICENSE](LICENSE) pour plus de détails.
-
----
-
-<div align="center">
-
-**Dernière mise à jour**: 19 janvier 2026  
-**Version**: 1.0.0  
-**Status**: ✅ Production Ready
-
-[⬆ Retour au haut](#-green-app---détection-de-maladies-des-plantes-avec-ia)
-
-</div>

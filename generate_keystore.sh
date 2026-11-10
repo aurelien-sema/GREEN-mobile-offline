@@ -1,4 +1,11 @@
 #!/bin/bash
+# ATTENTION : ne lancez ce script QUE pour une toute nouvelle application.
+# GREEN est déjà publiée avec android/keystore/green_app.jks : une nouvelle clé
+# empêcherait toute mise à jour sur les téléphones des utilisateurs.
+if [ "${1:-}" != "--nouvelle-application" ]; then
+  echo "Refusé : la clé existante doit être conservée. Voir BUILD_RELEASE.md."
+  exit 1
+fi
 
 # Script pour générer une clé de signature pour l'application Green App
 

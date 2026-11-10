@@ -1,0 +1,6 @@
+# Copier ce fichier en android/key.properties (ignoré par git) et compléter.
+# La clé elle-même ne change pas : android/keystore/green_app.jks, alias green_app_key.
+storeFile=keystore/green_app.jks
+keyAlias=green_app_key
+storePassword=MOT_DE_PASSE_DU_KEYSTORE
+keyPassword=MOT_DE_PASSE_DE_LA_CLE

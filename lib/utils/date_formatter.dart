@@ -1,55 +1,43 @@
-const Map<String, List<String>> _monthNamesByLocale = {
-  'fr': [
-    'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-    'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
-  ],
-  // Le pidgin camerounais n'a pas de noms de mois distincts standardisés ;
-  // on retombe sur l'anglais (langue de base du pidgin) plutôt que le français.
-  'en': [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ],
-  'pid': [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ],
+/// Dates lisibles sans dépendance (le pidgin reprend les mois anglais).
+const Map<String, List<String>> _months = {
+  'fr': ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
+  'en': ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 };
 
-const Map<String, String> _dateTimeSeparatorByLocale = {
-  'fr': ' à ',
-  'en': ' at ',
-  'pid': ' for ',
-};
+List<String> _monthsFor(String locale) => _months[locale] ?? _months['en']!;
 
-List<String> _monthNamesFor(String locale) =>
-    _monthNamesByLocale[locale] ?? _monthNamesByLocale['fr']!;
+String _two(int v) => v.toString().padLeft(2, '0');
 
-String _separatorFor(String locale) =>
-    _dateTimeSeparatorByLocale[locale] ?? _dateTimeSeparatorByLocale['fr']!;
-
-/// Format a DateTime as "Jour-Mois(lettres)-Année à/at Heure:Minute",
-/// dans la langue [locale] ('fr', 'en' ou 'pid'). Par défaut 'fr' pour
-/// rester compatible avec les appels existants qui ne précisent pas de locale.
-/// Example (fr): "3-février-2026 à 14:30"
-String formatDateFrench(DateTime dateTime, [String locale = 'fr']) {
-  final dt = dateTime.toLocal();
-  final month = _monthNamesFor(locale)[dt.month - 1];
-  final hour = dt.hour.toString().padLeft(2, '0');
-  final minute = dt.minute.toString().padLeft(2, '0');
-  return '${dt.day}-$month-${dt.year}${_separatorFor(locale)}$hour:$minute';
+/// « 7 novembre 2026 » / « 7 November 2026 ».
+String formatDate(DateTime date, String locale) {
+  final d = date.toLocal();
+  final m = _monthsFor(locale == 'fr' ? 'fr' : 'en')[d.month - 1];
+  return locale == 'fr' ? '${d.day} $m ${d.year}' : '$m ${d.day}, ${d.year}';
 }
 
-/// Format only the date part: "Jour-Mois(lettres)-Année"
-String formatDateOnlyFrench(DateTime dateTime, [String locale = 'fr']) {
-  final dt = dateTime.toLocal();
-  final month = _monthNamesFor(locale)[dt.month - 1];
-  return '${dt.day}-$month-${dt.year}';
+/// « 14:05 ».
+String formatTime(DateTime date) {
+  final d = date.toLocal();
+  return '${_two(d.hour)}:${_two(d.minute)}';
 }
 
-/// Format only the time part: "Heure:Minute"
-String formatTimeOnlyFrench(DateTime dateTime, [String locale = 'fr']) {
-  final dt = dateTime.toLocal();
-  final hour = dt.hour.toString().padLeft(2, '0');
-  final minute = dt.minute.toString().padLeft(2, '0');
-  return '$hour:$minute';
+/// « 7 novembre 2026 à 14:05 » / « November 7, 2026 at 14:05 ».
+String formatDateTime(DateTime date, String locale) {
+  final sep = switch (locale) { 'fr' => ' à ', 'pid' => ' for ', _ => ' at ' };
+  return '${formatDate(date, locale)}$sep${formatTime(date)}';
 }
+
+/// Regroupement de l'historique : 'today', 'yesterday', ou la date.
+String dayGroupLabel(DateTime date, String locale, String Function(String) t, {DateTime? now}) {
+  final n = (now ?? DateTime.now()).toLocal();
+  final d = date.toLocal();
+  final today = DateTime(n.year, n.month, n.day);
+  final day = DateTime(d.year, d.month, d.day);
+  final diff = today.difference(day).inDays;
+  if (diff == 0) return t('today');
+  if (diff == 1) return t('yesterday');
+  return formatDate(d, locale);
+}
+
+/// Compatibilité avec l'ancien nom.
+String formatDateFrench(DateTime dateTime, [String locale = 'fr']) => formatDateTime(dateTime, locale);

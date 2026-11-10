@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 et antérieurs. Les comptes, l'historique et les photos sont
+     sauvegardés ; le stockage chiffré (jeton GREEN Web) ne l'est pas : sa clé
+     vit dans le Keystore de l'appareil et ne serait pas restaurable. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+</full-backup-content>

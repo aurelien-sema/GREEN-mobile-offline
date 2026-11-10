@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../providers/locale_provider.dart';
-import '../../../providers/cart_provider.dart';
-import '../../../providers/marketplace_provider.dart';
+import '../../../core/theme/spacing.dart';
 import '../../../models/product_model.dart';
+import '../../../providers/cart_provider.dart';
+import '../../../providers/locale_provider.dart';
+import '../../../providers/marketplace_provider.dart';
+import '../../../providers/theme_provider.dart';
 import '../../../shared/widgets/custom_app_bar.dart';
-import '../../../shared/widgets/gradient_background.dart';
-import '../../../shared/widgets/app_pop_scope.dart';
 import 'seller_chat_screen.dart';
 
 class _PaymentOption {
@@ -58,25 +58,17 @@ class _CartScreenState extends State<CartScreen> {
     final t = context.watch<LocaleProvider>().t;
     final cart = context.watch<CartProvider>();
 
-    return AppPopScope(
-      onWillPop: () async {
-        context.go('/marketplace');
-        return false;
-      },
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
         appBar: CustomAppBar(title: t('myCart'), isDarkMode: isDarkMode),
-        body: GradientBackground(
-          isDarkMode: isDarkMode,
-          opacity: 0.1,
-          child: SafeArea(
+        body: SafeArea(
             child: cart.isEmpty
                 ? _buildEmptyState(context, isDarkMode, t)
                 : Column(
                     children: [
                       Expanded(
                         child: ListView(
-                          padding: const EdgeInsets.all(AppConstants.paddingMedium),
+                          padding: const EdgeInsets.all(Spacing.gutter),
                           children: [
                             ...cart.items.map(
                               (item) => Padding(
@@ -89,23 +81,19 @@ class _CartScreenState extends State<CartScreen> {
                               context,
                               isDarkMode,
                               title: t('paymentMethodTitle'),
-                              child: Column(
+                              child: RadioGroup<String>(
+                                groupValue: _paymentMethod,
+                                onChanged: (v) => setState(() => _paymentMethod = v ?? _paymentMethod),
+                                child: Column(
                                 children: _paymentOptions
                                     .map((o) => RadioListTile<String>(
                                           value: o.value,
-                                          groupValue: _paymentMethod,
-                                          onChanged: (v) => setState(() => _paymentMethod = v!),
                                           contentPadding: EdgeInsets.zero,
                                           activeColor: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                                          title: Row(
-                                            children: [
-                                              Icon(o.icon, size: 20, color: isDarkMode ? AppColors.darkHint : AppColors.lightHint),
-                                              const SizedBox(width: 8),
-                                              Expanded(child: Text(t(o.labelKey))),
-                                            ],
-                                          ),
+                                          title: Text(t(o.labelKey)),
                                         ))
                                     .toList(),
+                              ),
                               ),
                             ),
                             const SizedBox(height: AppConstants.paddingMedium),
@@ -113,12 +101,13 @@ class _CartScreenState extends State<CartScreen> {
                               context,
                               isDarkMode,
                               title: t('deliveryMethodTitle'),
-                              child: Column(
+                              child: RadioGroup<String>(
+                                groupValue: _deliveryMethod,
+                                onChanged: (v) => setState(() => _deliveryMethod = v ?? _deliveryMethod),
+                                child: Column(
                                 children: _deliveryOptions
                                     .map((o) => RadioListTile<String>(
                                           value: o.value,
-                                          groupValue: _deliveryMethod,
-                                          onChanged: (v) => setState(() => _deliveryMethod = v!),
                                           contentPadding: EdgeInsets.zero,
                                           activeColor: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
                                           title: Text(t(o.labelKey)),
@@ -133,6 +122,7 @@ class _CartScreenState extends State<CartScreen> {
                                         ))
                                     .toList(),
                               ),
+                              ),
                             ),
                           ],
                         ),
@@ -141,15 +131,13 @@ class _CartScreenState extends State<CartScreen> {
                     ],
                   ),
           ),
-        ),
-      ),
-    );
+      );
   }
 
   Widget _buildSectionCard(BuildContext context, bool isDarkMode, {required String title, required Widget child}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppConstants.paddingMedium),
+      padding: const EdgeInsets.all(Spacing.gutter),
       decoration: BoxDecoration(
         color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
         borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
@@ -299,7 +287,7 @@ class _CartScreenState extends State<CartScreen> {
   Widget _buildSummary(BuildContext context, CartProvider cart, bool isDarkMode, String Function(String) t) {
     final total = cart.totalPrice + _deliveryFee;
     return Container(
-      padding: const EdgeInsets.all(AppConstants.paddingMedium),
+      padding: const EdgeInsets.all(Spacing.gutter),
       decoration: BoxDecoration(
         color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
         boxShadow: [
@@ -375,7 +363,7 @@ class _CartScreenState extends State<CartScreen> {
               Container(
                 width: 72,
                 height: 72,
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), shape: BoxShape.circle),
                 child: const Center(child: Icon(Icons.check_circle, size: 44, color: Colors.green)),
               ),
               const SizedBox(height: 16),

@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../providers/theme_provider.dart';
+import '../../../core/theme/spacing.dart';
+import '../../../models/product_model.dart';
+import '../../../providers/cart_provider.dart';
 import '../../../providers/locale_provider.dart';
 import '../../../providers/marketplace_provider.dart';
-import '../../../models/product_model.dart';
-import '../../../shared/widgets/gradient_background.dart';
-import '../../../shared/widgets/app_pop_scope.dart';
+import '../../../providers/theme_provider.dart';
 import '../../../shared/widgets/cart_icon_button.dart';
-import '../../../providers/cart_provider.dart';
 import 'seller_chat_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
@@ -43,30 +42,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final avgPrice = (product.priceMin + product.priceMax) / 2;
     final totalPrice = avgPrice * _quantity;
 
-    return AppPopScope(
-      onWillPop: () async {
-        context.go('/marketplace');
-        return false;
-      },
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
         appBar: AppBar(
           title: Text(product.name),
           centerTitle: false,
           elevation: 0,
           backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/marketplace'),
-          ),
           actions: [CartIconButton(isDarkMode: isDarkMode)],
         ),
-        body: GradientBackground(
-          isDarkMode: isDarkMode,
-          opacity: 0.1,
-          child: SafeArea(
+        body: SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConstants.paddingMedium),
+              padding: const EdgeInsets.all(Spacing.gutter),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -87,57 +74,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                     child: _buildProductImage(product.imageUrl, isDarkMode),
-                  )
-                      .animate()
-                      .fadeIn(duration: AppConstants.animationNormal)
-                      .slideY(begin: -20, end: 0),
+                  ),
                   const SizedBox(height: AppConstants.paddingLarge),
 
                   // Nom et note
                   Text(
                     product.name,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-                  )
-                      .animate()
-                      .fadeIn(duration: AppConstants.animationNormal, delay: const Duration(milliseconds: 100))
-                      .slideY(begin: 10, end: 0),
+                  ),
                   const SizedBox(height: 8),
                   if (product.reviewCount > 0)
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 18, color: Colors.amber),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${product.rating} · ${product.reviewCount} ${t('reviewsSuffix')}',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
+                    Text(
+                      '${product.rating} / 5 · ${product.reviewCount} ${t('reviewsSuffix')}',
+                      style: Theme.of(context).textTheme.bodyMedium,
                     )
                   else
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.star_border,
-                          size: 18,
-                          color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          t('noReviewsYet'),
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                              ),
-                        ),
-                      ],
-                    )
-                    .animate()
-                    .fadeIn(duration: AppConstants.animationNormal, delay: const Duration(milliseconds: 150))
-                    .slideY(begin: 10, end: 0),
+                    Text(
+                      t('noReviewsYet'),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
+                          ),
+                    ),
                 const SizedBox(height: AppConstants.paddingLarge),
 
                 // Fournisseur
                 Container(
-                  padding: const EdgeInsets.all(AppConstants.paddingMedium),
+                  padding: const EdgeInsets.all(Spacing.gutter),
                   decoration: BoxDecoration(
                     color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
                     borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
@@ -150,18 +112,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(Icons.store, color: Colors.white, size: 24),
-                        ),
-                      ),
-                      const SizedBox(width: AppConstants.paddingMedium),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -191,28 +141,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ],
                   ),
-                )
-                    .animate()
-                    .fadeIn(duration: AppConstants.animationNormal, delay: const Duration(milliseconds: 200))
-                    .slideY(begin: 10, end: 0),
+                ),
                 const SizedBox(height: AppConstants.paddingLarge),
 
                 // Description
                 Text(
                   t('descriptionLabel'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                )
-                    .animate()
-                    .fadeIn(duration: AppConstants.animationNormal, delay: const Duration(milliseconds: 250))
-                    .slideY(begin: 10, end: 0),
+                ),
                 const SizedBox(height: 8),
                 Text(
                   product.description,
                   style: Theme.of(context).textTheme.bodyMedium,
-                )
-                    .animate()
-                    .fadeIn(duration: AppConstants.animationNormal, delay: const Duration(milliseconds: 300))
-                    .slideY(begin: 10, end: 0),
+                ),
                 const SizedBox(height: AppConstants.paddingLarge),
 
                 // Tags
@@ -235,14 +176,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                       const SizedBox(height: AppConstants.paddingLarge),
                     ],
-                  )
-                    .animate()
-                    .fadeIn(duration: AppConstants.animationNormal, delay: const Duration(milliseconds: 350))
-                    .slideY(begin: 10, end: 0),
+                  ),
 
                 // Prix
                 Container(
-                  padding: const EdgeInsets.all(AppConstants.paddingMedium),
+                  padding: const EdgeInsets.all(Spacing.gutter),
                   decoration: BoxDecoration(
                     color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
                     borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
@@ -279,10 +217,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ],
                   ),
-                )
-                    .animate()
-                    .fadeIn(duration: AppConstants.animationNormal, delay: const Duration(milliseconds: 375))
-                    .slideY(begin: 10, end: 0),
+                ),
                 const SizedBox(height: AppConstants.paddingLarge),
 
                 // Caractéristiques
@@ -293,10 +228,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       Text(
                         t('characteristics'),
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                      )
-                          .animate()
-                          .fadeIn(duration: AppConstants.animationNormal, delay: const Duration(milliseconds: 400))
-                          .slideY(begin: 10, end: 0),
+                      ),
                       const SizedBox(height: 8),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,10 +254,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   ),
                                 ))
                             .toList(),
-                      )
-                          .animate()
-                          .fadeIn(duration: AppConstants.animationNormal, delay: const Duration(milliseconds: 425))
-                          .slideY(begin: 10, end: 0),
+                      ),
                       const SizedBox(height: AppConstants.paddingLarge),
                     ],
                   ),
@@ -342,26 +271,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             ),
                       ),
                       const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 16),
-                          const SizedBox(width: 6),
-                          Text(
-                            product.location,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
-                          ),
-                        ],
+                      Text(
+                        product.location,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: AppConstants.paddingLarge),
                     ],
-                  )
-                      .animate()
-                      .fadeIn(duration: AppConstants.animationNormal, delay: const Duration(milliseconds: 450))
-                      .slideY(begin: 10, end: 0),
+                  ),
 
                 // Quantité et total
                 Container(
-                  padding: const EdgeInsets.all(AppConstants.paddingMedium),
+                  padding: const EdgeInsets.all(Spacing.gutter),
                   decoration: BoxDecoration(
                     color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
                     borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
@@ -428,18 +348,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ],
                   ),
-                )
-                    .animate()
-                    .fadeIn(duration: AppConstants.animationNormal, delay: const Duration(milliseconds: 400))
-                    .slideY(begin: 10, end: 0),
+                ),
                 const SizedBox(height: AppConstants.paddingLarge),
               ],
             ),
           ),
         ),
-      ),
       bottomNavigationBar: SafeArea(
-        minimum: const EdgeInsets.all(AppConstants.paddingMedium),
+        minimum: const EdgeInsets.all(Spacing.gutter),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
           child: ElevatedButton.icon(
@@ -458,13 +374,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     fontWeight: FontWeight.w600,
                   ),
             ),
-          )
-              .animate()
-              .fadeIn(duration: AppConstants.animationNormal)
-              .slideY(begin: 20, end: 0),
+          ),
         ),
       ),
-    ));
+    );
   }
 
   Widget _buildProductImage(String imageUrl, bool isDarkMode) {

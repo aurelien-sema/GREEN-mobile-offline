@@ -1,18 +1,29 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../services/history_service.dart';
-import '../../../models/scan_result_model.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../providers/locale_provider.dart';
-import '../../../utils/date_formatter.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../shared/widgets/app_pop_scope.dart';
-import 'dart:io';
 
-enum HistorySort { dateDesc, dateAsc, nameAsc, nameDesc }
+import '../../../core/theme/spacing.dart';
+import '../../../models/scan_result_model.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/diseases_provider.dart';
+import '../../../providers/locale_provider.dart';
+import '../../../services/green_web/photo_sync_service.dart';
+import '../../../services/history_service.dart';
+import '../../../shared/ui/ui.dart';
+import '../../../utils/date_formatter.dart';
+import '../scan_labels.dart';
 
+enum _Filter { all, diseased, healthy, uncertain }
+
+/// Historique des analyses.
+///
+/// Corrections v2 : liste défilable dans tout l'écran (la v1 imbriquait une
+/// liste dans une colonne avec rembourrage fixe), regroupement par jour,
+/// recherche, filtres par statut et par culture, suppression par glissement
+/// avec annulation, photos permanentes, retour système cohérent.
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
@@ -21,503 +32,339 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  List<ScanResultModel> _items = [];
-  HistorySort _sort = HistorySort.dateDesc;
+  final _searchCtrl = TextEditingController();
+  List<ScanResultModel> _all = const [];
+  bool _loading = true;
+  _Filter _filter = _Filter.all;
+  String? _crop;
+  bool _newestFirst = true;
+  StreamSubscription<void>? _sub;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _sub = historyService.onChanged.listen((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
-    final all = await historyService.getAllScans();
+    final items = await historyService.getAllScans();
+    if (!mounted) return;
     setState(() {
-      // getAllScans() renvoie une List.unmodifiable — en faire une copie
-      // mutable est indispensable puisque _applySort() appelle .sort() en
-      // place ; sans cette copie, .sort() lève une exception à l'intérieur
-      // même de setState(), qui empêche silencieusement tout rafraîchissement
-      // de l'écran (page vide, boutons de tri sans effet apparent).
-      _items = List<ScanResultModel>.from(all);
-      _applySort();
+      _all = items;
+      _loading = false;
     });
   }
 
-  void _applySort() {
-    switch (_sort) {
-      case HistorySort.dateDesc:
-        _items.sort((a, b) => b.scannedAt.compareTo(a.scannedAt));
-        break;
-      case HistorySort.dateAsc:
-        _items.sort((a, b) => a.scannedAt.compareTo(b.scannedAt));
-        break;
-      case HistorySort.nameAsc:
-        _items.sort((a, b) => a.diseaseName.compareTo(b.diseaseName));
-        break;
-      case HistorySort.nameDesc:
-        _items.sort((a, b) => b.diseaseName.compareTo(a.diseaseName));
-        break;
-    }
+  List<ScanResultModel> _visible(DiseasesProvider catalog, String locale, String Function(String) t) {
+    final q = DiseasesProvider.normalize(_searchCtrl.text);
+    final list = _all.where((s) {
+      final okFilter = switch (_filter) {
+        _Filter.all => true,
+        _Filter.diseased => s.isDiseased,
+        _Filter.healthy => s.isHealthy,
+        _Filter.uncertain => s.isUncertain || s.isError,
+      };
+      if (!okFilter) return false;
+      if (_crop != null) {
+        final crop = s.cropId ?? ScanLabels.entry(s, catalog)?.crops.firstOrNull;
+        if (crop != _crop) return false;
+      }
+      if (q.isEmpty) return true;
+      final text = DiseasesProvider.normalize(
+        '${ScanLabels.title(s, catalog, locale, t)} ${ScanLabels.plant(s, catalog, locale, t)}',
+      );
+      return q.split(' ').every(text.contains);
+    }).toList();
+    list.sort((a, b) => _newestFirst ? b.scannedAt.compareTo(a.scannedAt) : a.scannedAt.compareTo(b.scannedAt));
+    return list;
   }
 
-  void _showScanDetails(ScanResultModel scan, bool isDark) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _buildScanDetailSheet(scan, isDark),
-    );
-  }
-
-  Widget _buildScanDetailSheet(ScanResultModel scan, bool isDark) {
+  Future<void> _remove(ScanResultModel scan) async {
     final t = context.read<LocaleProvider>().t;
-    return DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (context, scrollController) => SingleChildScrollView(
-        controller: scrollController,
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.paddingLarge),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header avec titre
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkHint : AppColors.lightHint,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                t('scanDetails'),
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Image si disponible
-              if (scan.imageUrl.isNotEmpty && File(scan.imageUrl).existsSync())
-                Container(
-                  width: double.infinity,
-                  height: 250,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
-                    image: DecorationImage(
-                      image: FileImage(File(scan.imageUrl)),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                )
-              else
-                Container(
-                  width: double.infinity,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
-                    color: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 48,
-                      color: isDark ? AppColors.darkHint : AppColors.lightHint,
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 24),
-
-              // Maladie
-              _buildDetailSection(
-                context,
-                t('detectedDisease'),
-                scan.diseaseName,
-                isDark,
-              ),
-              const SizedBox(height: 16),
-
-              // Plantes affectées
-              _buildDetailSection(
-                context,
-                t('affectedPlantsLabel'),
-                scan.affectedPlants.isNotEmpty
-                    ? scan.affectedPlants.join(', ')
-                    : t('notSpecified'),
-                isDark,
-              ),
-              const SizedBox(height: 16),
-
-              // Confiance
-              _buildDetailSection(
-                context,
-                t('confidenceLevel'),
-                '${(scan.confidence * 100).toStringAsFixed(1)}%',
-                isDark,
-              ),
-              const SizedBox(height: 16),
-
-              // Date du scan
-              _buildDetailSection(
-                context,
-                t('scanDate'),
-                formatDateFrench(scan.scannedAt, context.read<LocaleProvider>().locale),
-                isDark,
-              ),
-              const SizedBox(height: 16),
-
-              // Traitement/Recommandation
-              _buildDetailSection(
-                context,
-                t('recommendationsLabel'),
-                scan.treatment,
-                isDark,
-              ),
-              const SizedBox(height: 24),
-
-              // Boutons d'action
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                      label: Text(t('closeDialog')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark
-                            ? AppColors.darkHint
-                            : AppColors.lightHint,
-                        foregroundColor:
-                            isDark ? Colors.black : Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        await historyService.removeScan(scan.id);
-                        if (!mounted) return;
-                        setState(() {
-                          _items.removeWhere((e) => e.id == scan.id);
-                        });
-                        Navigator.pop(context);
-                      },
-                      icon: const Icon(Icons.delete),
-                      label: Text(t('delete')),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+    final messenger = ScaffoldMessenger.of(context);
+    // Retrait immédiat de la liste affichée : Dismissible exige que l'élément
+    // glissé disparaisse dans la même image.
+    setState(() => _all = _all.where((s) => s.id != scan.id).toList());
+    final removed = await historyService.removeScan(scan.id);
+    if (removed == null) return;
+    var undone = false;
+    messenger.clearSnackBars();
+    final controller = messenger.showSnackBar(SnackBar(
+      content: Text(t('scanDeleted')),
+      action: SnackBarAction(
+        label: t('undo'),
+        onPressed: () {
+          undone = true;
+          historyService.restoreScan(removed);
+        },
       ),
-    );
+    ));
+    await controller.closed;
+    if (undone) return;
+    await historyService.purgeFiles(removed);
+    if (mounted) await context.read<PhotoSyncService>().cancel(removed.id);
   }
 
-  Widget _buildDetailSection(
-    BuildContext context,
-    String label,
-    String value,
-    bool isDark,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: isDark ? AppColors.darkHint : AppColors.lightHint,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(AppConstants.paddingMedium),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.darkBackground : AppColors.lightBackground,
-            borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-            border: Border.all(
-              color: isDark
-                  ? const Color.fromRGBO(66, 66, 66, 0.3)
-                  : const Color.fromRGBO(224, 224, 224, 0.5),
-            ),
-          ),
-          child: Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ),
-      ],
+  Future<void> _clearAll() async {
+    final t = context.read<LocaleProvider>().t;
+    final ok = await showConfirmDialog(
+      context,
+      title: t('clearHistoryTitle'),
+      message: t('clearHistoryMessage'),
+      confirmLabel: t('deleteAll'),
+      cancelLabel: t('cancel'),
+      destructive: true,
     );
+    if (!ok || !mounted) return;
+    final sync = context.read<PhotoSyncService>();
+    final uid = context.read<AuthProvider>().currentUser?.id;
+    await historyService.clearAll();
+    if (uid != null) await sync.forget(uid);
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.watch<ThemeProvider>().isDarkMode;
-    final t = context.watch<LocaleProvider>().t;
-    return AppPopScope(
-      onWillPop: () async {
-        // Cohérent avec la flèche de l'AppBar : /history n'est ouvert que
-        // depuis /home (bouton "Voir l'historique"), donc les deux contrôles
-        // de retour doivent mener au même endroit.
-        context.go('/home');
-        return false;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(t('history')),
-          centerTitle: false,
-          elevation: 0,
-          backgroundColor: isDark ? AppColors.darkSurface : AppColors.lightSurface,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/home'),
+    final l = context.watch<LocaleProvider>();
+    final t = l.t;
+    final catalog = context.watch<DiseasesProvider>();
+    final items = _visible(catalog, l.locale, t);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(t('history')),
+        actions: [
+          IconButton(
+            tooltip: t(_newestFirst ? 'sortDateDesc' : 'sortDateAsc'),
+            onPressed: () => setState(() => _newestFirst = !_newestFirst),
+            icon: Icon(_newestFirst ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded),
           ),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(AppConstants.paddingMedium),
-          child: Column(
-            children: [
-              // Tri avec boutons cliquables au lieu de dropdown
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    Text(
-                      t('sortBy'),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(width: 8),
-                    _sortButton(
-                      context,
-                      t('sortDateDesc'),
-                      _sort == HistorySort.dateDesc,
-                      () => _updateSort(HistorySort.dateDesc),
-                      isDark,
-                    ),
-                    const SizedBox(width: 6),
-                    _sortButton(
-                      context,
-                      t('sortDateAsc'),
-                      _sort == HistorySort.dateAsc,
-                      () => _updateSort(HistorySort.dateAsc),
-                      isDark,
-                    ),
-                    const SizedBox(width: 6),
-                    _sortButton(
-                      context,
-                      t('sortNameAZ'),
-                      _sort == HistorySort.nameAsc,
-                      () => _updateSort(HistorySort.nameAsc),
-                      isDark,
-                    ),
-                    const SizedBox(width: 6),
-                    _sortButton(
-                      context,
-                      t('sortNameZA'),
-                      _sort == HistorySort.nameDesc,
-                      () => _updateSort(HistorySort.nameDesc),
-                      isDark,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _items.isEmpty
-                    ? Center(
-                        child: Text(
-                          t('noScansYet'),
-                          style: TextStyle(
-                            color: isDark ? AppColors.darkHint : AppColors.lightHint,
-                          ),
-                        ),
-                      )
-                    : ListView.separated(
-                        itemCount: _items.length,
-                        separatorBuilder: (context, index) => const Divider(),
-                        itemBuilder: (context, index) {
-                          final it = _items[index];
-                          return GestureDetector(
-                            onTap: () => _showScanDetails(it, isDark),
-                            child: Card(
-                              elevation: 0,
-                              color: isDark
-                                  ? AppColors.darkSurface
-                                  : AppColors.lightSurface,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppConstants.radiusMedium,
-                                ),
-                                side: BorderSide(
-                                  color: isDark
-                                      ? const Color.fromRGBO(66, 66, 66, 0.3)
-                                      : const Color.fromRGBO(224, 224, 224, 0.5),
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(
-                                  AppConstants.paddingMedium,
-                                ),
-                                child: Row(
-                                  children: [
-                                    // Image thumbnail
-                                    if (it.imageUrl.isNotEmpty &&
-                                        File(it.imageUrl).existsSync())
-                                      Container(
-                                        width: 60,
-                                        height: 60,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            AppConstants.radiusSmall,
-                                          ),
-                                          image: DecorationImage(
-                                            image:
-                                                FileImage(File(it.imageUrl)),
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                      )
-                                    else
-                                      Container(
-                                        width: 60,
-                                        height: 60,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            AppConstants.radiusSmall,
-                                          ),
-                                          color: isDark
-                                              ? AppColors.darkBackground
-                                              : AppColors.lightBackground,
-                                        ),
-                                        child: Center(
-                                          child: Icon(
-                                            Icons.image_not_supported,
-                                            size: 24,
-                                            color: isDark
-                                                ? AppColors.darkHint
-                                                : AppColors.lightHint,
-                                          ),
-                                        ),
-                                      ),
-                                    const SizedBox(
-                                      width: AppConstants.paddingMedium,
-                                    ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            it.diseaseName,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleMedium
-                                                ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${t('plantsPrefix')}: ${it.affectedPlants.join(", ")}',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${formatDateFrench(it.scannedAt, context.read<LocaleProvider>().locale)} • ${(it.confidence * 100).toStringAsFixed(0)}%',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.copyWith(
-                                              color: isDark
-                                                  ? AppColors.darkHint
-                                                  : AppColors.lightHint,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Icon(
-                                      Icons.arrow_forward_ios,
-                                      size: 16,
-                                      color: isDark
-                                          ? AppColors.darkHint
-                                          : AppColors.lightHint,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-              ),
+          PopupMenuButton<String>(
+            enabled: _all.isNotEmpty,
+            onSelected: (v) {
+              if (v == 'clear') _clearAll();
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(value: 'clear', child: Text(t('clearHistoryTitle'))),
             ],
           ),
-        ),
+        ],
+      ),
+      body: SafeArea(
+        top: false,
+        child: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _all.isEmpty
+              ? EmptyState(
+                  icon: Icons.history_rounded,
+                  title: t('noScansYet'),
+                  message: t('noScansYetHint'),
+                  action: FilledButton.icon(
+                    onPressed: () => context.go('/camera'),
+                    icon: const Icon(Icons.center_focus_strong_rounded),
+                    label: Text(t('scanAPlant')),
+                  ),
+                )
+              : CustomScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  slivers: [
+                    SliverToBoxAdapter(child: _filters(catalog, l)),
+                    if (items.isEmpty)
+                      SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: EmptyState(icon: Icons.search_off_rounded, title: t('noResults')),
+                      )
+                    else
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(Spacing.gutter, 0, Spacing.gutter, Spacing.xxxl),
+                        sliver: SliverList.builder(
+                          itemCount: items.length,
+                          itemBuilder: (context, i) {
+                            final scan = items[i];
+                            final header = dayGroupLabel(scan.scannedAt, l.locale, t);
+                            final showHeader = i == 0 || dayGroupLabel(items[i - 1].scannedAt, l.locale, t) != header;
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (showHeader) GroupLabel(header),
+                                _HistoryTile(
+                                  scan: scan,
+                                  catalog: catalog,
+                                  locale: l.locale,
+                                  t: t,
+                                  onDelete: () => _remove(scan),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
       ),
     );
   }
 
-  void _updateSort(HistorySort sort) {
-    setState(() {
-      _sort = sort;
-      _applySort();
-    });
-  }
-
-  Widget _sortButton(
-    BuildContext context,
-    String label,
-    bool isActive,
-    VoidCallback onTap,
-    bool isDark,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isActive
-              ? (isDark ? AppColors.darkPrimary : AppColors.lightPrimary)
-              : (isDark ? AppColors.darkSurface : AppColors.lightSurface),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isActive
-                ? (isDark ? AppColors.darkPrimary : AppColors.lightPrimary)
-                : (isDark
-                    ? const Color.fromRGBO(66, 66, 66, 0.3)
-                    : const Color.fromRGBO(224, 224, 224, 0.5)),
+  Widget _filters(DiseasesProvider catalog, LocaleProvider l) {
+    final t = l.t;
+    final counts = {
+      _Filter.all: _all.length,
+      _Filter.diseased: _all.where((s) => s.isDiseased).length,
+      _Filter.healthy: _all.where((s) => s.isHealthy).length,
+      _Filter.uncertain: _all.where((s) => s.isUncertain || s.isError).length,
+    };
+    final labels = {
+      _Filter.all: t('filterAll'),
+      _Filter.diseased: t('filterDiseased'),
+      _Filter.healthy: t('filterHealthy'),
+      _Filter.uncertain: t('filterUncertain'),
+    };
+    const crops = ['maize', 'cassava', 'tomato'];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(Spacing.gutter, Spacing.md, Spacing.gutter, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _searchCtrl,
+            textInputAction: TextInputAction.search,
+            keyboardType: TextInputType.text,
+            inputFormatters: [LengthLimitingTextInputFormatter(60)],
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: t('searchHistory'),
+              prefixIcon: const Icon(Icons.search_rounded),
+              suffixIcon: _searchCtrl.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: t('clear'),
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => setState(_searchCtrl.clear),
+                    ),
+            ),
           ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final f in _Filter.values)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text('${labels[f]} (${counts[f]})'),
+                      selected: _filter == f,
+                      onSelected: (_) => setState(() => _filter = f),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final c in crops)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(catalog.cropName(c, l.locale)),
+                      selected: _crop == c,
+                      onSelected: (v) => setState(() => _crop = v ? c : null),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryTile extends StatelessWidget {
+  final ScanResultModel scan;
+  final DiseasesProvider catalog;
+  final String locale;
+  final String Function(String) t;
+  final VoidCallback onDelete;
+
+  const _HistoryTile({
+    required this.scan,
+    required this.catalog,
+    required this.locale,
+    required this.t,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = scanStatusStyle(scan.status);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Dismissible(
+        key: ValueKey(scan.id),
+        direction: DismissDirection.endToStart,
+        onDismissed: (_) => onDelete(),
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          decoration: BoxDecoration(color: theme.colorScheme.errorContainer, borderRadius: BorderRadius.circular(14)),
+          child: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.onErrorContainer),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isActive
-                ? Colors.white
-                : (isDark ? AppColors.darkHint : AppColors.lightHint),
+        child: Card(
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => context.push('/scan/${scan.id}'),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                children: [
+                  Hero(
+                    tag: 'scan-${scan.id}',
+                    child: LocalImage(path: scan.thumbPath ?? scan.imagePath, width: 64, height: 64, cacheWidth: 192),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          ScanLabels.title(scan, catalog, locale, t),
+                          style: theme.textTheme.titleMedium,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${ScanLabels.plant(scan, catalog, locale, t)} · ${formatTime(scan.scannedAt)} · ${(scan.confidence * 100).round()} %',
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(
+                    children: [
+                      Icon(style.icon, color: style.color),
+                      if (scan.sync.status == SyncStatus.sent) ...[
+                        const SizedBox(height: 6),
+                        Icon(Icons.cloud_done_rounded, size: 16, color: theme.colorScheme.onSurfaceVariant),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

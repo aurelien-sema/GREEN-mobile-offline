@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../providers/locale_provider.dart';
+import '../../../core/theme/spacing.dart';
 import '../../../models/product_model.dart';
-import '../../../shared/widgets/custom_scroll_physics.dart';
+import '../../../providers/locale_provider.dart';
+import '../../../providers/theme_provider.dart';
 
 class _SellerMessage {
   final String text;
@@ -137,8 +138,7 @@ class _SellerChatScreenState extends State<SellerChatScreen> {
                   )
                 : ListView.builder(
                     controller: _scrollController,
-                    physics: const SmoothScrollPhysics(),
-                    padding: const EdgeInsets.all(AppConstants.paddingMedium),
+                    padding: const EdgeInsets.all(Spacing.gutter),
                     itemCount: _messages.length + (_isTyping ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index == _messages.length) {
@@ -182,7 +182,7 @@ class _SellerChatScreenState extends State<SellerChatScreen> {
           SafeArea(
             top: false,
             child: Padding(
-              padding: const EdgeInsets.all(AppConstants.paddingMedium),
+              padding: const EdgeInsets.all(Spacing.gutter),
               child: Row(
                 children: [
                   Expanded(

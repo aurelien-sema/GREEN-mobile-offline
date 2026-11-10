@@ -32,12 +32,27 @@ class LocaleProvider extends ChangeNotifier {
   Future<void> setLocale(String newLocale) async {
     if (!AppStrings.availableLocales.contains(newLocale)) return;
     _locale = newLocale;
-    await _prefs.setString(_localeKey, newLocale);
     notifyListeners();
+    try {
+      _prefs = await SharedPreferences.getInstance();
+      await _prefs.setString(_localeKey, newLocale);
+    } catch (e) {
+      debugPrint('Langue non enregistrée : $e');
+    }
   }
 
   /// Get localized string by key.
   String t(String key) => AppStrings.get(key, _locale);
+
+  /// Texte traduit avec paramètres : tf('attemptsLeft', {'n': 2}) remplace {n}.
+  String tf(String key, Map<String, Object> params) {
+    var s = AppStrings.get(key, _locale);
+    params.forEach((k, v) => s = s.replaceAll('{$k}', '$v'));
+    return s;
+  }
+
+  /// Locale Intl / Flutter correspondante (le pidgin utilise l'anglais).
+  String get materialLanguage => _locale == 'fr' ? 'fr' : 'en';
 
   /// Get all available locales.
   List<String> get availableLocales => AppStrings.availableLocales;

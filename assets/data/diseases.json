@@ -1,739 +1,3993 @@
-[
-  {
-    "id": "healthy",
-    "name": "Saine",
-    "scientificName": "N/A",
-    "affectedPlants": ["Toutes les plantes"],
-    "symptoms": [],
-    "actions": [
-      "Continuez l'observation régulière",
-      "Maintenez une bonne hygiène du jardin",
-      "Assurez un arrosage adapté",
-      "Pratiquez la rotation des cultures"
-    ],
-    "aliases": ["Healthy", "Healthy Plant"]
+{
+ "version": 3,
+ "updated": "2026-11-09",
+ "note": "Base de maladies hors ligne de GREEN. modelLabels relie chaque classe d'un modèle de vision (TFLite actif et ONNX conservé) à sa fiche.",
+ "crops": {
+  "maize": {
+   "fr": "Maïs",
+   "en": "Maize"
   },
-  {
-    "id": "mildiou",
-    "name": "Mildiou",
-    "scientificName": "Phytophthora infestans",
-    "affectedPlants": ["Tomate", "Pomme de terre", "Poivre", "Aubergine"],
-    "symptoms": [
-      "Taches brunes huileuses sur les feuilles",
-      "Taches sombres avec auréole jaune",
-      "Taches sombres sur les fruits",
-      "Feuilles flétrissantes et nécrosées",
-      "Pourriture à la base des tiges"
-    ],
-    "actions": [
-      "Retirer et détruire les parties infectées",
-      "Améliorer le drainage et diminuer l'humidité",
-      "Éviter l'arrosage par le haut",
-      "Appliquer un fongicide (cuivre ou mancozèbe selon recommandation locale)",
-      "Alterner les cultures et pratiquer une rotation de 3-4 ans",
-      "Espacer les plants pour améliorer la ventilation"
-    ],
-    "aliases": ["Late Blight", "Phytophtora"]
+  "cassava": {
+   "fr": "Manioc",
+   "en": "Cassava"
   },
-  {
-    "id": "oidium",
-    "name": "Oïdium",
-    "scientificName": "Erysiphales (gén.)",
-    "affectedPlants": ["Courgette", "Vigne", "Céréales", "Pois", "Haricot", "Melon"],
-    "symptoms": [
-      "Poudre blanche farineuse sur la surface des feuilles",
-      "Distorsion des jeunes tissus",
-      "Feuilles jaunissantes et desséchées",
-      "Présence de petits points noirs (cléistothèques) en fin de saison"
-    ],
-    "actions": [
-      "Supprimer feuilles fortement touchées",
-      "Favoriser l'aération et éclaircissement de la plante",
-      "Éviter trop d'azote qui favorise la maladie",
-      "Utiliser traitement à base de soufre ou fongicide adapté",
-      "Pulvériser dès les premiers symptômes",
-      "Arroser à la base pour éviter l'humidité foliaire"
-    ],
-    "aliases": ["Powdery Mildew"]
+  "tomato": {
+   "fr": "Tomate",
+   "en": "Tomato"
   },
-  {
-    "id": "rouille",
-    "name": "Rouille",
-    "scientificName": "Pucciniales",
-    "affectedPlants": ["Blé", "Maïs", "Orge", "Plantes ornementales", "Hortensia", "Bégonias"],
-    "symptoms": [
-      "Pustules orange/rouille sur la face inférieure des feuilles",
-      "Taches jaunes ou chlorotiques sur la face supérieure",
-      "Perte de vigueur et chute précoce des feuilles",
-      "Pustules noires en fin de saison"
-    ],
-    "actions": [
-      "Enlever débris végétaux et éviter l'humidité prolongée",
-      "Planter des variétés résistantes si disponibles",
-      "Appliquer fongicides à base de cuivre en prévention",
-      "Améliorer l'aération des feuillages",
-      "Arrosage par le bas uniquement",
-      "Rotation cultures de 2-3 ans minimum"
-    ],
-    "aliases": ["Rust", "Rust Disease"]
+  "plantain": {
+   "fr": "Plantain et banane",
+   "en": "Plantain and banana"
   },
-  {
-    "id": "anthracnose",
-    "name": "Anthracnose",
-    "scientificName": "Colletotrichum spp.",
-    "affectedPlants": ["Fruits", "Légumes", "Arbres fruitiers", "Manioc", "Haricot", "Pois"],
-    "symptoms": [
-      "Taches nécrotiques anguleuses sur feuilles",
-      "Taches noires ou pourriture sur fruits",
-      "Branches mortes ou dépérissantes",
-      "Chancres sur branches et troncs",
-      "Spores rosées en condition humide"
-    ],
-    "actions": [
-      "Éliminer les parties atteintes et réduire l'humidité",
-      "Éviter les blessures aux plantes",
-      "Appliquer traitements fongicides de contact",
-      "Utiliser semences certifiées saines",
-      "Désinfecter outils de coupe",
-      "Rotation des cultures obligatoire"
-    ],
-    "aliases": ["Anthracnose"]
+  "cocoa": {
+   "fr": "Cacaoyer",
+   "en": "Cocoa"
   },
-  {
-    "id": "fusariose",
-    "name": "Fusariose (Flétrissement fusarien)",
-    "scientificName": "Fusarium spp.",
-    "affectedPlants": ["Tomate", "Bananier", "Plantes ornementales", "Cacao", "Cotonnier"],
-    "symptoms": [
-      "Jaunissement uni-latéral des feuilles",
-      "Pourriture racinaire ou collet",
-      "Dépérissement progressif de la plante",
-      "Coloration brun-rouge interne du système vasculaire",
-      "Flètrissement soudain lors de chaleurs"
-    ],
-    "actions": [
-      "Utiliser plants sains et sol bien drainé",
-      "Éviter excès d'arrosage",
-      "Rotation des cultures de 3-4 ans minimum",
-      "Désinfection du sol si possible (solarisation)",
-      "Planter variétés résistantes",
-      "Éliminer plants infectés complètement"
-    ],
-    "aliases": ["Fusarium Wilt"]
+  "coffee": {
+   "fr": "Caféier",
+   "en": "Coffee"
   },
-  {
-    "id": "bacterial-wilt",
-    "name": "Flétrissement bactérien",
-    "scientificName": "Ralstonia solanacearum",
-    "affectedPlants": ["Tomate", "Aubergine", "Banane", "Cacao", "Poivre", "Pomme de terre"],
-    "symptoms": [
-      "Flétrissement rapide sans jaunissement du feuillage",
-      "Décoloration marron du tissu vasculaire",
-      "Dépérissement complet de la plante",
-      "Écoulement de sécrétions visqueuses",
-      "Mort soudaine de plantations entières"
-    ],
-    "actions": [
-      "Utiliser plants certifiés sains",
-      "Éviter l'excès d'humidité du sol",
-      "Rotation de cultures obligatoire (au moins 2-3 ans)",
-      "Éliminer plants malades complètement",
-      "Nettoyer et désinfecter tous les outils",
-      "Quarantaine stricte de nouvelles plantations",
-      "Maintenir sol bien drainé"
-    ],
-    "aliases": ["Brown Rot", "Bacterial Wilt"]
+  "groundnut": {
+   "fr": "Arachide",
+   "en": "Groundnut"
   },
-  {
-    "id": "black-sigatoka",
-    "name": "Sigatoka noir",
-    "scientificName": "Pseudocercospora fijiensis",
-    "affectedPlants": ["Bananier", "Plantain"],
-    "symptoms": [
-      "Petites taches foliaires sombres longues et étroites",
-      "Taches devenant noires progressivement",
-      "Feuilles noircissantes conduisant à perte de rendement",
-      "Défaut de maturation des fruits",
-      "Défoliation complète en absence de traitement"
-    ],
-    "actions": [
-      "Enlever feuilles très atteintes régulièrement",
-      "Améliorer la ventilation des parcelles",
-      "Appliquer traitements fongicides prescrits localement",
-      "Utiliser variétés tolérantes",
-      "Gestion stricte des débris végétaux",
-      "Pulvérisations préventives dès apparition premiers foyers"
-    ],
-    "aliases": ["Black Sigatoka", "Sigatoka Noir"]
+  "beans": {
+   "fr": "Haricot",
+   "en": "Beans"
   },
-  {
-    "id": "cassava-mosaic",
-    "name": "Cassava Mosaic Disease",
-    "scientificName": "Geminiviridae",
-    "affectedPlants": ["Manioc"],
-    "symptoms": [
-      "Mosaïque de feuilles (zones chlorotiques)",
-      "Rétrécissement des feuilles",
-      "Retard de croissance et diminution de rendement"
-    ],
-    "actions": [
-      "Planter matériel sain certifié",
-      "Éliminer plants infectés",
-      "Contrôle des vecteurs (insectes)"
-    ],
-    "aliases": []
+  "rice": {
+   "fr": "Riz",
+   "en": "Rice"
   },
-  {
-    "id": "maize-streak",
-    "name": "Maize Streak Virus",
-    "scientificName": "Mastrevirus",
-    "affectedPlants": ["Maïs"],
-    "symptoms": [
-      "Lignes chlorotiques parallèles sur feuilles",
-      "Jaunissement et réduction de la croissance",
-      "Diminution significative du rendement"
-    ],
-    "actions": [
-      "Utiliser variétés résistantes",
-      "Contrôler les cicadelles (vecteurs)",
-      "Retirer plants gravement infectés"
-    ],
-    "aliases": []
+  "yam": {
+   "fr": "Igname",
+   "en": "Yam"
   },
-  {
-    "id": "coffee-leaf-rust",
-    "name": "Rouille du café",
-    "scientificName": "Hemileia vastatrix",
-    "affectedPlants": ["Caféier"],
-    "symptoms": [
-      "Poudre jaune/orange sous les feuilles",
-      "Défoliation avancée et baisse de productivité",
-      "Branches affaiblies"
-    ],
-    "actions": [
-      "Élaguer pour réduire l'humidité",
-      "Planter variétés résistantes si disponible",
-      "Appliquer traitements fongicides selon recommandations"
-    ],
-    "aliases": ["Coffee Leaf Rust"]
+  "cocoyam": {
+   "fr": "Macabo et taro",
+   "en": "Cocoyam and taro"
   },
-  {
-    "id": "bacterial-wilt",
-    "name": "Flétrissement bactérien",
-    "scientificName": "Ralstonia solanacearum",
-    "affectedPlants": ["Tomate", "Aubergine", "Banane", "Cacao"],
-    "symptoms": [
-      "Flétrissement rapide sans jaunissement du feuillage",
-      "Décoloration marron du tissu vasculaire",
-      "Dépérissement complet de la plante"
-    ],
-    "actions": [
-      "Utiliser plants certifiés sains",
-      "Éviter l'excès d'humidité du sol",
-      "Rotation de cultures obligatoire",
-      "Éliminer plants malades et nettoyer outils"
-    ],
-    "aliases": ["Brown Rot", "Bacterial Wilt"]
+  "pepper": {
+   "fr": "Piment et poivron",
+   "en": "Pepper"
   },
-  {
-    "id": "early-blight",
-    "name": "Alternariose (Brûlure précoce)",
-    "scientificName": "Alternaria solani",
-    "affectedPlants": ["Tomate", "Pomme de terre", "Aubergine"],
-    "symptoms": [
-      "Petites taches brunes concentriques sur feuilles",
-      "Lésions en cibles avec anneaux nécrotiques",
-      "Feuilles jaunissantes et chute prématurée",
-      "Apparition d'abord sur feuilles basses",
-      "Taches circulaires avec crête noire"
-    ],
-    "actions": [
-      "Améliorer l'aération et réduire l'arrosage par le haut",
-      "Retirer feuilles infra-infectées régulièrement",
-      "Appliquer fongicides préventifs dès début saison",
-      "Désinfecter outils et matériel",
-      "Éviter l'humidité foliaire prolongée",
-      "Paillage pour éviter éclaboussure du sol"
-    ],
-    "aliases": ["Alternaria Blight", "Early Blight"]
+  "cucurbits": {
+   "fr": "Concombre, pastèque, courge",
+   "en": "Cucumber, watermelon, squash"
   },
-  {
-    "id": "leaf-spot-fungi",
-    "name": "Tache foliaire fongique",
-    "scientificName": "Cercospora spp., Bipolaris spp.",
-    "affectedPlants": ["Maïs", "Sorgho", "Blé", "Riz"],
-    "symptoms": [
-      "Taches rectangulaires ou circulaires gris-brun",
-      "Centre de tache pâle avec bordure foncée",
-      "Chute des feuilles et réduction de la photosynthèse"
-    ],
-    "actions": [
-      "Choisir variétés résistantes",
-      "Éviter accumulat humidité",
-      "Appliquer fongicides à base de cuivre",
-      "Rotation des cultures sur 2-3 ans"
-    ],
-    "aliases": ["Cercospora Leaf Spot"]
+  "onion": {
+   "fr": "Oignon",
+   "en": "Onion"
   },
-  {
-    "id": "cassava-mosaic",
-    "name": "Mosaïque du manioc",
-    "scientificName": "Geminiviridae",
-    "affectedPlants": ["Manioc"],
-    "symptoms": [
-      "Mosaïque de zones chlorotiques sur feuilles",
-      "Rétrécissement des feuilles",
-      "Retard de croissance important"
-    ],
-    "actions": [
-      "Planter boutures certifiées saines",
-      "Éliminer plants infectés",
-      "Contrôle des insectes vecteurs (mouches blanches)",
-      "Quarantaine de nouvelles boutures"
-    ],
-    "aliases": ["Cassava Mosaic"]
-  },
-  {
-    "id": "maize-streak-virus",
-    "name": "Virus de la strie du maïs",
-    "scientificName": "Mastrevirus",
-    "affectedPlants": ["Maïs"],
-    "symptoms": [
-      "Lignes chlorotiques parallèles sur feuilles",
-      "Jaunissement et nécrose des feuilles",
-      "Réduction importante du rendement"
-    ],
-    "actions": [
-      "Utiliser variétés résistantes",
-      "Contrôler cicadelles (vecteurs) avec insecticides",
-      "Retirer plants gravement infectés",
-      "Semer plus tard après 1ère génération cicadelles"
-    ],
-    "aliases": ["Maize Streak"]
-  },
-  {
-    "id": "cocoa-frosty-pod",
-    "name": "Frosty Pod Rot du cacao",
-    "scientificName": "Moniliophthora roreri",
-    "affectedPlants": ["Cacao"],
-    "symptoms": [
-      "Pourriture blanche givrée sur gousses",
-      "Désséchement complet des gousses",
-      "Perte totale du rendement de la plante"
-    ],
-    "actions": [
-      "Enlever toutes gousses infectées ou mortes",
-      "Maintenir une bonne santé général de la plante",
-      "Améliorer aération en élagage léger",
-      "Utiliser fongicides recommandés"
-    ],
-    "aliases": ["Frosty Pod Rot"]
-  },
-  {
-    "id": "rice-blast",
-    "name": "Pyriculariose du riz",
-    "scientificName": "Magnaporthe grisea",
-    "affectedPlants": ["Riz"],
-    "symptoms": [
-      "Lésions spindle-shaped gris-brun",
-      "Ceinturage des tiges et panicules",
-      "Baisse dramatique de rendement"
-    ],
-    "actions": [
-      "Utiliser variétés résistantes",
-      "Éviter fertilisation azotée excessive",
-      "Appliquer fongicides en début épiaison",
-      "Enlever résidus de culture après moisson"
-    ],
-    "aliases": ["Rice Blast"]
-  },
-  {
-    "id": "citrus-canker",
-    "name": "Chancre bactérien des agrumes",
-    "scientificName": "Xanthomonas citri",
-    "affectedPlants": ["Citrus", "Citron", "Orange"],
-    "symptoms": [
-      "Lésions surélevées avec auréole jaune",
-      "Ulcérations sur fruits et feuilles",
-      "Défoliation et diminution de productivité"
-    ],
-    "actions": [
-      "Planter plants indemnes certifiés",
-      "Éviter excès d'humidité foliaire",
-      "Pratiquer élagage sanitaire sévère",
-      "Appliquer cuivre oxychlorure préventvif"
-    ],
-    "aliases": ["Citrus Canker"]
-  },
-  {
-    "id": "downy-mildew",
-    "name": "Mildiou blanc",
-    "scientificName": "Plasmopara viticola, Peronospora",
-    "affectedPlants": ["Vigne", "Houblon", "Laitue"],
-    "symptoms": [
-      "Duvet blanc grisâtre sur face inférieure des feuilles",
-      "Taches huileuses sur face supérieure",
-      "Flétrissement et chute des feuilles"
-    ],
-    "actions": [
-      "Améliorer ventilation et aération",
-      "Éviter humidité excessive et rosée prolongée",
-      "Appliquer fongicides à base de cuivre",
-      "Enlever débris infectés"
-    ],
-    "aliases": ["Downy Mildew"]
-  },
-  {
-    "id": "scale-insects",
-    "name": "Cochenilles",
-    "scientificName": "Hemiptera - Coccoidea",
-    "affectedPlants": ["Cacao", "Caféier", "Agrumes", "Manguier"],
-    "symptoms": [
-      "Petits insectes écailleux recouvrant branches et feuilles",
-      "Feuilles collantes (miellée)",
-      "Ralentissement croissance et dépérissement"
-    ],
-    "actions": [
-      "Nettoyer branches infectées avec brosse",
-      "Appliquer savon insecticide ou huile minérale",
-      "Utiliser insecticides systémiques si nécessaire",
-      "Favoriser insectes prédateurs"
-    ],
-    "aliases": ["Scale Insects"]
-  },
-  {
-    "id": "root-knot-nematode",
-    "name": "Nématode des racines",
-    "scientificName": "Meloidogyne spp.",
-    "affectedPlants": ["Tomate", "Aubergine", "Concombre", "Carotte"],
-    "symptoms": [
-      "Nodosités ou renflements sur racines",
-      "Flétrissement des parties aériennes",
-      "Ralentissement de croissance",
-      "Réduction du rendement"
-    ],
-    "actions": [
-      "Rotation des cultures (3-4 ans)",
-      "Planter variétés résistantes",
-      "Améliorer drainage du sol",
-      "Solarisation du sol si possible"
-    ],
-    "aliases": ["Root Knot Nematode"]
-  },
-  {
-    "id": "cotton-leaf-curl",
-    "name": "Recroquevillement de feuille du coton",
-    "scientificName": "Begomovirus",
-    "affectedPlants": ["Cotonnier"],
-    "symptoms": [
-      "Recourbement des bords foliaires",
-      "Jaunissement et chlorose",
-      "Réduction sévère de rendement"
-    ],
-    "actions": [
-      "Contrôler mouches blanches vecteurs",
-      "Planter variétés tolérantes",
-      "Enlever plants fortement infectés",
-      "Appliquer insecticides systémiques"
-    ],
-    "aliases": ["Cotton Leaf Curl"]
-  },
-  {
-    "id": "banana-xanthom",
-    "name": "Flétrissement bactérien de la banane",
-    "scientificName": "Xanthomonas campestris pv. musacearum",
-    "affectedPlants": ["Bananier"],
-    "symptoms": [
-      "Jaunissement des feuilles",
-      "Sécrétion de gouttelettes rougeâtres",
-      "Dépérissement rapide de la plante"
-    ],
-    "actions": [
-      "Utiliser plants de pépinière sain",
-      "Désinfecter les outils de coupe",
-      "Éliminer plants malades complètement",
-      "Quarantaine de nouvelles plantations"
-    ],
-    "aliases": ["Banana Xanthomonas"]
-  },
-  {
-    "id": "bean-anthracnose",
-    "name": "Anthracnose du haricot",
-    "scientificName": "Colletotrichum lindemuthianum",
-    "affectedPlants": ["Haricot", "Pois"],
-    "symptoms": [
-      "Taches circulaires brun foncé sur feuilles",
-      "Lésions sur gousses et graines",
-      "Perte de viabilité des semences"
-    ],
-    "actions": [
-      "Utiliser semences certifiées saines",
-      "Éviter l'humidité foliaire",
-      "Appliquer fongicides en début de culture",
-      "Rotation des cultures obligatoire"
-    ],
-    "aliases": ["Bean Anthracnose"]
-  },
-  {
-    "id": "peanut-aflatoxin",
-    "name": "Aflatoxine de l'arachide",
-    "scientificName": "Aspergillus flavus",
-    "affectedPlants": ["Arachide", "Maïs"],
-    "symptoms": [
-      "Pourriture pré-récolte des gousses",
-      "Contamination de la récolte par moisissures",
-      "Décoloration et décomposition"
-    ],
-    "actions": [
-      "Récolter au moment optimal",
-      "Sécher rapidement et correctement",
-      "Stocker dans endroit sec et frais",
-      "Éviter humidité excessive pendant la culture"
-    ],
-    "aliases": ["Aflatoxin"]
-  },
-  {
-    "id": "whiteflies",
-    "name": "Mouches blanches",
-    "scientificName": "Bemisia tabaci",
-    "affectedPlants": ["Tomate", "Chou", "Courges", "Coton"],
-    "symptoms": [
-      "Jaunissement et taches jaunes sur feuilles",
-      "Miellée (sécrétion collante)",
-      "Transmission de virus"
-    ],
-    "actions": [
-      "Utiliser pièges jaunes pour monitoring",
-      "Appliquer insecticides systémiques",
-      "Utiliser filets anti-insectes si possible",
-      "Contrôler les mauvaises herbes hôtes"
-    ],
-    "aliases": ["Whiteflies"]
-  },
-  {
-    "id": "stem-borer",
-    "name": "Foreurs des tiges",
-    "scientificName": "Lepidoptera - Noctuidae",
-    "affectedPlants": ["Maïs", "Sorgho", "Riz"],
-    "symptoms": [
-      "Larves à l'intérieur des tiges et feuilles",
-      "Trous de sortie visibles sur tiges",
-      "Casse des tiges et flétrissement apical"
-    ],
-    "actions": [
-      "Utiliser plants résistants si disponibles",
-      "Retirer tiges infectées à la main",
-      "Appliquer insecticides au collet",
-      "Enfouir résidus de culture"
-    ],
-    "aliases": ["Stem Borer"]
-  },
-  {
-    "id": "armyworm",
-    "name": "Légionnaire d'automne",
-    "scientificName": "Spodoptera frugiperda",
-    "affectedPlants": ["Maïs", "Sorgho", "Riz", "Coton"],
-    "symptoms": [
-      "Défoliation complète des jeunes plants",
-      "Trous importants dans feuillage",
-      "Mortalité des plantules"
-    ],
-    "actions": [
-      "Monitoring régulier des champs",
-      "Application insecticides en début infestation",
-      "Utiliser pièges à phéromones",
-      "Enfouir résidus de culture"
-    ],
-    "aliases": ["Fall Armyworm", "Légionnaire"]
-  },
-  {
-    "id": "locusts",
-    "name": "Criquets",
-    "scientificName": "Acrididae",
-    "affectedPlants": ["Toutes les cultures", "Herbes"],
-    "symptoms": [
-      "Défoliation totale des cultures",
-      "Destruction complète des feuillages",
-      "Invasions massives rapides"
-    ],
-    "actions": [
-      "Alerte précoce des services agricoles",
-      "Arrosage insecticide aérien si possible",
-      "Creuser fossés barrière",
-      "Couverture du sol avec géotextiles"
-    ],
-    "aliases": ["Locusts", "Criquets"]
-  },
-  {
-    "id": "termites",
-    "name": "Termites",
-    "scientificName": "Isoptera",
-    "affectedPlants": ["Arbres", "Cultures pérennes"],
-    "symptoms": [
-      "Galeries et terriers dans tronc",
-      "Dépérissement progressif des branches",
-      "Chute complète de la plante"
-    ],
-    "actions": [
-      "Badigeon du tronc avec insecticides",
-      "Retrait du bois mort et débris",
-      "Traitement du sol autour du tronc",
-      "Aération du sol pour réduire humidité"
-    ],
-    "aliases": ["Termites", "Termites"]
-  },
-  {
-    "id": "spider-mites",
-    "name": "Acariens",
-    "scientificName": "Acarina",
-    "affectedPlants": ["Cacao", "Tomate", "Courges", "Haricot"],
-    "symptoms": [
-      "Feuilles tachetées et pointillées",
-      "Toiles fines visibles sous feuilles",
-      "Décoloration et desséchement"
-    ],
-    "actions": [
-      "Appliquer savons insecticides",
-      "Utiliser huile minérale ou neem",
-      "Augmenter humidité si possible",
-      "Éviter excès d'azote"
-    ],
-    "aliases": ["Spider Mites", "Acariens"]
-  },
-  {
-    "id": "blight-disease",
-    "name": "Brûlure bactérienne",
-    "scientificName": "Xanthomonas spp.",
-    "affectedPlants": ["Riz", "Tomate", "Poivre"],
-    "symptoms": [
-      "Taches brun-rougeâtre avec bordure jaune",
-      "Encroûtement et perforations",
-      "Dépérissement du feuillage"
-    ],
-    "actions": [
-      "Utiliser graines certifiées saines",
-      "Éviter l'humidité excessive",
-      "Appliquer cuivre oxychlorure",
-      "Rotation cultures sur 2 ans"
-    ],
-    "aliases": ["Blight", "Bacterial Blight"]
-  },
-  {
-    "id": "damping-off",
-    "name": "Fonte des semis",
-    "scientificName": "Pythium, Rhizoctonia",
-    "affectedPlants": ["Tomate", "Poivron", "Chou", "Haricot"],
-    "symptoms": [
-      "Dépérissement de plantules à la surface du sol",
-      "Noircissement du collet",
-      "Mort des jeunes plantes après levée"
-    ],
-    "actions": [
-      "Utiliser terreau désinfecté",
-      "Améliorer drainage et aération",
-      "Éviter surhumidité",
-      "Arroser modérément avec eau claire"
-    ],
-    "aliases": ["Damping Off"]
-  },
-  {
-    "id": "corn-brown-spots",
-    "name": "Taches brunes",
-    "scientificName": "Colletotrichum graminicola / Cercospora spp.",
-    "affectedPlants": ["Maïs"],
-    "symptoms": [
-      "Petites taches rondes ou allongées brun foncé",
-      "Taches progressives avec concentriques",
-      "Coalescence des lésions avec progression rapide",
-      "Pourriture des épis en condition très humide"
-    ],
-    "actions": [
-      "Utiliser des variétés résistantes si disponibles",
-      "Éliminer les résidus de culture infectés",
-      "Pratiquer la rotation des cultures",
-      "Appliquer des fongicides en début d'infection",
-      "Améliorer la ventilation des cultures"
-    ],
-    "aliases": ["Brown Spots", "Corn Leaf Spots"]
-  },
-  {
-    "id": "corn-mildew",
-    "name": "Mildiou du maïs",
-    "scientificName": "Sclerophthora macrospora",
-    "affectedPlants": ["Maïs"],
-    "symptoms": [
-      "Bandes chlorotiques allongées sur feuilles",
-      "Enroulement des feuilles",
-      "Croissance rabougrie et anormale",
-      "Dépérissement général de la plante"
-    ],
-    "actions": [
-      "Utiliser des semences certifiées",
-      "Drainer les sols à mauvais drainage",
-      "Éloigner de la source d'humidité excessive",
-      "Rotation des cultures obligatoire",
-      "Traitement fongicide préventif en conditions favorables"
-    ],
-    "aliases": ["Mildiou", "Downy Mildew of Maize"]
-  },
-  {
-    "id": "corn-stripe-virus",
-    "name": "Virus des raies du maïs",
-    "scientificName": "Maize stripe virus",
-    "affectedPlants": ["Maïs"],
-    "symptoms": [
-      "Bandes chlorotiques alternées sur les feuilles",
-      "Motif de rayures jaunes et vertes",
-      "Feuilles mottled ou déformées",
-      "Réduction du rendement et de la croissance"
-    ],
-    "actions": [
-      "Pratiquer la rotation des cultures",
-      "Contrôler les vecteurs (insectes)",
-      "Utiliser des variétés résistantes",
-      "Éliminer les mauvaises herbes hôtes",
-      "Détruire les résidus de culture infectés"
-    ],
-    "aliases": ["Stripe Virus", "Maize stripe"]
-  },
-  {
-    "id": "corn-yellowing",
-    "name": "Jaunissement du maïs",
-    "scientificName": "Virus de la jaunisse nanisante du maïs",
-    "affectedPlants": ["Maïs"],
-    "symptoms": [
-      "Jaunissement progressif du feuillage",
-      "Nanisme et retard de croissance",
-      "Feuilles rougeâtres ou pourpres",
-      "Épis mal remplis ou avortés"
-    ],
-    "actions": [
-      "Utiliser des variétés tolérantes ou résistantes",
-      "Contrôler les aphides vecteurs",
-      "Pratiquer la rotation des cultures",
-      "Éliminer les plantes malades précocement",
-      "Traitement insecticide si nécessaire"
-    ],
-    "aliases": ["Yellowing", "Maize dwarf mosaic", "MCDV"]
-  },
-  {
-    "id": "corn-leaf-blight",
-    "name": "Brûlure des feuilles du maïs",
-    "scientificName": "Exserohilum turcicum / Bipolaris maydis",
-    "affectedPlants": ["Maïs"],
-    "symptoms": [
-      "Lésions elliptiques allongées gris-brun",
-      "Taches progressives avec bordure sombre",
-      "Coalescence des lésions avec perte progressive de feuilles",
-      "Réduction importante du rendement"
-    ],
-    "actions": [
-      "Pratiquer la rotation des cultures sur 2-3 ans",
-      "Éliminer résidus de culture infectés",
-      "Utiliser variétés résistantes quand disponibles",
-      "Espacer les plants pour améliorer ventilation",
-      "Appliquer fongicides en début de symptômes"
-    ],
-    "aliases": ["Leaf Blight", "Northern corn leaf blight", "NCLB"]
+  "sweet_potato": {
+   "fr": "Patate douce",
+   "en": "Sweet potato"
   }
-]
+ },
+ "diseases": [
+  {
+   "id": "maize-healthy",
+   "type": "healthy",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [
+    "Corn Healthy"
+   ],
+   "severity": "none",
+   "name": {
+    "fr": "Maïs sain",
+    "en": "Healthy maize"
+   },
+   "scientificName": "",
+   "aliases": [
+    "Saine",
+    "Healthy"
+   ],
+   "symptoms": {
+    "fr": [],
+    "en": []
+   },
+   "causes": {
+    "fr": "",
+    "en": ""
+   },
+   "conditions": {
+    "fr": [],
+    "en": []
+   },
+   "actions": {
+    "fr": [],
+    "en": []
+   },
+   "prevention": {
+    "fr": [
+     "Observez vos plants chaque semaine, surtout le dessous des feuilles.",
+     "Gardez le champ propre : retirez les mauvaises herbes et les plants malades.",
+     "Pratiquez la rotation des cultures d'une saison à l'autre.",
+     "Utilisez des semences ou boutures saines, de préférence certifiées.",
+     "Semez à la bonne densité et apportez du compost ou de l'engrais au bon moment."
+    ],
+    "en": [
+     "Check your plants every week, especially under the leaves.",
+     "Keep the field clean: remove weeds and diseased plants.",
+     "Rotate crops from one season to the next.",
+     "Use healthy, preferably certified, seed or cuttings.",
+     "Sow at the right density and apply compost or fertiliser at the right time."
+    ]
+   }
+  },
+  {
+   "id": "tomato-healthy",
+   "type": "healthy",
+   "crops": [
+    "tomato"
+   ],
+   "modelLabels": [
+    "Tomato healthy"
+   ],
+   "severity": "none",
+   "name": {
+    "fr": "Tomate saine",
+    "en": "Healthy tomato"
+   },
+   "scientificName": "",
+   "aliases": [
+    "Saine",
+    "Healthy"
+   ],
+   "symptoms": {
+    "fr": [],
+    "en": []
+   },
+   "causes": {
+    "fr": "",
+    "en": ""
+   },
+   "conditions": {
+    "fr": [],
+    "en": []
+   },
+   "actions": {
+    "fr": [],
+    "en": []
+   },
+   "prevention": {
+    "fr": [
+     "Observez vos plants chaque semaine, surtout le dessous des feuilles.",
+     "Gardez le champ propre : retirez les mauvaises herbes et les plants malades.",
+     "Pratiquez la rotation des cultures d'une saison à l'autre.",
+     "Utilisez des semences ou boutures saines, de préférence certifiées.",
+     "Tuteurez les plants et arrosez au pied, sans mouiller les feuilles."
+    ],
+    "en": [
+     "Check your plants every week, especially under the leaves.",
+     "Keep the field clean: remove weeds and diseased plants.",
+     "Rotate crops from one season to the next.",
+     "Use healthy, preferably certified, seed or cuttings.",
+     "Stake the plants and water at the base, without wetting the leaves."
+    ]
+   }
+  },
+  {
+   "id": "cassava-healthy",
+   "type": "healthy",
+   "crops": [
+    "cassava"
+   ],
+   "modelLabels": [
+    "Cassava Healthy"
+   ],
+   "severity": "none",
+   "name": {
+    "fr": "Manioc sain",
+    "en": "Healthy cassava"
+   },
+   "scientificName": "",
+   "aliases": [],
+   "symptoms": {
+    "fr": [],
+    "en": []
+   },
+   "causes": {
+    "fr": "",
+    "en": ""
+   },
+   "conditions": {
+    "fr": [],
+    "en": []
+   },
+   "actions": {
+    "fr": [],
+    "en": []
+   },
+   "prevention": {
+    "fr": [
+     "Observez vos plants chaque semaine, surtout le dessous des feuilles.",
+     "Gardez le champ propre : retirez les mauvaises herbes et les plants malades.",
+     "Pratiquez la rotation des cultures d'une saison à l'autre.",
+     "Utilisez des semences ou boutures saines, de préférence certifiées.",
+     "Plantez des boutures prélevées sur des plants vigoureux et sans taches."
+    ],
+    "en": [
+     "Check your plants every week, especially under the leaves.",
+     "Keep the field clean: remove weeds and diseased plants.",
+     "Rotate crops from one season to the next.",
+     "Use healthy, preferably certified, seed or cuttings.",
+     "Plant cuttings taken from vigorous, spot-free plants."
+    ]
+   }
+  },
+  {
+   "id": "cassava-mosaic",
+   "type": "viral",
+   "crops": [
+    "cassava"
+   ],
+   "modelLabels": [
+    "Cassava Mosaic"
+   ],
+   "severity": "high",
+   "name": {
+    "fr": "Mosaïque du manioc",
+    "en": "Cassava mosaic disease"
+   },
+   "scientificName": "Begomovirus (CMD), transmis par la mouche blanche Bemisia tabaci",
+   "aliases": [
+    "Cassava Mosaic Disease",
+    "CMD",
+    "Mosaïque"
+   ],
+   "symptoms": {
+    "fr": [
+     "Feuilles tachetées de jaune et de vert (mosaïque).",
+     "Feuilles déformées, tordues et plus petites.",
+     "Plant rabougri ; les racines restent petites."
+    ],
+    "en": [
+     "Leaves mottled yellow and green (mosaic).",
+     "Leaves distorted, twisted and smaller.",
+     "Stunted plant; roots stay small."
+    ]
+   },
+   "causes": {
+    "fr": "Virus transmis par les mouches blanches et surtout par les boutures prélevées sur des plants malades.",
+    "en": "Virus spread by whiteflies and above all by cuttings taken from diseased plants."
+   },
+   "conditions": {
+    "fr": [
+     "Boutures issues de champs infectés.",
+     "Fortes populations de mouches blanches en saison sèche."
+    ],
+    "en": [
+     "Cuttings from infected fields.",
+     "High whitefly numbers in the dry season."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez et brûlez ou enfouissez loin du champ les jeunes plants très atteints.",
+     "Ne prélevez jamais de boutures sur un plant qui présente la mosaïque.",
+     "Il n'existe pas de traitement qui guérit un plant atteint."
+    ],
+    "en": [
+     "Uproot and burn, or bury far from the field, badly affected young plants.",
+     "Never take cuttings from a plant showing mosaic.",
+     "There is no treatment that cures an infected plant."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Plantez des variétés tolérantes, recommandées par l'IRAD ou les services agricoles.",
+     "Utilisez des boutures saines venant d'un champ contrôlé.",
+     "Éliminez tôt les plants malades pendant les trois premiers mois."
+    ],
+    "en": [
+     "Plant tolerant varieties recommended by IRAD or extension services.",
+     "Use healthy cuttings from an inspected field.",
+     "Remove diseased plants early during the first three months."
+    ]
+   },
+   "lookalikes": {
+    "fr": "Carence en éléments nutritifs, attaques d'acariens verts (feuilles plus petites et jaunâtres, sans dessin de mosaïque).",
+    "en": "Nutrient deficiency, green mite attack (smaller yellowish leaves, without the mosaic pattern)."
+   },
+   "whenToSeekHelp": {
+    "fr": "Si plus d'un plant sur dix est atteint : demandez des boutures saines aux services agricoles.",
+    "en": "If more than one plant in ten is affected: ask extension services for healthy cuttings."
+   }
+  },
+  {
+   "id": "cassava-brown-leaf-spot",
+   "type": "fungal",
+   "crops": [
+    "cassava"
+   ],
+   "modelLabels": [
+    "Cassava Brown Leaf Spot"
+   ],
+   "severity": "low",
+   "name": {
+    "fr": "Cercosporiose brune du manioc (taches brunes des feuilles)",
+    "en": "Cassava brown leaf spot"
+   },
+   "scientificName": "Passalora henningsii (syn. Cercosporidium henningsii)",
+   "aliases": [
+    "Taches brunes du manioc",
+    "Cercosporiose",
+    "Brown leaf spot"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches brunes de 3 à 12 mm sur les feuilles les plus âgées (bas de la plante).",
+     "Taches anguleuses, limitées par les nervures, au bord plus foncé, parfois entourées d'un halo jaune.",
+     "Dessous des taches grisâtre (fructifications du champignon).",
+     "Attaque forte : feuilles du bas qui jaunissent et tombent avant l'heure."
+    ],
+    "en": [
+     "Brown spots 3 to 12 mm wide on the oldest leaves (lower canopy).",
+     "Angular spots bounded by veins, with a darker margin, sometimes a yellow halo.",
+     "Greyish underside of the spots (fungal fruiting).",
+     "Heavy attack: lower leaves turn yellow and drop early."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon disséminé par la pluie et le vent ; il survit sur les feuilles mortes tombées au sol.",
+    "en": "Fungus spread by rain splash and wind; it survives on fallen dead leaves."
+   },
+   "conditions": {
+    "fr": [
+     "Saison des pluies, chaleur et forte humidité.",
+     "Plantations denses et mal aérées."
+    ],
+    "en": [
+     "Rainy season, warm and humid weather.",
+     "Dense, poorly ventilated plantings."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Ramassez et brûlez (ou enfouissez) les feuilles atteintes tombées au sol.",
+     "Aérez la parcelle (désherbage, écartement suffisant).",
+     "Un traitement fongicide est rarement rentable : demandez conseil avant d'en utiliser."
+    ],
+    "en": [
+     "Collect and burn (or bury) affected fallen leaves.",
+     "Improve air flow (weeding, adequate spacing).",
+     "Fungicide spraying is rarely worth it: ask for advice before using one."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Variétés tolérantes recommandées localement.",
+     "Rotation des cultures et boutures prélevées sur des plants sains.",
+     "Fumure équilibrée, en particulier en potasse."
+    ],
+    "en": [
+     "Locally recommended tolerant varieties.",
+     "Crop rotation and cuttings taken from healthy plants.",
+     "Balanced fertilisation, especially potassium."
+    ]
+   },
+   "lookalikes": {
+    "fr": "Bactériose du manioc (taches d'aspect huileux puis flétrissement) et tache blanche (petites taches blanchâtres). Les taches brunes restent sèches et touchent surtout les vieilles feuilles.",
+    "en": "Cassava bacterial blight (water-soaked spots, then wilting) and white leaf spot (small whitish spots). Brown leaf spot stays dry and mostly affects old leaves."
+   },
+   "whenToSeekHelp": {
+    "fr": "Si les jeunes feuilles sont touchées, si la plante perd beaucoup de feuilles ou si des tiges flétrissent : faites vérifier par un agent agricole.",
+    "en": "If young leaves are affected, the plant loses many leaves or stems wilt: have it checked by an extension officer."
+   }
+  },
+  {
+   "id": "maize-brown-spot",
+   "type": "fungal",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [
+    "Corn Brown Spots"
+   ],
+   "severity": "moderate",
+   "name": {
+    "fr": "Taches brunes du maïs",
+    "en": "Maize brown spots"
+   },
+   "scientificName": "Physoderma maydis, Bipolaris maydis (selon le cas)",
+   "aliases": [
+    "Taches brunes",
+    "Brown spot",
+    "Tache foliaire fongique"
+   ],
+   "symptoms": {
+    "fr": [
+     "Petites taches brunes ou rouille, rondes ou allongées, sur les feuilles.",
+     "Les taches peuvent se rejoindre et dessécher des bandes de feuille.",
+     "Parfois des taches violacées sur la gaine et la nervure centrale."
+    ],
+    "en": [
+     "Small brown or rusty spots, round or elongated, on the leaves.",
+     "Spots can merge and dry out strips of leaf.",
+     "Sometimes purplish spots on the sheath and midrib."
+    ]
+   },
+   "causes": {
+    "fr": "Champignons de taches foliaires qui survivent dans les débris de maïs restés au champ.",
+    "en": "Leaf-spot fungi surviving in maize debris left in the field."
+   },
+   "conditions": {
+    "fr": [
+     "Temps chaud et humide, pluies fréquentes.",
+     "Maïs semé plusieurs années de suite sur la même parcelle."
+    ],
+    "en": [
+     "Warm, humid weather with frequent rain.",
+     "Maize grown on the same plot several years in a row."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Retirez et détruisez les feuilles les plus atteintes.",
+     "Évitez d'entrer dans le champ quand les feuilles sont mouillées.",
+     "Si l'attaque progresse avant la floraison, demandez conseil pour un fongicide homologué."
+    ],
+    "en": [
+     "Remove and destroy the most affected leaves.",
+     "Avoid walking through the field when leaves are wet.",
+     "If the attack spreads before flowering, ask advice about a registered fungicide."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Enfouissez ou compostez les résidus après la récolte.",
+     "Alternez le maïs avec une légumineuse (haricot, arachide, soja).",
+     "Semez des variétés tolérantes et ne serrez pas trop les plants."
+    ],
+    "en": [
+     "Bury or compost residues after harvest.",
+     "Rotate maize with a legume (beans, groundnut, soybean).",
+     "Sow tolerant varieties and do not crowd the plants."
+    ]
+   },
+   "lookalikes": {
+    "fr": "La rouille commune forme des pustules poudreuses qui laissent une poudre rouille sur le doigt ; les taches brunes, non.",
+    "en": "Common rust forms powdery pustules that leave rust-coloured powder on your finger; brown spots do not."
+   }
+  },
+  {
+   "id": "maize-downy-mildew",
+   "type": "oomycete",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [
+    "Corn Mildew"
+   ],
+   "severity": "high",
+   "name": {
+    "fr": "Mildiou du maïs",
+    "en": "Maize downy mildew"
+   },
+   "scientificName": "Peronosclerospora sorghi, P. maydis",
+   "aliases": [
+    "Mildiou du maïs",
+    "Downy mildew"
+   ],
+   "symptoms": {
+    "fr": [
+     "Bandes jaunes ou blanchâtres le long des feuilles, de la base vers la pointe.",
+     "Duvet blanc sous les feuilles le matin, quand il fait humide.",
+     "Plants rabougris ; épis absents ou mal formés."
+    ],
+    "en": [
+     "Yellow or whitish stripes along the leaves, from base to tip.",
+     "White down under the leaves in the morning, in humid weather.",
+     "Stunted plants; ears missing or malformed."
+    ]
+   },
+   "causes": {
+    "fr": "Micro-organisme proche des champignons, conservé dans le sol et transmis par le vent.",
+    "en": "Fungus-like organism that survives in the soil and is spread by wind."
+   },
+   "conditions": {
+    "fr": [
+     "Nuits fraîches et humides, rosée abondante.",
+     "Semis tardifs à côté de maïs déjà malade."
+    ],
+    "en": [
+     "Cool, humid nights with heavy dew.",
+     "Late sowing next to already diseased maize."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez et détruisez les jeunes plants atteints pour limiter la contamination.",
+     "Ne gardez pas les grains de ce champ comme semences.",
+     "Demandez conseil pour des semences traitées avec un produit homologué."
+    ],
+    "en": [
+     "Uproot and destroy affected young plants to limit spread.",
+     "Do not keep grain from this field as seed.",
+     "Ask advice about seed treated with a registered product."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Semez des variétés résistantes au mildiou.",
+     "Semez tôt et en même temps que vos voisins.",
+     "Faites une rotation de cultures (pas de maïs ni de sorgho deux saisons de suite)."
+    ],
+    "en": [
+     "Sow downy-mildew-resistant varieties.",
+     "Sow early and at the same time as your neighbours.",
+     "Rotate crops (no maize or sorghum two seasons in a row)."
+    ]
+   },
+   "whenToSeekHelp": {
+    "fr": "Si de nombreux jeunes plants sont atteints : contactez le technicien agricole, la maladie peut ruiner la récolte.",
+    "en": "If many young plants are affected: contact the extension officer, the disease can ruin the harvest."
+   }
+  },
+  {
+   "id": "maize-streak-virus",
+   "type": "viral",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [
+    "Corn Streak"
+   ],
+   "severity": "high",
+   "name": {
+    "fr": "Virus de la striure du maïs",
+    "en": "Maize streak virus"
+   },
+   "scientificName": "Maize streak virus (MSV), transmis par les cicadelles Cicadulina",
+   "aliases": [
+    "Maize Streak Virus",
+    "MSV",
+    "Virus de la strie du maïs",
+    "Striure"
+   ],
+   "symptoms": {
+    "fr": [
+     "Fines stries jaunes en pointillés, parallèles aux nervures.",
+     "Les stries se rejoignent et la feuille devient jaune pâle.",
+     "Plant rabougri si l'attaque est précoce ; épis petits ou vides."
+    ],
+    "en": [
+     "Thin, broken yellow streaks parallel to the veins.",
+     "Streaks merge and the leaf turns pale yellow.",
+     "Stunted plant if attacked early; small or empty ears."
+    ]
+   },
+   "causes": {
+    "fr": "Virus transmis par de petites cicadelles qui piquent les feuilles.",
+    "en": "Virus transmitted by small leafhoppers that feed on the leaves."
+   },
+   "conditions": {
+    "fr": [
+     "Semis tardifs, quand les cicadelles sont nombreuses.",
+     "Herbes graminées autour du champ."
+    ],
+    "en": [
+     "Late sowing, when leafhoppers are numerous.",
+     "Grassy weeds around the field."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez les jeunes plants atteints dans les premières semaines.",
+     "Gardez les bordures du champ désherbées.",
+     "Aucun produit ne guérit un plant atteint."
+    ],
+    "en": [
+     "Uproot affected young plants in the first weeks.",
+     "Keep field margins weeded.",
+     "No product cures an infected plant."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Semez des variétés résistantes à la striure.",
+     "Semez tôt en début de saison des pluies.",
+     "Évitez de semer à côté d'un vieux champ de maïs."
+    ],
+    "en": [
+     "Sow streak-resistant varieties.",
+     "Sow early at the start of the rainy season.",
+     "Avoid sowing next to an old maize field."
+    ]
+   }
+  },
+  {
+   "id": "maize-stripe-virus",
+   "type": "viral",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [
+    "Corn Stripe"
+   ],
+   "severity": "moderate",
+   "name": {
+    "fr": "Virus des stries chlorotiques du maïs",
+    "en": "Maize stripe virus"
+   },
+   "scientificName": "Maize stripe virus (MSpV), transmis par Peregrinus maidis",
+   "aliases": [
+    "Virus des raies du maïs",
+    "Maize stripe"
+   ],
+   "symptoms": {
+    "fr": [
+     "Larges bandes jaunes continues le long des feuilles.",
+     "Jeunes feuilles enroulées et jaunes.",
+     "Plants rabougris, panicules et épis mal formés."
+    ],
+    "en": [
+     "Wide, continuous yellow bands along the leaves.",
+     "Young leaves rolled and yellow.",
+     "Stunted plants, malformed tassels and ears."
+    ]
+   },
+   "causes": {
+    "fr": "Virus transmis par une petite cicadelle (delphacide) du maïs.",
+    "en": "Virus transmitted by a small maize planthopper."
+   },
+   "conditions": {
+    "fr": [
+     "Fortes populations de cicadelles.",
+     "Cultures de maïs échelonnées toute l'année."
+    ],
+    "en": [
+     "High planthopper populations.",
+     "Maize planted continuously all year round."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez les plants atteints tôt.",
+     "Désherbez les bordures.",
+     "Il n'existe pas de traitement curatif."
+    ],
+    "en": [
+     "Uproot affected plants early.",
+     "Weed the margins.",
+     "There is no curative treatment."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Synchronisez les semis avec vos voisins.",
+     "Utilisez des variétés tolérantes.",
+     "Rotation avec des cultures non graminées."
+    ],
+    "en": [
+     "Synchronise sowing with your neighbours.",
+     "Use tolerant varieties.",
+     "Rotate with non-cereal crops."
+    ]
+   },
+   "lookalikes": {
+    "fr": "La striure (MSV) donne des stries fines en pointillés ; ici, les bandes sont larges et continues.",
+    "en": "Maize streak (MSV) gives thin broken streaks; here the bands are wide and continuous."
+   }
+  },
+  {
+   "id": "maize-yellowing",
+   "type": "physiological",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [
+    "Corn Yellowing"
+   ],
+   "severity": "moderate",
+   "name": {
+    "fr": "Jaunissement du maïs",
+    "en": "Maize yellowing"
+   },
+   "scientificName": "Carence (azote surtout), stress hydrique, ou virus",
+   "aliases": [
+    "Jaunissement",
+    "Carence azotée"
+   ],
+   "symptoms": {
+    "fr": [
+     "Feuilles jaunes, d'abord les plus vieilles en bas du plant (manque d'azote).",
+     "Jaunissement en V depuis la pointe de la feuille.",
+     "Plant pâle, croissance lente."
+    ],
+    "en": [
+     "Yellow leaves, first the oldest at the bottom (nitrogen shortage).",
+     "V-shaped yellowing from the leaf tip.",
+     "Pale plant, slow growth."
+    ]
+   },
+   "causes": {
+    "fr": "Le plus souvent un manque d'azote ou d'eau, parfois un sol trop acide ou engorgé, plus rarement un virus.",
+    "en": "Most often a lack of nitrogen or water, sometimes acidic or waterlogged soil, rarely a virus."
+   },
+   "conditions": {
+    "fr": [
+     "Sol pauvre ou lessivé par de fortes pluies.",
+     "Sécheresse ou eau stagnante."
+    ],
+    "en": [
+     "Poor soil or soil leached by heavy rain.",
+     "Drought or standing water."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Apportez de l'azote (urée, compost bien décomposé, fumier) au pied, sur sol humide.",
+     "Drainez si l'eau stagne ; arrosez si le sol est sec.",
+     "Si les jeunes feuilles sont aussi striées ou déformées, refaites une photo : ce peut être un virus."
+    ],
+    "en": [
+     "Apply nitrogen (urea, well-rotted compost, manure) at the base, on moist soil.",
+     "Drain if water stands; water if the soil is dry.",
+     "If young leaves are also streaked or distorted, take a new photo: it may be a virus."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Fumure de fond avant le semis et apport d'azote à 4–6 semaines.",
+     "Associez ou alternez avec des légumineuses.",
+     "Paillez pour garder l'humidité du sol."
+    ],
+    "en": [
+     "Base fertiliser before sowing and nitrogen top-dressing at 4–6 weeks.",
+     "Intercrop or rotate with legumes.",
+     "Mulch to keep soil moisture."
+    ]
+   }
+  },
+  {
+   "id": "maize-northern-leaf-blight",
+   "type": "fungal",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [
+    "Corn leaf blight"
+   ],
+   "severity": "moderate",
+   "name": {
+    "fr": "Helminthosporiose du maïs (brûlure des feuilles)",
+    "en": "Northern corn leaf blight"
+   },
+   "scientificName": "Exserohilum turcicum",
+   "aliases": [
+    "Brûlure des feuilles du maïs",
+    "Leaf blight",
+    "Turcicum"
+   ],
+   "symptoms": {
+    "fr": [
+     "Grandes taches allongées gris-vert à brun clair, en forme de cigare (5 à 15 cm).",
+     "Les taches commencent sur les feuilles du bas.",
+     "Feuilles brûlées : moins de grains et des épis légers."
+    ],
+    "en": [
+     "Large, elongated grey-green to light brown, cigar-shaped lesions (5 to 15 cm).",
+     "Lesions start on the lower leaves.",
+     "Burnt leaves: fewer grains and light ears."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon conservé dans les résidus de maïs, disséminé par le vent et la pluie.",
+    "en": "Fungus surviving in maize residue, spread by wind and rain."
+   },
+   "conditions": {
+    "fr": [
+     "Temps modérément chaud, humide, rosées longues.",
+     "Maïs sur maïs."
+    ],
+    "en": [
+     "Moderately warm, humid weather with long dews.",
+     "Maize after maize."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Surveillez la progression vers les feuilles de l'épi.",
+     "Si les taches atteignent la feuille de l'épi avant la floraison, demandez conseil pour un fongicide homologué.",
+     "Retirez les feuilles très atteintes des petits champs."
+    ],
+    "en": [
+     "Watch whether it spreads to the ear leaf.",
+     "If lesions reach the ear leaf before flowering, ask advice about a registered fungicide.",
+     "Remove badly affected leaves in small fields."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Variétés résistantes.",
+     "Enfouissement des résidus et rotation.",
+     "Densité de semis raisonnable."
+    ],
+    "en": [
+     "Resistant varieties.",
+     "Bury residues and rotate crops.",
+     "Reasonable sowing density."
+    ]
+   }
+  },
+  {
+   "id": "tomato-early-blight",
+   "type": "fungal",
+   "crops": [
+    "tomato"
+   ],
+   "modelLabels": [
+    "Tomato Brown Spots"
+   ],
+   "severity": "moderate",
+   "name": {
+    "fr": "Alternariose de la tomate",
+    "en": "Tomato early blight"
+   },
+   "scientificName": "Alternaria solani",
+   "aliases": [
+    "Alternariose (Brûlure précoce)",
+    "Early blight",
+    "Alternariose"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches brunes à cercles concentriques (en cible) sur les vieilles feuilles.",
+     "Jaunissement autour des taches puis chute des feuilles.",
+     "Taches sombres et enfoncées près du pédoncule des fruits."
+    ],
+    "en": [
+     "Brown spots with concentric rings (target-like) on older leaves.",
+     "Yellowing around spots, then leaf drop.",
+     "Dark, sunken spots near the fruit stem."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon présent dans le sol et les débris, éclaboussé sur les feuilles basses.",
+    "en": "Fungus in soil and debris, splashed onto lower leaves."
+   },
+   "conditions": {
+    "fr": [
+     "Chaleur et humidité, pluies fréquentes.",
+     "Plants affaiblis ou mal nourris."
+    ],
+    "en": [
+     "Warm, humid weather, frequent rain.",
+     "Weak or poorly fed plants."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Retirez et détruisez les feuilles basses tachées.",
+     "Paillez le sol pour éviter les éclaboussures.",
+     "Si la maladie avance, demandez conseil pour un fongicide homologué (par exemple à base de cuivre)."
+    ],
+    "en": [
+     "Remove and destroy spotted lower leaves.",
+     "Mulch the soil to avoid splashing.",
+     "If it spreads, ask advice about a registered fungicide (for example copper-based)."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Rotation : pas de tomate, piment, aubergine ou pomme de terre au même endroit pendant 2 à 3 ans.",
+     "Tuteurage et espacement pour aérer les plants.",
+     "Arrosage au pied, le matin."
+    ],
+    "en": [
+     "Rotation: no tomato, pepper, eggplant or potato in the same spot for 2 to 3 years.",
+     "Staking and spacing to ventilate plants.",
+     "Water at the base, in the morning."
+    ]
+   },
+   "lookalikes": {
+    "fr": "La septoriose donne beaucoup de petites taches à centre gris clair, sans cercles.",
+    "en": "Septoria gives many small spots with a light grey centre, without rings."
+   }
+  },
+  {
+   "id": "tomato-late-blight",
+   "type": "oomycete",
+   "crops": [
+    "tomato"
+   ],
+   "modelLabels": [
+    "Tomato blight leaf"
+   ],
+   "severity": "high",
+   "name": {
+    "fr": "Mildiou de la tomate",
+    "en": "Tomato late blight"
+   },
+   "scientificName": "Phytophthora infestans",
+   "aliases": [
+    "Mildiou",
+    "Late blight"
+   ],
+   "symptoms": {
+    "fr": [
+     "Grandes taches brun-vert huileuses qui s'étendent vite sur les feuilles.",
+     "Duvet blanc sous les feuilles par temps humide.",
+     "Taches brunes dures sur les fruits ; tiges noircies."
+    ],
+    "en": [
+     "Large oily brown-green patches spreading fast on leaves.",
+     "White down under the leaves in humid weather.",
+     "Hard brown patches on fruit; blackened stems."
+    ]
+   },
+   "causes": {
+    "fr": "Micro-organisme qui se propage très vite par temps frais et humide.",
+    "en": "Organism that spreads very fast in cool, wet weather."
+   },
+   "conditions": {
+    "fr": [
+     "Nuits fraîches, brouillard, pluies continues.",
+     "Feuillage dense qui reste mouillé."
+    ],
+    "en": [
+     "Cool nights, fog, continuous rain.",
+     "Dense foliage that stays wet."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Agissez vite : retirez et détruisez (brûler ou enfouir) les parties atteintes, sans les composter.",
+     "Demandez conseil pour un fongicide homologué contre le mildiou et appliquez-le avant la pluie.",
+     "Récoltez les fruits sains rapidement."
+    ],
+    "en": [
+     "Act fast: remove and destroy (burn or bury) affected parts, do not compost them.",
+     "Ask advice about a registered late-blight fungicide and apply it before rain.",
+     "Harvest healthy fruit quickly."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Espacez et tuteurez les plants ; taillez les gourmands.",
+     "Ne mouillez pas les feuilles en arrosant.",
+     "Éloignez les tomates des pommes de terre ; variétés tolérantes."
+    ],
+    "en": [
+     "Space and stake plants; remove suckers.",
+     "Do not wet leaves when watering.",
+     "Keep tomatoes away from potatoes; tolerant varieties."
+    ]
+   },
+   "whenToSeekHelp": {
+    "fr": "La maladie peut détruire un champ en une semaine : si elle s'étend, contactez sans attendre un technicien.",
+    "en": "The disease can destroy a field in a week: if it spreads, contact an extension officer without delay."
+   }
+  },
+  {
+   "id": "maize-common-rust",
+   "type": "fungal",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [],
+   "severity": "low",
+   "name": {
+    "fr": "Rouille commune du maïs",
+    "en": "Common rust of maize"
+   },
+   "scientificName": "Puccinia sorghi",
+   "aliases": [
+    "Rouille",
+    "Common rust"
+   ],
+   "symptoms": {
+    "fr": [
+     "Petites pustules brun-rouille sur les deux faces de la feuille.",
+     "Une poudre couleur rouille reste sur le doigt quand on frotte."
+    ],
+    "en": [
+     "Small rust-brown pustules on both sides of the leaf.",
+     "Rust-coloured powder stays on your finger when rubbed."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon apporté par le vent.",
+    "en": "Fungus carried by wind."
+   },
+   "conditions": {
+    "fr": [
+     "Temps frais et humide."
+    ],
+    "en": [
+     "Cool, humid weather."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "En général peu grave : surveillez simplement.",
+     "Si les pustules couvrent la feuille de l'épi avant la floraison, demandez conseil pour un fongicide homologué."
+    ],
+    "en": [
+     "Usually not serious: just monitor.",
+     "If pustules cover the ear leaf before flowering, ask advice about a registered fungicide."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Variétés tolérantes.",
+     "Semis à la bonne période."
+    ],
+    "en": [
+     "Tolerant varieties.",
+     "Sow at the right time."
+    ]
+   }
+  },
+  {
+   "id": "maize-southern-rust",
+   "type": "fungal",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Rouille américaine du maïs",
+    "en": "Southern rust of maize"
+   },
+   "scientificName": "Puccinia polysora",
+   "aliases": [
+    "Rouille du Sud",
+    "Southern rust"
+   ],
+   "symptoms": {
+    "fr": [
+     "Nombreuses petites pustules orange, surtout sur la face supérieure.",
+     "Dessèchement rapide des feuilles par temps chaud."
+    ],
+    "en": [
+     "Many small orange pustules, mostly on the upper side.",
+     "Rapid drying of leaves in hot weather."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon transporté par le vent, favorisé par la chaleur.",
+    "en": "Wind-borne fungus favoured by heat."
+   },
+   "conditions": {
+    "fr": [
+     "Chaleur et forte humidité."
+    ],
+    "en": [
+     "Heat and high humidity."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Surveillez de près : cette rouille progresse plus vite que la rouille commune.",
+     "Demandez conseil pour un fongicide homologué si l'attaque est précoce."
+    ],
+    "en": [
+     "Monitor closely: this rust spreads faster than common rust.",
+     "Ask advice about a registered fungicide if the attack is early."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Variétés résistantes.",
+     "Éviter les semis très tardifs."
+    ],
+    "en": [
+     "Resistant varieties.",
+     "Avoid very late sowing."
+    ]
+   }
+  },
+  {
+   "id": "maize-gray-leaf-spot",
+   "type": "fungal",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Cercosporiose du maïs",
+    "en": "Grey leaf spot of maize"
+   },
+   "scientificName": "Cercospora zeae-maydis",
+   "aliases": [
+    "Grey leaf spot",
+    "Gray leaf spot"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches rectangulaires gris-brun, limitées par les nervures.",
+     "Les taches se rejoignent et dessèchent les feuilles du bas vers le haut."
+    ],
+    "en": [
+     "Rectangular grey-brown lesions bounded by the veins.",
+     "Lesions merge and dry the leaves from bottom to top."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon conservé dans les résidus de maïs.",
+    "en": "Fungus surviving in maize residue."
+   },
+   "conditions": {
+    "fr": [
+     "Humidité élevée prolongée, brouillards.",
+     "Maïs sur maïs, travail du sol réduit."
+    ],
+    "en": [
+     "Long periods of high humidity, fog.",
+     "Maize after maize, minimum tillage."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Retirez les feuilles très atteintes dans les petites parcelles.",
+     "Demandez conseil pour un fongicide homologué si la maladie monte vers l'épi."
+    ],
+    "en": [
+     "Remove badly affected leaves in small plots.",
+     "Ask advice about a registered fungicide if it moves up to the ear."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Rotation et enfouissement des résidus.",
+     "Variétés tolérantes."
+    ],
+    "en": [
+     "Rotation and burying residues.",
+     "Tolerant varieties."
+    ]
+   }
+  },
+  {
+   "id": "maize-lethal-necrosis",
+   "type": "viral",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Nécrose létale du maïs",
+    "en": "Maize lethal necrosis"
+   },
+   "scientificName": "MCMV + virus de la famille des Potyviridae",
+   "aliases": [
+    "MLN"
+   ],
+   "symptoms": {
+    "fr": [
+     "Jaunissement en mosaïque puis dessèchement à partir des bords des feuilles.",
+     "Mort du cœur du plant (« cœur mort »).",
+     "Épis petits, déformés, souvent pourris."
+    ],
+    "en": [
+     "Mosaic yellowing then drying from leaf edges.",
+     "Death of the plant's central whorl ('dead heart').",
+     "Small, deformed, often rotten ears."
+    ]
+   },
+   "causes": {
+    "fr": "Association de deux virus transmis par des insectes et par les semences.",
+    "en": "Combination of two viruses spread by insects and seed."
+   },
+   "conditions": {
+    "fr": [
+     "Semences non certifiées.",
+     "Maïs cultivé sans interruption."
+    ],
+    "en": [
+     "Uncertified seed.",
+     "Continuous maize cropping."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez et détruisez les plants atteints.",
+     "Ne gardez pas de grains de ce champ pour semer.",
+     "Prévenez le service agricole."
+    ],
+    "en": [
+     "Uproot and destroy affected plants.",
+     "Do not keep grain from this field for seed.",
+     "Inform the agricultural service."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Semences certifiées.",
+     "Rotation avec des cultures non graminées.",
+     "Lutte contre les thrips et pucerons."
+    ],
+    "en": [
+     "Certified seed.",
+     "Rotation with non-cereal crops.",
+     "Control thrips and aphids."
+    ]
+   },
+   "whenToSeekHelp": {
+    "fr": "Maladie grave et contagieuse : signalez-la au service agricole.",
+    "en": "Serious, contagious disease: report it to the agricultural service."
+   }
+  },
+  {
+   "id": "fall-armyworm",
+   "type": "pest",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Chenille légionnaire d'automne",
+    "en": "Fall armyworm"
+   },
+   "scientificName": "Spodoptera frugiperda",
+   "aliases": [
+    "Légionnaire d'automne",
+    "FAW",
+    "Chenille légionnaire"
+   ],
+   "symptoms": {
+    "fr": [
+     "Feuilles trouées, déchiquetées, avec des « fenêtres » transparentes.",
+     "Sciure humide (excréments) dans le cornet du plant.",
+     "Chenille avec un Y clair sur la tête et quatre points sur l'arrière."
+    ],
+    "en": [
+     "Ragged holes and transparent 'windows' in leaves.",
+     "Wet sawdust-like droppings in the whorl.",
+     "Caterpillar with a pale Y on its head and four dots near the rear."
+    ]
+   },
+   "causes": {
+    "fr": "Chenille d'un papillon de nuit qui pond sur le maïs.",
+    "en": "Caterpillar of a moth that lays eggs on maize."
+   },
+   "conditions": {
+    "fr": [
+     "Début de saison des pluies, après une sécheresse.",
+     "Jeunes maïs de 2 à 6 semaines."
+    ],
+    "en": [
+     "Start of the rainy season, after a dry spell.",
+     "Young maize, 2 to 6 weeks old."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Inspectez 20 plants au hasard deux fois par semaine.",
+     "Écrasez les masses d'œufs et les jeunes chenilles à la main.",
+     "Mettez un peu de cendre ou de sable sec dans le cornet des plants atteints ; si plus de 2 plants sur 10 sont touchés, demandez conseil pour un insecticide homologué."
+    ],
+    "en": [
+     "Check 20 random plants twice a week.",
+     "Crush egg masses and young caterpillars by hand.",
+     "Put a little ash or dry sand in the whorl of affected plants; if more than 2 plants in 10 are hit, ask advice about a registered insecticide."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Semis précoces et groupés avec les voisins.",
+     "Association maïs–légumineuse et bordures d'herbes (méthode push-pull).",
+     "Préservez les insectes utiles : évitez les traitements inutiles."
+    ],
+    "en": [
+     "Early sowing, at the same time as neighbours.",
+     "Maize–legume intercropping and grass borders (push-pull).",
+     "Protect beneficial insects: avoid unnecessary spraying."
+    ]
+   }
+  },
+  {
+   "id": "maize-stem-borers",
+   "type": "pest",
+   "crops": [
+    "maize"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Foreurs des tiges du maïs",
+    "en": "Maize stem borers"
+   },
+   "scientificName": "Busseola fusca, Sesamia calamistis, Eldana saccharina",
+   "aliases": [
+    "Foreurs des tiges",
+    "Stem borer"
+   ],
+   "symptoms": {
+    "fr": [
+     "Petits trous alignés sur les jeunes feuilles.",
+     "Trous dans la tige avec de la sciure ; tiges cassées.",
+     "Cœur mort sur les jeunes plants."
+    ],
+    "en": [
+     "Small holes in a row on young leaves.",
+     "Holes in the stem with sawdust; broken stems.",
+     "Dead heart in young plants."
+    ]
+   },
+   "causes": {
+    "fr": "Chenilles qui creusent des galeries dans la tige.",
+    "en": "Caterpillars tunnelling inside the stem."
+   },
+   "conditions": {
+    "fr": [
+     "Résidus de tiges laissés au champ.",
+     "Semis échelonnés."
+    ],
+    "en": [
+     "Stem residues left in the field.",
+     "Staggered sowing."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez et détruisez les plants à cœur mort.",
+     "Demandez conseil pour un traitement homologué si les attaques sont fortes."
+    ],
+    "en": [
+     "Uproot and destroy dead-heart plants.",
+     "Ask advice about a registered treatment if attacks are severe."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Détruisez ou enfouissez les tiges après la récolte.",
+     "Rotation et association avec des légumineuses."
+    ],
+    "en": [
+     "Destroy or bury stems after harvest.",
+     "Rotation and intercropping with legumes."
+    ]
+   }
+  },
+  {
+   "id": "cassava-brown-streak",
+   "type": "viral",
+   "crops": [
+    "cassava"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Striure brune du manioc",
+    "en": "Cassava brown streak disease"
+   },
+   "scientificName": "Ipomovirus (CBSV, UCBSV)",
+   "aliases": [
+    "CBSD"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches jaunes en plumes le long des nervures des vieilles feuilles.",
+     "Stries brunes sur les jeunes tiges.",
+     "Racines avec des zones brunes, dures et pourries à l'intérieur."
+    ],
+    "en": [
+     "Feathery yellow patches along veins of older leaves.",
+     "Brown streaks on young stems.",
+     "Roots with brown, hard, rotten areas inside."
+    ]
+   },
+   "causes": {
+    "fr": "Virus transmis par les mouches blanches et les boutures infectées.",
+    "en": "Virus spread by whiteflies and infected cuttings."
+   },
+   "conditions": {
+    "fr": [
+     "Boutures d'origine inconnue."
+    ],
+    "en": [
+     "Cuttings of unknown origin."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "N'utilisez pas les boutures de ces plants.",
+     "Arrachez les plants atteints et signalez le cas au service agricole."
+    ],
+    "en": [
+     "Do not use cuttings from these plants.",
+     "Uproot affected plants and report the case to the agricultural service."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Boutures certifiées et variétés tolérantes.",
+     "Contrôle des mouches blanches."
+    ],
+    "en": [
+     "Certified cuttings and tolerant varieties.",
+     "Whitefly control."
+    ]
+   },
+   "whenToSeekHelp": {
+    "fr": "Maladie très surveillée en Afrique centrale : signalez tout cas suspect.",
+    "en": "Closely watched disease in Central Africa: report any suspected case."
+   }
+  },
+  {
+   "id": "cassava-bacterial-blight",
+   "type": "bacterial",
+   "crops": [
+    "cassava"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Bactériose vasculaire du manioc",
+    "en": "Cassava bacterial blight"
+   },
+   "scientificName": "Xanthomonas phaseoli pv. manihotis",
+   "aliases": [
+    "CBB",
+    "Bactériose"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches anguleuses d'aspect mouillé sur les feuilles.",
+     "Flétrissement et chute des feuilles ; gomme jaune sur les tiges.",
+     "Dessèchement des pousses (aspect brûlé)."
+    ],
+    "en": [
+     "Angular, water-soaked spots on leaves.",
+     "Wilting and leaf fall; yellow gum on stems.",
+     "Shoot dieback (burnt look)."
+    ]
+   },
+   "causes": {
+    "fr": "Bactérie transmise par les boutures, la pluie et les outils.",
+    "en": "Bacterium spread by cuttings, rain and tools."
+   },
+   "conditions": {
+    "fr": [
+     "Saison des pluies.",
+     "Outils non nettoyés."
+    ],
+    "en": [
+     "Rainy season.",
+     "Unclean tools."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Coupez et brûlez les parties atteintes.",
+     "Désinfectez la machette entre deux plants (eau de Javel diluée ou flamme)."
+    ],
+    "en": [
+     "Cut and burn affected parts.",
+     "Disinfect the machete between plants (diluted bleach or flame)."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Boutures saines.",
+     "Rotation d'au moins une saison.",
+     "Variétés tolérantes."
+    ],
+    "en": [
+     "Healthy cuttings.",
+     "Rotation of at least one season.",
+     "Tolerant varieties."
+    ]
+   }
+  },
+  {
+   "id": "cassava-anthracnose",
+   "type": "fungal",
+   "crops": [
+    "cassava"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Anthracnose du manioc",
+    "en": "Cassava anthracnose"
+   },
+   "scientificName": "Colletotrichum gloeosporioides f. sp. manihotis",
+   "aliases": [
+    "Anthracnose"
+   ],
+   "symptoms": {
+    "fr": [
+     "Chancres (plaies creuses) sur les jeunes tiges vertes.",
+     "Tiges qui se courbent ou se cassent.",
+     "Dessèchement des pointes."
+    ],
+    "en": [
+     "Cankers (sunken wounds) on young green stems.",
+     "Stems that bend or break.",
+     "Tip dieback."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon favorisé par les piqûres d'insectes et l'humidité.",
+    "en": "Fungus favoured by insect damage and humidity."
+   },
+   "conditions": {
+    "fr": [
+     "Pluies abondantes."
+    ],
+    "en": [
+     "Heavy rains."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Coupez et détruisez les tiges atteintes.",
+     "Ne plantez pas de boutures avec des chancres."
+    ],
+    "en": [
+     "Cut and destroy affected stems.",
+     "Do not plant cuttings with cankers."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Boutures saines.",
+     "Lutte contre les punaises qui piquent les tiges."
+    ],
+    "en": [
+     "Healthy cuttings.",
+     "Control bugs that pierce stems."
+    ]
+   }
+  },
+  {
+   "id": "cassava-green-mite",
+   "type": "pest",
+   "crops": [
+    "cassava"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Acarien vert du manioc",
+    "en": "Cassava green mite"
+   },
+   "scientificName": "Mononychellus tanajoa",
+   "aliases": [
+    "Acariens",
+    "Green mite"
+   ],
+   "symptoms": {
+    "fr": [
+     "Petits points jaunes sur les jeunes feuilles.",
+     "Feuilles du sommet petites, déformées, jaunâtres.",
+     "Plant en « tête d'allumette » en saison sèche."
+    ],
+    "en": [
+     "Tiny yellow dots on young leaves.",
+     "Small, deformed, yellowish top leaves.",
+     "'Candlestick' plant top in the dry season."
+    ]
+   },
+   "causes": {
+    "fr": "Acariens minuscules qui sucent les jeunes feuilles.",
+    "en": "Tiny mites sucking young leaves."
+   },
+   "conditions": {
+    "fr": [
+     "Saison sèche."
+    ],
+    "en": [
+     "Dry season."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Évitez les insecticides qui tuent les acariens prédateurs utiles.",
+     "Apportez du compost pour aider le plant à repartir aux pluies."
+    ],
+    "en": [
+     "Avoid insecticides that kill useful predatory mites.",
+     "Add compost to help the plant recover with the rains."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Variétés tolérantes.",
+     "Plantation en début de saison des pluies."
+    ],
+    "en": [
+     "Tolerant varieties.",
+     "Plant at the start of the rainy season."
+    ]
+   },
+   "lookalikes": {
+    "fr": "La mosaïque du manioc donne un dessin jaune et vert bien visible ; l'acarien donne des points jaunes fins.",
+    "en": "Cassava mosaic shows a clear yellow-green pattern; mites cause fine yellow dots."
+   }
+  },
+  {
+   "id": "cassava-mealybug",
+   "type": "pest",
+   "crops": [
+    "cassava"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Cochenille farineuse du manioc",
+    "en": "Cassava mealybug"
+   },
+   "scientificName": "Phenacoccus manihoti",
+   "aliases": [
+    "Cochenilles",
+    "Mealybug"
+   ],
+   "symptoms": {
+    "fr": [
+     "Amas blancs cotonneux au bout des tiges.",
+     "Sommet en « touffe » (feuilles serrées et tordues).",
+     "Nervures courtes, plants rabougris."
+    ],
+    "en": [
+     "White cottony clusters on shoot tips.",
+     "Bunchy top (crowded, twisted leaves).",
+     "Short internodes, stunted plants."
+    ]
+   },
+   "causes": {
+    "fr": "Petits insectes piqueurs couverts de cire blanche.",
+    "en": "Small sap-sucking insects covered in white wax."
+   },
+   "conditions": {
+    "fr": [
+     "Saison sèche."
+    ],
+    "en": [
+     "Dry season."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Coupez et détruisez les pointes atteintes.",
+     "Préservez les petites guêpes et coccinelles qui les mangent."
+    ],
+    "en": [
+     "Cut and destroy affected tips.",
+     "Protect the small wasps and ladybirds that eat them."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Boutures saines, sans cochenilles.",
+     "Plantation au début des pluies."
+    ],
+    "en": [
+     "Healthy cuttings, free of mealybugs.",
+     "Plant at the start of the rains."
+    ]
+   }
+  },
+  {
+   "id": "cassava-root-rot",
+   "type": "fungal",
+   "crops": [
+    "cassava"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Pourriture des racines du manioc",
+    "en": "Cassava root rot"
+   },
+   "scientificName": "Phytophthora spp., Fusarium spp., Botryodiplodia",
+   "aliases": [
+    "Pourriture racinaire"
+   ],
+   "symptoms": {
+    "fr": [
+     "Flétrissement soudain malgré un sol humide.",
+     "Racines molles, brunes, à odeur forte."
+    ],
+    "en": [
+     "Sudden wilting despite moist soil.",
+     "Soft, brown, foul-smelling roots."
+    ]
+   },
+   "causes": {
+    "fr": "Champignons du sol favorisés par l'excès d'eau.",
+    "en": "Soil fungi favoured by excess water."
+   },
+   "conditions": {
+    "fr": [
+     "Sol mal drainé, bas-fonds."
+    ],
+    "en": [
+     "Poorly drained soil, lowlands."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Récoltez au plus tôt les plants voisins encore sains.",
+     "Ne laissez pas les racines pourries au champ."
+    ],
+    "en": [
+     "Harvest neighbouring healthy plants early.",
+     "Do not leave rotten roots in the field."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Plantez sur buttes ou billons en sol lourd.",
+     "Rotation avec une céréale."
+    ],
+    "en": [
+     "Plant on mounds or ridges in heavy soil.",
+     "Rotate with a cereal."
+    ]
+   }
+  },
+  {
+   "id": "tomato-bacterial-wilt",
+   "type": "bacterial",
+   "crops": [
+    "tomato",
+    "pepper"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Flétrissement bactérien",
+    "en": "Bacterial wilt"
+   },
+   "scientificName": "Ralstonia solanacearum",
+   "aliases": [
+    "Flétrissement bactérien",
+    "Bacterial wilt",
+    "Ralstonia"
+   ],
+   "symptoms": {
+    "fr": [
+     "Le plant fane d'un coup en journée alors que le sol est humide, sans jaunir.",
+     "Tige coupée plongée dans l'eau : un filet blanchâtre s'en échappe."
+    ],
+    "en": [
+     "The plant suddenly wilts during the day although the soil is moist, without yellowing.",
+     "Cut stem placed in water: a whitish stream oozes out."
+    ]
+   },
+   "causes": {
+    "fr": "Bactérie du sol qui bouche les vaisseaux du plant.",
+    "en": "Soil bacterium that blocks the plant's vessels."
+   },
+   "conditions": {
+    "fr": [
+     "Sols chauds et humides.",
+     "Plusieurs saisons de tomate, piment ou aubergine au même endroit."
+    ],
+    "en": [
+     "Warm, moist soils.",
+     "Several seasons of tomato, pepper or eggplant in the same spot."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez le plant avec sa motte et brûlez-le loin du champ.",
+     "N'arrosez pas d'un plant malade vers un plant sain.",
+     "Aucun produit ne guérit un plant atteint."
+    ],
+    "en": [
+     "Uproot the plant with its root ball and burn it away from the field.",
+     "Do not let water run from a diseased plant to healthy ones.",
+     "No product cures an infected plant."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Rotation longue (3 ans) avec maïs, manioc ou haricot.",
+     "Plants greffés ou variétés tolérantes.",
+     "Désinfectez les outils."
+    ],
+    "en": [
+     "Long rotation (3 years) with maize, cassava or beans.",
+     "Grafted plants or tolerant varieties.",
+     "Disinfect tools."
+    ]
+   },
+   "lookalikes": {
+    "fr": "La fusariose fait jaunir les feuilles d'un seul côté avant le flétrissement.",
+    "en": "Fusarium wilt yellows leaves on one side before wilting."
+   }
+  },
+  {
+   "id": "tomato-fusarium-wilt",
+   "type": "fungal",
+   "crops": [
+    "tomato"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Fusariose de la tomate",
+    "en": "Fusarium wilt of tomato"
+   },
+   "scientificName": "Fusarium oxysporum f. sp. lycopersici",
+   "aliases": [
+    "Fusariose (Flétrissement fusarien)",
+    "Fusarium wilt"
+   ],
+   "symptoms": {
+    "fr": [
+     "Jaunissement des feuilles du bas, souvent d'un seul côté du plant.",
+     "Flétrissement progressif, puis mort.",
+     "Vaisseaux bruns dans la tige coupée."
+    ],
+    "en": [
+     "Lower leaves yellow, often on one side of the plant.",
+     "Progressive wilting, then death.",
+     "Brown vessels in the cut stem."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon du sol qui reste des années.",
+    "en": "Soil fungus that persists for years."
+   },
+   "conditions": {
+    "fr": [
+     "Sol chaud, acide, sableux."
+    ],
+    "en": [
+     "Warm, acidic, sandy soil."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez et brûlez les plants atteints.",
+     "Ne replantez pas de tomate à cet endroit."
+    ],
+    "en": [
+     "Uproot and burn affected plants.",
+     "Do not replant tomato in that spot."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Variétés résistantes (lettre F sur le sachet).",
+     "Rotation et chaulage des sols acides."
+    ],
+    "en": [
+     "Resistant varieties (letter F on the seed packet).",
+     "Rotation and liming acidic soils."
+    ]
+   }
+  },
+  {
+   "id": "tomato-septoria",
+   "type": "fungal",
+   "crops": [
+    "tomato"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Septoriose de la tomate",
+    "en": "Septoria leaf spot"
+   },
+   "scientificName": "Septoria lycopersici",
+   "aliases": [
+    "Septoria"
+   ],
+   "symptoms": {
+    "fr": [
+     "Nombreuses petites taches rondes à centre gris clair et bord brun.",
+     "Petits points noirs au centre des taches.",
+     "Les feuilles du bas jaunissent et tombent."
+    ],
+    "en": [
+     "Many small round spots with a light grey centre and brown edge.",
+     "Tiny black dots in the centre of the spots.",
+     "Lower leaves yellow and fall."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon conservé sur les débris, éclaboussé par la pluie.",
+    "en": "Fungus surviving on debris, splashed by rain."
+   },
+   "conditions": {
+    "fr": [
+     "Temps humide, feuillage mouillé longtemps."
+    ],
+    "en": [
+     "Humid weather, foliage wet for long periods."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Retirez les feuilles tachées.",
+     "Demandez conseil pour un fongicide homologué si l'attaque progresse."
+    ],
+    "en": [
+     "Remove spotted leaves.",
+     "Ask advice about a registered fungicide if it spreads."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Paillage, arrosage au pied.",
+     "Rotation de 2 à 3 ans."
+    ],
+    "en": [
+     "Mulch, water at the base.",
+     "2 to 3 year rotation."
+    ]
+   }
+  },
+  {
+   "id": "tomato-yellow-leaf-curl",
+   "type": "viral",
+   "crops": [
+    "tomato"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Enroulement jaune de la tomate",
+    "en": "Tomato yellow leaf curl"
+   },
+   "scientificName": "TYLCV (Begomovirus), transmis par Bemisia tabaci",
+   "aliases": [
+    "TYLCV",
+    "Enroulement"
+   ],
+   "symptoms": {
+    "fr": [
+     "Jeunes feuilles petites, jaunes et enroulées vers le haut.",
+     "Plant buissonnant et rabougri.",
+     "Peu de fleurs et de fruits."
+    ],
+    "en": [
+     "Young leaves small, yellow and curled upwards.",
+     "Bushy, stunted plant.",
+     "Few flowers and fruit."
+    ]
+   },
+   "causes": {
+    "fr": "Virus transmis par les mouches blanches.",
+    "en": "Virus transmitted by whiteflies."
+   },
+   "conditions": {
+    "fr": [
+     "Saison sèche et chaude, fortes populations de mouches blanches."
+    ],
+    "en": [
+     "Hot dry season, high whitefly numbers."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez tôt les plants atteints.",
+     "Luttez contre les mouches blanches (pièges jaunes collants)."
+    ],
+    "en": [
+     "Uproot affected plants early.",
+     "Control whiteflies (yellow sticky traps)."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Pépinière sous voile anti-insectes.",
+     "Variétés tolérantes (TY).",
+     "Pas de vieux plants de tomate près des nouveaux."
+    ],
+    "en": [
+     "Nursery under insect netting.",
+     "Tolerant (TY) varieties.",
+     "No old tomato plants near new ones."
+    ]
+   }
+  },
+  {
+   "id": "tuta-absoluta",
+   "type": "pest",
+   "crops": [
+    "tomato"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Mineuse de la tomate",
+    "en": "Tomato leafminer"
+   },
+   "scientificName": "Tuta absoluta (Phthorimaea absoluta)",
+   "aliases": [
+    "Tuta",
+    "Leafminer"
+   ],
+   "symptoms": {
+    "fr": [
+     "Galeries blanchâtres (mines) dans les feuilles.",
+     "Petits trous noirs dans les fruits.",
+     "Bouts des tiges creusés."
+    ],
+    "en": [
+     "Whitish tunnels (mines) in leaves.",
+     "Small black holes in fruit.",
+     "Bored shoot tips."
+    ]
+   },
+   "causes": {
+    "fr": "Chenille d'un petit papillon qui se multiplie très vite.",
+    "en": "Caterpillar of a small moth that multiplies very fast."
+   },
+   "conditions": {
+    "fr": [
+     "Températures chaudes.",
+     "Cultures de tomate en continu."
+    ],
+    "en": [
+     "Warm temperatures.",
+     "Continuous tomato cropping."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Ramassez et détruisez les feuilles et fruits minés.",
+     "Posez des pièges à phéromone ou des pièges lumineux à eau.",
+     "Demandez conseil pour un insecticide homologué ; changez de produit à chaque traitement."
+    ],
+    "en": [
+     "Collect and destroy mined leaves and fruit.",
+     "Set pheromone or water-light traps.",
+     "Ask advice about a registered insecticide; change product at each treatment."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Plants sains en pépinière protégée.",
+     "Vide sanitaire entre deux cultures."
+    ],
+    "en": [
+     "Healthy plants from a protected nursery.",
+     "Break period between two crops."
+    ]
+   }
+  },
+  {
+   "id": "blossom-end-rot",
+   "type": "physiological",
+   "crops": [
+    "tomato",
+    "pepper"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Nécrose apicale (cul noir)",
+    "en": "Blossom-end rot"
+   },
+   "scientificName": "Manque de calcium lié à un arrosage irrégulier",
+   "aliases": [
+    "Cul noir",
+    "BER"
+   ],
+   "symptoms": {
+    "fr": [
+     "Tache sombre, sèche et enfoncée au bout du fruit, opposé à la tige.",
+     "Les feuilles restent saines."
+    ],
+    "en": [
+     "Dark, dry, sunken patch at the fruit end opposite the stem.",
+     "Leaves stay healthy."
+    ]
+   },
+   "causes": {
+    "fr": "Le fruit manque de calcium quand l'arrosage alterne sec et très mouillé.",
+    "en": "The fruit lacks calcium when watering alternates between dry and very wet."
+   },
+   "conditions": {
+    "fr": [
+     "Arrosage irrégulier, sécheresse.",
+     "Excès d'engrais azoté."
+    ],
+    "en": [
+     "Irregular watering, drought.",
+     "Too much nitrogen fertiliser."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrosez régulièrement, sans excès.",
+     "Paillez le sol.",
+     "Retirez les fruits atteints."
+    ],
+    "en": [
+     "Water regularly, without excess.",
+     "Mulch the soil.",
+     "Remove affected fruit."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Chaulez les sols acides avant la plantation.",
+     "Fumure équilibrée."
+    ],
+    "en": [
+     "Lime acidic soils before planting.",
+     "Balanced fertilisation."
+    ]
+   }
+  },
+  {
+   "id": "whiteflies",
+   "type": "pest",
+   "crops": [
+    "tomato",
+    "cassava",
+    "pepper",
+    "beans"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Mouches blanches",
+    "en": "Whiteflies"
+   },
+   "scientificName": "Bemisia tabaci",
+   "aliases": [
+    "Mouches blanches",
+    "Whitefly"
+   ],
+   "symptoms": {
+    "fr": [
+     "Nuée de petits insectes blancs qui s'envolent quand on secoue le plant.",
+     "Feuilles collantes, parfois noircies (fumagine)."
+    ],
+    "en": [
+     "Cloud of tiny white insects flying up when the plant is shaken.",
+     "Sticky leaves, sometimes blackened (sooty mould)."
+    ]
+   },
+   "causes": {
+    "fr": "Insectes piqueurs qui transmettent aussi des virus (mosaïque du manioc, enroulement de la tomate).",
+    "en": "Sap-sucking insects that also spread viruses (cassava mosaic, tomato leaf curl)."
+   },
+   "conditions": {
+    "fr": [
+     "Saison sèche et chaude."
+    ],
+    "en": [
+     "Hot dry season."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Pièges jaunes collants.",
+     "Pulvérisation d'extrait de neem (graines ou feuilles).",
+     "Arrachez les vieux plants abandonnés."
+    ],
+    "en": [
+     "Yellow sticky traps.",
+     "Spray neem extract (seeds or leaves).",
+     "Remove old abandoned plants."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Voile anti-insectes en pépinière.",
+     "Désherbage autour des parcelles."
+    ],
+    "en": [
+     "Insect netting in nurseries.",
+     "Weed around plots."
+    ]
+   }
+  },
+  {
+   "id": "aphids",
+   "type": "pest",
+   "crops": [
+    "beans",
+    "pepper",
+    "cucurbits",
+    "groundnut",
+    "tomato"
+   ],
+   "modelLabels": [],
+   "severity": "low",
+   "name": {
+    "fr": "Pucerons",
+    "en": "Aphids"
+   },
+   "scientificName": "Aphis spp., Myzus persicae…",
+   "aliases": [
+    "Puceron",
+    "Aphid"
+   ],
+   "symptoms": {
+    "fr": [
+     "Colonies de petits insectes verts ou noirs sous les feuilles et sur les pousses.",
+     "Feuilles enroulées, collantes."
+    ],
+    "en": [
+     "Colonies of small green or black insects under leaves and on shoots.",
+     "Curled, sticky leaves."
+    ]
+   },
+   "causes": {
+    "fr": "Insectes piqueurs qui affaiblissent le plant et transmettent des virus.",
+    "en": "Sap-sucking insects that weaken plants and spread viruses."
+   },
+   "conditions": {
+    "fr": [
+     "Temps sec, excès d'azote."
+    ],
+    "en": [
+     "Dry weather, excess nitrogen."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Jet d'eau savonneuse ou extrait de neem.",
+     "Laissez agir les coccinelles."
+    ],
+    "en": [
+     "Soapy water spray or neem extract.",
+     "Let ladybirds do their work."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Fumure équilibrée.",
+     "Fleurs en bordure pour attirer les insectes utiles."
+    ],
+    "en": [
+     "Balanced fertilisation.",
+     "Flowers on the borders to attract beneficial insects."
+    ]
+   }
+  },
+  {
+   "id": "pepper-anthracnose",
+   "type": "fungal",
+   "crops": [
+    "pepper"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Anthracnose du piment",
+    "en": "Pepper anthracnose"
+   },
+   "scientificName": "Colletotrichum spp.",
+   "aliases": [
+    "Anthracnose"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches rondes enfoncées sur les fruits, avec des cercles orange ou noirs.",
+     "Fruits qui pourrissent sur le plant."
+    ],
+    "en": [
+     "Round sunken spots on fruit, with orange or black rings.",
+     "Fruit rotting on the plant."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon transmis par les semences et la pluie.",
+    "en": "Fungus carried by seed and rain."
+   },
+   "conditions": {
+    "fr": [
+     "Pluies et chaleur pendant la fructification."
+    ],
+    "en": [
+     "Rain and heat during fruiting."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Ramassez et détruisez les fruits atteints.",
+     "Demandez conseil pour un fongicide homologué."
+    ],
+    "en": [
+     "Collect and destroy affected fruit.",
+     "Ask advice about a registered fungicide."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Semences saines.",
+     "Rotation de 2 ans."
+    ],
+    "en": [
+     "Healthy seed.",
+     "2-year rotation."
+    ]
+   }
+  },
+  {
+   "id": "cucurbit-downy-mildew",
+   "type": "oomycete",
+   "crops": [
+    "cucurbits"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Mildiou des cucurbitacées",
+    "en": "Cucurbit downy mildew"
+   },
+   "scientificName": "Pseudoperonospora cubensis",
+   "aliases": [
+    "Mildiou"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches jaunes anguleuses sur le dessus des feuilles.",
+     "Duvet gris-violet dessous par temps humide.",
+     "Feuilles qui brunissent et sèchent vite."
+    ],
+    "en": [
+     "Angular yellow spots on the upper leaf surface.",
+     "Grey-purple down underneath in humid weather.",
+     "Leaves brown and dry quickly."
+    ]
+   },
+   "causes": {
+    "fr": "Micro-organisme transporté par le vent, favorisé par l'humidité.",
+    "en": "Wind-borne organism favoured by humidity."
+   },
+   "conditions": {
+    "fr": [
+     "Rosées, pluies, nuits fraîches."
+    ],
+    "en": [
+     "Dew, rain, cool nights."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Retirez les feuilles atteintes.",
+     "Demandez conseil pour un fongicide homologué contre le mildiou."
+    ],
+    "en": [
+     "Remove affected leaves.",
+     "Ask advice about a registered downy-mildew fungicide."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Espacement suffisant, arrosage au pied.",
+     "Variétés tolérantes."
+    ],
+    "en": [
+     "Enough spacing, water at the base.",
+     "Tolerant varieties."
+    ]
+   }
+  },
+  {
+   "id": "powdery-mildew",
+   "type": "fungal",
+   "crops": [
+    "cucurbits",
+    "tomato",
+    "beans",
+    "pepper"
+   ],
+   "modelLabels": [],
+   "severity": "low",
+   "name": {
+    "fr": "Oïdium",
+    "en": "Powdery mildew"
+   },
+   "scientificName": "Erysiphales (Podosphaera, Leveillula…)",
+   "aliases": [
+    "Oïdium",
+    "Mildiou blanc",
+    "Powdery mildew"
+   ],
+   "symptoms": {
+    "fr": [
+     "Feutrage blanc poudreux sur les feuilles, comme de la farine.",
+     "Feuilles qui jaunissent puis sèchent."
+    ],
+    "en": [
+     "White powdery coating on leaves, like flour.",
+     "Leaves turn yellow then dry."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon favorisé par un air sec et des nuits fraîches.",
+    "en": "Fungus favoured by dry air and cool nights."
+   },
+   "conditions": {
+    "fr": [
+     "Saison sèche, plants serrés à l'ombre."
+    ],
+    "en": [
+     "Dry season, crowded plants in the shade."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Retirez les feuilles très atteintes.",
+     "Pulvérisez un mélange de lait écrémé et d'eau (1 pour 9) sur les feuilles."
+    ],
+    "en": [
+     "Remove badly affected leaves.",
+     "Spray a mix of skimmed milk and water (1 to 9) on the leaves."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Aérez les plants.",
+     "Variétés tolérantes."
+    ],
+    "en": [
+     "Ventilate plants.",
+     "Tolerant varieties."
+    ]
+   }
+  },
+  {
+   "id": "onion-purple-blotch",
+   "type": "fungal",
+   "crops": [
+    "onion"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Alternariose de l'oignon",
+    "en": "Onion purple blotch"
+   },
+   "scientificName": "Alternaria porri",
+   "aliases": [
+    "Purple blotch"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches allongées violettes entourées de jaune sur les feuilles.",
+     "Feuilles qui se cassent et sèchent."
+    ],
+    "en": [
+     "Elongated purple spots with a yellow halo on leaves.",
+     "Leaves break and dry."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon favorisé par l'humidité et les blessures (thrips).",
+    "en": "Fungus favoured by humidity and wounds (thrips)."
+   },
+   "conditions": {
+    "fr": [
+     "Rosées longues, pluies."
+    ],
+    "en": [
+     "Long dews, rain."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Retirez les feuilles atteintes.",
+     "Demandez conseil pour un fongicide homologué."
+    ],
+    "en": [
+     "Remove affected leaves.",
+     "Ask advice about a registered fungicide."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Rotation de 3 ans.",
+     "Lutte contre les thrips."
+    ],
+    "en": [
+     "3-year rotation.",
+     "Thrips control."
+    ]
+   }
+  },
+  {
+   "id": "damping-off",
+   "type": "fungal",
+   "crops": [
+    "tomato",
+    "pepper",
+    "cucurbits",
+    "onion"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Fonte des semis",
+    "en": "Damping-off"
+   },
+   "scientificName": "Pythium, Rhizoctonia, Fusarium",
+   "aliases": [
+    "Fonte des semis",
+    "Damping off"
+   ],
+   "symptoms": {
+    "fr": [
+     "Jeunes plants qui tombent, tige pincée et brune au ras du sol.",
+     "Graines qui ne lèvent pas."
+    ],
+    "en": [
+     "Seedlings collapse, stem pinched and brown at soil level.",
+     "Seeds that do not emerge."
+    ]
+   },
+   "causes": {
+    "fr": "Champignons du sol favorisés par l'excès d'eau.",
+    "en": "Soil fungi favoured by excess water."
+   },
+   "conditions": {
+    "fr": [
+     "Pépinière trop arrosée, semis trop serrés."
+    ],
+    "en": [
+     "Over-watered nursery, crowded sowing."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Retirez les plantules atteintes.",
+     "Arrosez moins et aérez la pépinière."
+    ],
+    "en": [
+     "Remove affected seedlings.",
+     "Water less and ventilate the nursery."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Terreau propre ou solarisé.",
+     "Semis clairs."
+    ],
+    "en": [
+     "Clean or solarised potting soil.",
+     "Sparse sowing."
+    ]
+   }
+  },
+  {
+   "id": "black-sigatoka",
+   "type": "fungal",
+   "crops": [
+    "plantain"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Cercosporiose noire (Sigatoka noir)",
+    "en": "Black Sigatoka"
+   },
+   "scientificName": "Pseudocercospora fijiensis",
+   "aliases": [
+    "Sigatoka noir",
+    "Black leaf streak"
+   ],
+   "symptoms": {
+    "fr": [
+     "Fines stries brunes puis noires sur les feuilles.",
+     "Grandes plages noires et feuilles qui sèchent avant la récolte.",
+     "Régimes petits, mûrissement précoce."
+    ],
+    "en": [
+     "Thin brown then black streaks on leaves.",
+     "Large black areas and leaves drying before harvest.",
+     "Small bunches, early ripening."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon disséminé par le vent et la pluie.",
+    "en": "Fungus spread by wind and rain."
+   },
+   "conditions": {
+    "fr": [
+     "Saison des pluies, forte humidité."
+    ],
+    "en": [
+     "Rainy season, high humidity."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Effeuillez : coupez les feuilles ou parties de feuilles nécrosées et laissez-les pourrir au sol, face tachée contre terre.",
+     "Demandez conseil pour un traitement homologué dans les grandes plantations."
+    ],
+    "en": [
+     "De-leaf: cut necrotic leaves or leaf parts and leave them to rot on the ground, spotted side down.",
+     "Ask advice about a registered treatment in large plantations."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Espacement correct et drainage.",
+     "Variétés tolérantes (hybrides FHIA, CARBAP)."
+    ],
+    "en": [
+     "Correct spacing and drainage.",
+     "Tolerant varieties (FHIA, CARBAP hybrids)."
+    ]
+   }
+  },
+  {
+   "id": "banana-fusarium-wilt",
+   "type": "fungal",
+   "crops": [
+    "plantain"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Fusariose du bananier (maladie de Panama)",
+    "en": "Fusarium wilt of banana (Panama disease)"
+   },
+   "scientificName": "Fusarium oxysporum f. sp. cubense",
+   "aliases": [
+    "Maladie de Panama",
+    "Panama disease"
+   ],
+   "symptoms": {
+    "fr": [
+     "Feuilles âgées qui jaunissent depuis le bord puis pendent autour du pseudo-tronc.",
+     "Pseudo-tronc fendu à la base ; vaisseaux bruns ou rouges à l'intérieur."
+    ],
+    "en": [
+     "Older leaves yellow from the edge, then hang around the pseudostem.",
+     "Split pseudostem base; brown or red vessels inside."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon du sol qui survit des dizaines d'années.",
+    "en": "Soil fungus that survives for decades."
+   },
+   "conditions": {
+    "fr": [
+     "Rejets prélevés sur des souches malades."
+    ],
+    "en": [
+     "Suckers taken from diseased mats."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Ne déplacez ni terre ni rejets de la touffe malade.",
+     "Signalez le cas au service agricole."
+    ],
+    "en": [
+     "Do not move soil or suckers from the diseased mat.",
+     "Report the case to the agricultural service."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Plants issus de vivoplants ou de rejets sains (méthode PIF).",
+     "Nettoyez bottes et outils."
+    ],
+    "en": [
+     "Plants from nursery plantlets or healthy suckers (PIF method).",
+     "Clean boots and tools."
+    ]
+   },
+   "whenToSeekHelp": {
+    "fr": "Maladie sans traitement, à signaler pour éviter sa propagation.",
+    "en": "Untreatable disease, report it to prevent spread."
+   }
+  },
+  {
+   "id": "banana-bunchy-top",
+   "type": "viral",
+   "crops": [
+    "plantain"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Bunchy top du bananier",
+    "en": "Banana bunchy top"
+   },
+   "scientificName": "BBTV (Babuvirus), transmis par le puceron Pentalonia nigronervosa",
+   "aliases": [
+    "BBTV"
+   ],
+   "symptoms": {
+    "fr": [
+     "Feuilles étroites, raides et dressées, serrées en touffe au sommet.",
+     "Petits traits vert foncé en morse sur les nervures.",
+     "Pas de régime ou régime minuscule."
+    ],
+    "en": [
+     "Narrow, stiff, upright leaves bunched at the top.",
+     "Short dark-green 'Morse code' dashes on veins.",
+     "No bunch or a tiny bunch."
+    ]
+   },
+   "causes": {
+    "fr": "Virus transmis par un puceron et par les rejets.",
+    "en": "Virus spread by an aphid and by suckers."
+   },
+   "conditions": {
+    "fr": [
+     "Rejets d'origine inconnue."
+    ],
+    "en": [
+     "Suckers of unknown origin."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Détruisez toute la touffe (plant mère et rejets).",
+     "Signalez le cas au service agricole."
+    ],
+    "en": [
+     "Destroy the whole mat (mother plant and suckers).",
+     "Report the case to the agricultural service."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Matériel de plantation certifié.",
+     "Surveillance régulière."
+    ],
+    "en": [
+     "Certified planting material.",
+     "Regular monitoring."
+    ]
+   }
+  },
+  {
+   "id": "banana-weevil",
+   "type": "pest",
+   "crops": [
+    "plantain"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Charançon du bananier",
+    "en": "Banana weevil"
+   },
+   "scientificName": "Cosmopolites sordidus",
+   "aliases": [
+    "Charançon"
+   ],
+   "symptoms": {
+    "fr": [
+     "Galeries dans le bulbe (souche).",
+     "Plants qui versent, régimes petits."
+    ],
+    "en": [
+     "Tunnels in the corm.",
+     "Plants topple, small bunches."
+    ]
+   },
+   "causes": {
+    "fr": "Larves d'un coléoptère noir qui creusent la souche.",
+    "en": "Larvae of a black beetle boring into the corm."
+   },
+   "conditions": {
+    "fr": [
+     "Vieilles bananeraies, débris au sol."
+    ],
+    "en": [
+     "Old plantations, debris on the ground."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Pièges en morceaux de pseudo-tronc fendu posés au sol ; ramassez les charançons.",
+     "Détruisez les vieilles souches."
+    ],
+    "en": [
+     "Traps of split pseudostem pieces on the ground; collect weevils.",
+     "Destroy old corms."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Parez et nettoyez les rejets avant plantation.",
+     "Paillage et propreté de la plantation."
+    ],
+    "en": [
+     "Pare and clean suckers before planting.",
+     "Mulching and clean plantation."
+    ]
+   }
+  },
+  {
+   "id": "cocoa-black-pod",
+   "type": "oomycete",
+   "crops": [
+    "cocoa"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Pourriture brune des cabosses",
+    "en": "Cocoa black pod"
+   },
+   "scientificName": "Phytophthora megakarya, P. palmivora",
+   "aliases": [
+    "Pourriture brune",
+    "Black pod",
+    "Phytophthora"
+   ],
+   "symptoms": {
+    "fr": [
+     "Tache brune ronde qui s'étend vite sur la cabosse.",
+     "Duvet blanc sur la tache ; fèves pourries."
+    ],
+    "en": [
+     "Round brown spot spreading quickly over the pod.",
+     "White down on the spot; rotten beans."
+    ]
+   },
+   "causes": {
+    "fr": "Micro-organisme du sol et de l'eau, disséminé par la pluie, les insectes et les mains.",
+    "en": "Soil- and water-borne organism spread by rain, insects and hands."
+   },
+   "conditions": {
+    "fr": [
+     "Saison des pluies, ombrage trop dense."
+    ],
+    "en": [
+     "Rainy season, too much shade."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Récoltez et sortez de la plantation toutes les cabosses malades chaque semaine.",
+     "Demandez conseil pour un fongicide homologué (cuivre ou métalaxyl) selon le calendrier recommandé."
+    ],
+    "en": [
+     "Harvest and remove all diseased pods from the plantation every week.",
+     "Ask advice about a registered fungicide (copper or metalaxyl) according to the recommended schedule."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Réduisez l'ombrage et taillez les cacaoyers.",
+     "Récoltes fréquentes."
+    ],
+    "en": [
+     "Reduce shade and prune cocoa trees.",
+     "Frequent harvesting."
+    ]
+   },
+   "whenToSeekHelp": {
+    "fr": "Première cause de pertes de cacao au Cameroun : suivez le programme de traitement de la SODECAO ou des services agricoles.",
+    "en": "Main cause of cocoa losses in Cameroon: follow the SODECAO or extension spraying programme."
+   }
+  },
+  {
+   "id": "cocoa-swollen-shoot",
+   "type": "viral",
+   "crops": [
+    "cocoa"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Swollen shoot du cacaoyer",
+    "en": "Cocoa swollen shoot"
+   },
+   "scientificName": "CSSV (Badnavirus), transmis par des cochenilles",
+   "aliases": [
+    "CSSV"
+   ],
+   "symptoms": {
+    "fr": [
+     "Gonflements des tiges et des racines.",
+     "Feuilles avec des bandes rouges ou jaunes le long des nervures.",
+     "Déclin et mort de l'arbre."
+    ],
+    "en": [
+     "Swellings on stems and roots.",
+     "Leaves with red or yellow bands along veins.",
+     "Decline and death of the tree."
+    ]
+   },
+   "causes": {
+    "fr": "Virus transmis par des cochenilles farineuses.",
+    "en": "Virus spread by mealybugs."
+   },
+   "conditions": {
+    "fr": [
+     "Arbres malades à proximité."
+    ],
+    "en": [
+     "Diseased trees nearby."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Signalez les arbres suspects au service agricole ; l'arrachage des arbres atteints et voisins est la seule mesure efficace."
+    ],
+    "en": [
+     "Report suspected trees to the agricultural service; removing infected and neighbouring trees is the only effective measure."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Matériel végétal sain.",
+     "Barrières de cultures non hôtes."
+    ],
+    "en": [
+     "Healthy planting material.",
+     "Barriers of non-host crops."
+    ]
+   }
+  },
+  {
+   "id": "cocoa-mirids",
+   "type": "pest",
+   "crops": [
+    "cocoa"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Mirides (capsides) du cacaoyer",
+    "en": "Cocoa mirids (capsids)"
+   },
+   "scientificName": "Sahlbergella singularis, Distantiella theobroma",
+   "aliases": [
+    "Capsides",
+    "Mirides"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches noires sur les jeunes rameaux et les cabosses.",
+     "Rameaux qui sèchent (« poches de mirides »)."
+    ],
+    "en": [
+     "Black lesions on young shoots and pods.",
+     "Drying shoots ('mirid pockets')."
+    ]
+   },
+   "causes": {
+    "fr": "Punaises qui piquent les tissus tendres.",
+    "en": "Bugs that pierce soft tissues."
+   },
+   "conditions": {
+    "fr": [
+     "Trouées dans l'ombrage, saison sèche."
+    ],
+    "en": [
+     "Gaps in the shade, dry season."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Demandez conseil pour un insecticide homologué selon le calendrier recommandé."
+    ],
+    "en": [
+     "Ask advice about a registered insecticide according to the recommended schedule."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Ombrage régulier.",
+     "Surveillance des jeunes pousses."
+    ],
+    "en": [
+     "Even shade.",
+     "Monitor young shoots."
+    ]
+   }
+  },
+  {
+   "id": "coffee-leaf-rust",
+   "type": "fungal",
+   "crops": [
+    "coffee"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Rouille orangée du caféier",
+    "en": "Coffee leaf rust"
+   },
+   "scientificName": "Hemileia vastatrix",
+   "aliases": [
+    "Rouille du café",
+    "Coffee rust"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches jaune-orange poudreuses sous les feuilles.",
+     "Chute des feuilles, rameaux dénudés."
+    ],
+    "en": [
+     "Powdery yellow-orange spots under the leaves.",
+     "Leaf fall, bare branches."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon disséminé par le vent et la pluie.",
+    "en": "Fungus spread by wind and rain."
+   },
+   "conditions": {
+    "fr": [
+     "Chaleur et humidité, fortes récoltes."
+    ],
+    "en": [
+     "Heat and humidity, heavy crops."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Demandez conseil pour un fongicide homologué (cuivre) en début de saison des pluies."
+    ],
+    "en": [
+     "Ask advice about a registered (copper) fungicide at the start of the rains."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Variétés résistantes.",
+     "Taille et fertilisation équilibrée."
+    ],
+    "en": [
+     "Resistant varieties.",
+     "Pruning and balanced fertilisation."
+    ]
+   }
+  },
+  {
+   "id": "coffee-berry-disease",
+   "type": "fungal",
+   "crops": [
+    "coffee"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Anthracnose des baies du caféier",
+    "en": "Coffee berry disease"
+   },
+   "scientificName": "Colletotrichum kahawae",
+   "aliases": [
+    "CBD"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches noires enfoncées sur les cerises vertes.",
+     "Cerises qui noircissent et tombent."
+    ],
+    "en": [
+     "Dark sunken spots on green berries.",
+     "Berries turn black and drop."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon favorisé par la pluie en altitude (Arabica).",
+    "en": "Fungus favoured by rain at altitude (Arabica)."
+   },
+   "conditions": {
+    "fr": [
+     "Pluies pendant le développement des cerises."
+    ],
+    "en": [
+     "Rain during berry development."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Ramassez et détruisez les cerises atteintes.",
+     "Demandez conseil pour un fongicide homologué."
+    ],
+    "en": [
+     "Collect and destroy affected berries.",
+     "Ask advice about a registered fungicide."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Variétés résistantes.",
+     "Taille pour aérer."
+    ],
+    "en": [
+     "Resistant varieties.",
+     "Prune to ventilate."
+    ]
+   }
+  },
+  {
+   "id": "groundnut-rosette",
+   "type": "viral",
+   "crops": [
+    "groundnut"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Rosette de l'arachide",
+    "en": "Groundnut rosette"
+   },
+   "scientificName": "Complexe viral (GRV, GRAV), transmis par le puceron Aphis craccivora",
+   "aliases": [
+    "Rosette"
+   ],
+   "symptoms": {
+    "fr": [
+     "Plants nains en touffe, feuilles petites.",
+     "Feuilles jaunes ou en mosaïque."
+    ],
+    "en": [
+     "Dwarf, bushy plants with small leaves.",
+     "Yellow or mosaic leaves."
+    ]
+   },
+   "causes": {
+    "fr": "Virus transmis par des pucerons.",
+    "en": "Virus spread by aphids."
+   },
+   "conditions": {
+    "fr": [
+     "Semis tardifs, faible densité."
+    ],
+    "en": [
+     "Late sowing, low density."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez les plants atteints tôt."
+    ],
+    "en": [
+     "Uproot affected plants early."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Semis précoce et dense.",
+     "Variétés résistantes."
+    ],
+    "en": [
+     "Early, dense sowing.",
+     "Resistant varieties."
+    ]
+   }
+  },
+  {
+   "id": "groundnut-leaf-spots",
+   "type": "fungal",
+   "crops": [
+    "groundnut"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Cercosporioses de l'arachide",
+    "en": "Groundnut leaf spots"
+   },
+   "scientificName": "Passalora arachidicola, Nothopassalora personata",
+   "aliases": [
+    "Cercosporiose"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches brunes ou noires rondes sur les feuilles, parfois entourées de jaune.",
+     "Chute précoce des feuilles."
+    ],
+    "en": [
+     "Round brown or black spots on leaves, sometimes with a yellow halo.",
+     "Early leaf fall."
+    ]
+   },
+   "causes": {
+    "fr": "Champignons conservés dans les résidus.",
+    "en": "Fungi surviving in residues."
+   },
+   "conditions": {
+    "fr": [
+     "Humidité, arachide sur arachide."
+    ],
+    "en": [
+     "Humidity, groundnut after groundnut."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Demandez conseil pour un fongicide homologué si la chute des feuilles commence avant 2 mois."
+    ],
+    "en": [
+     "Ask advice about a registered fungicide if leaf fall starts before 2 months."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Rotation avec maïs ou manioc.",
+     "Enfouissement des résidus."
+    ],
+    "en": [
+     "Rotation with maize or cassava.",
+     "Bury residues."
+    ]
+   }
+  },
+  {
+   "id": "aflatoxin",
+   "type": "fungal",
+   "crops": [
+    "groundnut",
+    "maize"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Moisissures à aflatoxines",
+    "en": "Aflatoxin moulds"
+   },
+   "scientificName": "Aspergillus flavus",
+   "aliases": [
+    "Aflatoxine de l'arachide",
+    "Aflatoxine"
+   ],
+   "symptoms": {
+    "fr": [
+     "Moisissure vert-jaune sur les graines ou épis.",
+     "Grains abîmés, ridés ou décolorés."
+    ],
+    "en": [
+     "Green-yellow mould on seeds or ears.",
+     "Damaged, shrivelled or discoloured grain."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon qui produit un poison dangereux pour la santé, surtout pendant le séchage et le stockage.",
+    "en": "Fungus producing a poison harmful to health, mostly during drying and storage."
+   },
+   "conditions": {
+    "fr": [
+     "Séchage lent, stockage humide.",
+     "Sécheresse en fin de cycle, attaques d'insectes."
+    ],
+    "en": [
+     "Slow drying, damp storage.",
+     "Drought at the end of the season, insect damage."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Ne consommez pas et ne donnez pas aux animaux les grains moisis : triez-les et détruisez-les."
+    ],
+    "en": [
+     "Do not eat or feed moulded grain to animals: sort it out and destroy it."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Récolte à maturité et séchage rapide sur bâche, jamais à même le sol.",
+     "Stockage au sec, dans des sacs hermétiques.",
+     "Biocontrôle Aflasafe si disponible."
+    ],
+    "en": [
+     "Harvest at maturity and dry quickly on tarpaulin, never on bare ground.",
+     "Store dry, in hermetic bags.",
+     "Aflasafe biocontrol where available."
+    ]
+   },
+   "whenToSeekHelp": {
+    "fr": "Les aflatoxines sont toxiques même invisibles : en cas de doute sur un stock, demandez une analyse.",
+    "en": "Aflatoxins are toxic even when invisible: if a stock is doubtful, ask for testing."
+   }
+  },
+  {
+   "id": "bean-anthracnose",
+   "type": "fungal",
+   "crops": [
+    "beans"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Anthracnose du haricot",
+    "en": "Bean anthracnose"
+   },
+   "scientificName": "Colletotrichum lindemuthianum",
+   "aliases": [
+    "Anthracnose du haricot"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches brun-noir enfoncées sur les gousses.",
+     "Nervures noircies sous les feuilles."
+    ],
+    "en": [
+     "Sunken brown-black spots on pods.",
+     "Blackened veins under leaves."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon transmis surtout par les semences.",
+    "en": "Fungus carried mainly by seed."
+   },
+   "conditions": {
+    "fr": [
+     "Temps frais et humide."
+    ],
+    "en": [
+     "Cool, humid weather."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Ne récoltez pas de semences sur des plants atteints.",
+     "Évitez de toucher les plants mouillés."
+    ],
+    "en": [
+     "Do not save seed from affected plants.",
+     "Avoid handling wet plants."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Semences saines.",
+     "Rotation de 2 ans."
+    ],
+    "en": [
+     "Healthy seed.",
+     "2-year rotation."
+    ]
+   }
+  },
+  {
+   "id": "bean-angular-leaf-spot",
+   "type": "fungal",
+   "crops": [
+    "beans"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Taches anguleuses du haricot",
+    "en": "Bean angular leaf spot"
+   },
+   "scientificName": "Pseudocercospora griseola",
+   "aliases": [
+    "Angular leaf spot"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches grises ou brunes anguleuses, limitées par les nervures.",
+     "Chute des feuilles."
+    ],
+    "en": [
+     "Angular grey or brown spots bounded by veins.",
+     "Leaf drop."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon conservé dans les débris et les semences.",
+    "en": "Fungus surviving in debris and seed."
+   },
+   "conditions": {
+    "fr": [
+     "Alternance de temps humide et sec."
+    ],
+    "en": [
+     "Alternating wet and dry weather."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Retirez les feuilles atteintes."
+    ],
+    "en": [
+     "Remove affected leaves."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Semences saines.",
+     "Rotation, enfouissement des résidus."
+    ],
+    "en": [
+     "Healthy seed.",
+     "Rotation, bury residues."
+    ]
+   }
+  },
+  {
+   "id": "bean-common-mosaic",
+   "type": "viral",
+   "crops": [
+    "beans"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Mosaïque commune du haricot",
+    "en": "Bean common mosaic"
+   },
+   "scientificName": "BCMV / BCMNV (Potyvirus)",
+   "aliases": [
+    "BCMV"
+   ],
+   "symptoms": {
+    "fr": [
+     "Feuilles marbrées vert clair et vert foncé, gaufrées.",
+     "Plants rabougris, peu de gousses."
+    ],
+    "en": [
+     "Leaves mottled light and dark green, puckered.",
+     "Stunted plants, few pods."
+    ]
+   },
+   "causes": {
+    "fr": "Virus transmis par les semences et les pucerons.",
+    "en": "Virus spread by seed and aphids."
+   },
+   "conditions": {
+    "fr": [
+     "Semences récoltées sur des plants malades."
+    ],
+    "en": [
+     "Seed saved from diseased plants."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez les plants atteints tôt."
+    ],
+    "en": [
+     "Uproot affected plants early."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Semences certifiées.",
+     "Variétés résistantes."
+    ],
+    "en": [
+     "Certified seed.",
+     "Resistant varieties."
+    ]
+   }
+  },
+  {
+   "id": "rice-blast",
+   "type": "fungal",
+   "crops": [
+    "rice"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Pyriculariose du riz",
+    "en": "Rice blast"
+   },
+   "scientificName": "Magnaporthe oryzae",
+   "aliases": [
+    "Pyriculariose du riz",
+    "Blast"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches en losange à centre gris et bord brun sur les feuilles.",
+     "Cou de la panicule noirci et cassé ; grains vides."
+    ],
+    "en": [
+     "Diamond-shaped spots with grey centre and brown edge on leaves.",
+     "Blackened, broken panicle neck; empty grains."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon favorisé par l'humidité et l'excès d'azote.",
+    "en": "Fungus favoured by humidity and excess nitrogen."
+   },
+   "conditions": {
+    "fr": [
+     "Rosées, nuits fraîches, excès d'engrais azoté."
+    ],
+    "en": [
+     "Dew, cool nights, too much nitrogen fertiliser."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Fractionnez l'engrais azoté.",
+     "Demandez conseil pour un fongicide homologué si le cou des panicules est menacé."
+    ],
+    "en": [
+     "Split nitrogen fertiliser.",
+     "Ask advice about a registered fungicide if panicle necks are at risk."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Variétés résistantes.",
+     "Semences saines."
+    ],
+    "en": [
+     "Resistant varieties.",
+     "Healthy seed."
+    ]
+   }
+  },
+  {
+   "id": "rice-yellow-mottle",
+   "type": "viral",
+   "crops": [
+    "rice"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Panachure jaune du riz",
+    "en": "Rice yellow mottle"
+   },
+   "scientificName": "RYMV (Sobemovirus)",
+   "aliases": [
+    "RYMV"
+   ],
+   "symptoms": {
+    "fr": [
+     "Feuilles jaunes à orange, marbrées.",
+     "Tallage faible, panicules stériles."
+    ],
+    "en": [
+     "Yellow to orange mottled leaves.",
+     "Poor tillering, sterile panicles."
+    ]
+   },
+   "causes": {
+    "fr": "Virus transmis par des insectes et les contacts lors du repiquage.",
+    "en": "Virus spread by insects and contact during transplanting."
+   },
+   "conditions": {
+    "fr": [
+     "Repiquage de plants infectés, repousses de riz."
+    ],
+    "en": [
+     "Transplanting infected seedlings, rice regrowth."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez les touffes atteintes."
+    ],
+    "en": [
+     "Uproot affected hills."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Variétés résistantes.",
+     "Détruisez les repousses entre deux saisons."
+    ],
+    "en": [
+     "Resistant varieties.",
+     "Destroy regrowth between seasons."
+    ]
+   }
+  },
+  {
+   "id": "yam-anthracnose",
+   "type": "fungal",
+   "crops": [
+    "yam"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Anthracnose de l'igname",
+    "en": "Yam anthracnose"
+   },
+   "scientificName": "Colletotrichum gloeosporioides",
+   "aliases": [
+    "Anthracnose de l'igname"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches brun-noir sur les feuilles qui s'agrandissent.",
+     "Dessèchement des lianes (brûlure)."
+    ],
+    "en": [
+     "Brown-black leaf spots that enlarge.",
+     "Vine dieback (scorch)."
+    ]
+   },
+   "causes": {
+    "fr": "Champignon transmis par les semenceaux et la pluie.",
+    "en": "Fungus spread by seed yams and rain."
+   },
+   "conditions": {
+    "fr": [
+     "Pluies abondantes, chaleur."
+    ],
+    "en": [
+     "Heavy rain, heat."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Retirez et détruisez les feuilles et lianes atteintes.",
+     "Demandez conseil pour un fongicide homologué."
+    ],
+    "en": [
+     "Remove and destroy affected leaves and vines.",
+     "Ask advice about a registered fungicide."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Semenceaux sains.",
+     "Variétés tolérantes, tuteurage."
+    ],
+    "en": [
+     "Healthy seed yams.",
+     "Tolerant varieties, staking."
+    ]
+   }
+  },
+  {
+   "id": "cocoyam-leaf-blight",
+   "type": "oomycete",
+   "crops": [
+    "cocoyam"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Mildiou du taro",
+    "en": "Taro leaf blight"
+   },
+   "scientificName": "Phytophthora colocasiae",
+   "aliases": [
+    "Taro leaf blight"
+   ],
+   "symptoms": {
+    "fr": [
+     "Taches brunes humides avec gouttelettes orange sur les feuilles.",
+     "Feuilles détruites en quelques jours ; tubercules qui pourrissent."
+    ],
+    "en": [
+     "Wet brown spots with orange droplets on leaves.",
+     "Leaves destroyed within days; rotting corms."
+    ]
+   },
+   "causes": {
+    "fr": "Micro-organisme favorisé par la pluie et les nuits fraîches.",
+    "en": "Organism favoured by rain and cool nights."
+   },
+   "conditions": {
+    "fr": [
+     "Saison des pluies."
+    ],
+    "en": [
+     "Rainy season."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Coupez et détruisez les feuilles atteintes.",
+     "Demandez conseil pour un fongicide homologué (cuivre)."
+    ],
+    "en": [
+     "Cut and destroy affected leaves.",
+     "Ask advice about a registered (copper) fungicide."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Variétés tolérantes.",
+     "Espacement et rotation."
+    ],
+    "en": [
+     "Tolerant varieties.",
+     "Spacing and rotation."
+    ]
+   }
+  },
+  {
+   "id": "cocoyam-root-rot",
+   "type": "oomycete",
+   "crops": [
+    "cocoyam"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Pourridié du macabo",
+    "en": "Cocoyam root rot"
+   },
+   "scientificName": "Pythium myriotylum",
+   "aliases": [
+    "Pourriture racinaire du macabo"
+   ],
+   "symptoms": {
+    "fr": [
+     "Feuilles qui jaunissent et restent petites.",
+     "Racines détruites ; plants qui se couchent ; cormels peu nombreux."
+    ],
+    "en": [
+     "Leaves yellow and stay small.",
+     "Roots destroyed; plants lodge; few cormels."
+    ]
+   },
+   "causes": {
+    "fr": "Micro-organisme du sol, propagé par les cormels infectés.",
+    "en": "Soil organism spread by infected cormels."
+   },
+   "conditions": {
+    "fr": [
+     "Sols lourds et humides, monoculture."
+    ],
+    "en": [
+     "Heavy, wet soils, monoculture."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez les plants atteints et ne réutilisez pas leurs cormels."
+    ],
+    "en": [
+     "Uproot affected plants and do not reuse their cormels."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Rotation longue.",
+     "Matériel de plantation sain, apport de matière organique."
+    ],
+    "en": [
+     "Long rotation.",
+     "Healthy planting material, organic matter."
+    ]
+   }
+  },
+  {
+   "id": "sweet-potato-virus",
+   "type": "viral",
+   "crops": [
+    "sweet_potato"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Maladie virale de la patate douce",
+    "en": "Sweet potato virus disease"
+   },
+   "scientificName": "SPCSV + SPFMV",
+   "aliases": [
+    "SPVD"
+   ],
+   "symptoms": {
+    "fr": [
+     "Feuilles petites, déformées, avec des marbrures.",
+     "Plants rabougris, tubercules petits."
+    ],
+    "en": [
+     "Small, distorted, mottled leaves.",
+     "Stunted plants, small roots."
+    ]
+   },
+   "causes": {
+    "fr": "Association de virus transmis par les mouches blanches, les pucerons et les boutures.",
+    "en": "Combination of viruses spread by whiteflies, aphids and cuttings."
+   },
+   "conditions": {
+    "fr": [
+     "Boutures prélevées sur des plants malades."
+    ],
+    "en": [
+     "Cuttings from diseased plants."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez les plants atteints."
+    ],
+    "en": [
+     "Uproot affected plants."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Boutures saines (sommets de tiges vigoureuses)."
+    ],
+    "en": [
+     "Healthy cuttings (tops of vigorous vines)."
+    ]
+   }
+  },
+  {
+   "id": "root-knot-nematodes",
+   "type": "nematode",
+   "crops": [
+    "tomato",
+    "beans",
+    "plantain",
+    "yam",
+    "pepper"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Nématodes à galles",
+    "en": "Root-knot nematodes"
+   },
+   "scientificName": "Meloidogyne spp.",
+   "aliases": [
+    "Nématode des racines",
+    "Nématodes"
+   ],
+   "symptoms": {
+    "fr": [
+     "Racines couvertes de boules (galles).",
+     "Plants qui fanent aux heures chaudes, jaunissent et restent petits."
+    ],
+    "en": [
+     "Roots covered with knots (galls).",
+     "Plants wilt in the heat, yellow and stay small."
+    ]
+   },
+   "causes": {
+    "fr": "Petits vers microscopiques du sol qui attaquent les racines.",
+    "en": "Microscopic soil worms attacking roots."
+   },
+   "conditions": {
+    "fr": [
+     "Sols sableux, cultures maraîchères répétées."
+    ],
+    "en": [
+     "Sandy soils, repeated vegetable cropping."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Arrachez et brûlez les racines atteintes.",
+     "Apportez beaucoup de matière organique."
+    ],
+    "en": [
+     "Uproot and burn affected roots.",
+     "Add plenty of organic matter."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Rotation avec maïs, mil ou Crotalaria ; association avec des tagètes.",
+     "Solarisation des planches de pépinière."
+    ],
+    "en": [
+     "Rotation with maize, millet or Crotalaria; intercrop with marigolds.",
+     "Solarise nursery beds."
+    ]
+   }
+  },
+  {
+   "id": "termites",
+   "type": "pest",
+   "crops": [
+    "maize",
+    "cassava",
+    "groundnut",
+    "yam"
+   ],
+   "modelLabels": [],
+   "severity": "moderate",
+   "name": {
+    "fr": "Termites",
+    "en": "Termites"
+   },
+   "scientificName": "Macrotermes, Microtermes, Odontotermes",
+   "aliases": [
+    "Termite"
+   ],
+   "symptoms": {
+    "fr": [
+     "Plants qui se dessèchent, racines et collet rongés.",
+     "Galeries de terre sur les tiges."
+    ],
+    "en": [
+     "Plants drying, roots and collar eaten.",
+     "Earth tunnels on stems."
+    ]
+   },
+   "causes": {
+    "fr": "Insectes sociaux qui vivent en colonies dans le sol.",
+    "en": "Social insects living in soil colonies."
+   },
+   "conditions": {
+    "fr": [
+     "Sécheresse, résidus secs au sol."
+    ],
+    "en": [
+     "Drought, dry residues on the ground."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Retirez les plants morts et les débris secs.",
+     "Arrosez si possible : les termites attaquent surtout les plants stressés."
+    ],
+    "en": [
+     "Remove dead plants and dry debris.",
+     "Water if possible: termites mostly attack stressed plants."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Matière organique bien décomposée (pas de résidus secs en surface).",
+     "Récolte rapide à maturité."
+    ],
+    "en": [
+     "Well-rotted organic matter (no dry residue on the surface).",
+     "Quick harvest at maturity."
+    ]
+   }
+  },
+  {
+   "id": "locusts",
+   "type": "pest",
+   "crops": [
+    "maize",
+    "rice",
+    "cassava",
+    "groundnut"
+   ],
+   "modelLabels": [],
+   "severity": "high",
+   "name": {
+    "fr": "Criquets et sauteriaux",
+    "en": "Locusts and grasshoppers"
+   },
+   "scientificName": "Zonocerus variegatus, Locusta migratoria…",
+   "aliases": [
+    "Criquets",
+    "Sauteriaux",
+    "Zonocerus"
+   ],
+   "symptoms": {
+    "fr": [
+     "Feuilles dévorées depuis les bords, parfois jusqu'aux nervures.",
+     "Nombreux criquets visibles."
+    ],
+    "en": [
+     "Leaves eaten from the edges, sometimes down to the veins.",
+     "Many grasshoppers visible."
+    ]
+   },
+   "causes": {
+    "fr": "Insectes qui se déplacent en groupes et dévorent le feuillage.",
+    "en": "Insects moving in groups and devouring foliage."
+   },
+   "conditions": {
+    "fr": [
+     "Saison sèche, herbes hautes autour du champ."
+    ],
+    "en": [
+     "Dry season, tall grass around the field."
+    ]
+   },
+   "actions": {
+    "fr": [
+     "Ramassez les criquets tôt le matin quand ils sont engourdis.",
+     "En cas d'invasion, prévenez tout de suite le service de protection des végétaux."
+    ],
+    "en": [
+     "Collect grasshoppers early in the morning when they are sluggish.",
+     "In case of invasion, alert the plant protection service at once."
+    ]
+   },
+   "prevention": {
+    "fr": [
+     "Labour des zones de ponte en saison sèche.",
+     "Fauchage des bordures."
+    ],
+    "en": [
+     "Plough egg-laying areas in the dry season.",
+     "Mow the borders."
+    ]
+   }
+  }
+ ]
+}

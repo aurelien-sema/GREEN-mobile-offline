@@ -1,0 +1,16 @@
+{
+  "_comment": "Modèle de vision utilisé par l'application. Pour passer au modèle ONNX : copier le contenu de assets/models/onnx/onnx_model.json ici et déclarer assets/models/onnx/ dans pubspec.yaml (voir README, « Changer de modèle »).",
+  "id": "plant-classifier-9c-fp16",
+  "format": "tflite",
+  "model": "assets/models/tflite/plant_classifier_float16.tflite",
+  "labels": "assets/models/tflite/labels.txt",
+  "input": {
+    "layout": "nhwc",
+    "width": 224,
+    "height": 224,
+    "pixels": "raw_0_255",
+    "resize": "stretch_bilinear"
+  },
+  "output": { "kind": "probabilities" },
+  "threads": 4
+}
