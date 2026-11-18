@@ -1,3 +1,5 @@
+import 'app_strings_v2.dart';
+
 /// Localization constants for the Green app.
 /// Supports: Français (FR), English (EN), Pidgin (PID)
 class AppStrings {
@@ -181,6 +183,9 @@ class AppStrings {
       // Chat screen (extra)
       'offlineChatMessage': 'Vous êtes hors-ligne — le chat IA nécessite une connexion internet.',
       'aiServiceErrorPrefix': 'Erreur lors de la communication avec le service IA',
+      'networkErrorMessage': 'Le Green Bot n’a pas pu répondre pour le moment. Vérifiez votre connexion internet et réessayez plus tard.',
+      'serviceUnavailableMessage': 'Le Green Bot est momentanément indisponible. Réessayez dans quelques instants.',
+      'genericErrorMessage': 'Une erreur inattendue est survenue. Veuillez réessayer.',
       'newDiscussion': 'Nouvelle discussion',
       'noDiscussionYet': 'Aucune discussion',
       'noMessages': 'Aucun message',
@@ -518,6 +523,9 @@ class AppStrings {
       // Chat screen (extra)
       'offlineChatMessage': 'You are offline — the AI chat needs an internet connection.',
       'aiServiceErrorPrefix': 'Error communicating with the AI service',
+      'networkErrorMessage': 'Green Bot could not reply right now. Please check your internet connection and try again later.',
+      'serviceUnavailableMessage': 'Green Bot is temporarily unavailable. Please try again in a few moments.',
+      'genericErrorMessage': 'An unexpected error occurred. Please try again.',
       'newDiscussion': 'New discussion',
       'noDiscussionYet': 'No discussion yet',
       'noMessages': 'No messages',
@@ -855,6 +863,9 @@ class AppStrings {
       // Chat screen (extra)
       'offlineChatMessage': 'You no dey online — this chat need internet make e work.',
       'aiServiceErrorPrefix': 'Error when we dey try reach AI service',
+      'networkErrorMessage': 'Green Bot no fit reply now. Check your internet connection and try again later.',
+      'serviceUnavailableMessage': 'Green Bot dey temporarily unavailable. Try again small small.',
+      'genericErrorMessage': 'Unexpected error happen. Try again.',
       'newDiscussion': 'New discussion',
       'noDiscussionYet': 'No discussion yet',
       'noMessages': 'No message',
@@ -1017,11 +1028,23 @@ class AppStrings {
 
   /// Get string by key for given locale.
   /// Returns English if key not found in requested locale.
+  /// Textes v2 (app_strings_v2.dart) en priorité, puis v1 ; repli sur
+  /// l'anglais puis le français, et enfin la clé elle-même.
   static String get(String key, [String locale = 'fr']) {
-    return _strings[locale]?[key] ??
+    return appStringsV2[locale]?[key] ??
+        _strings[locale]?[key] ??
+        appStringsV2['en']?[key] ??
         _strings['en']?[key] ??
-        key; // Fallback to key name if not found
+        appStringsV2['fr']?[key] ??
+        _strings['fr']?[key] ??
+        key;
   }
+
+  /// Toutes les clés connues pour une langue (tests de complétude).
+  static Set<String> keysFor(String locale) => {
+        ...?_strings[locale]?.keys,
+        ...?appStringsV2[locale]?.keys,
+      };
 
   /// All available locales.
   static const List<String> availableLocales = ['fr', 'en', 'pid'];

@@ -1,7 +1,6 @@
-import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
-import 'dart:math';
+import 'dart:isolate';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -10,218 +9,153 @@ class RagChunk {
   final String id;
   final String source;
   final int page;
-  final int chunkIndex;
   final String text;
 
-  RagChunk({
-    required this.id,
-    required this.source,
-    required this.page,
-    required this.chunkIndex,
-    required this.text,
-  });
+  const RagChunk({required this.id, required this.source, required this.page, required this.text});
 
   factory RagChunk.fromJson(Map<String, dynamic> j) => RagChunk(
-        id: j['id'] ?? '',
-        source: j['source'] ?? '',
-        page: j['page'] ?? -1,
-        chunkIndex: j['chunk_index'] ?? 0,
-        text: j['text'] ?? '',
+        id: (j['id'] as String?) ?? '',
+        source: (j['source'] as String?) ?? '',
+        page: (j['page'] as num?)?.toInt() ?? -1,
+        text: (j['text'] as String?) ?? '',
       );
 }
 
+/// Recherche documentaire hors ligne pour GreenBot (RAG).
+///
+/// v2 : classement BM25 sur assets/rag/chunks.json (2 993 extraits de
+/// documents agronomiques). La v1 se reposait sur des vecteurs
+/// (embeddings_f32.bin) calculés avec Universal Sentence Encoder (512
+/// dimensions) alors que la requête devait être vectorisée par Gemini
+/// text-embedding-004 (768 dimensions, service arrêté le 14 janvier 2026) :
+/// la recherche vectorielle n'a donc jamais fonctionné, et le repli prenait
+/// les 3 premiers extraits contenant un mot de la question, dans l'ordre du
+/// fichier. BM25 classe par pertinence, ne demande aucun réseau, et le
+/// fichier de vecteurs (6 Mo) n'est plus embarqué dans l'APK.
 class RagService {
   RagService._();
   static final RagService instance = RagService._();
 
-  /// Dimension produite par le modèle d'embedding utilisé pour construire
-  /// embeddings_f32.bin (voir tools/rag/build_embeddings.py) — doit
-  /// correspondre exactement au modèle appelé côté requête (GeminiService),
-  /// sinon la similarité cosinus n'a aucun sens (deux espaces vectoriels
-  /// différents). Actuellement : Gemini "models/text-embedding-004" (768).
-  static const int expectedVectorDim = 768;
+  List<RagChunk> chunks = const [];
+  _Bm25Index? _index;
+  Future<void>? _loading;
 
-  List<RagChunk> chunks = [];
-  Float32List? embeddings; // flat array: n_chunks * dim
-  int? vectorDim;
+  bool get isInitialized => _index != null;
 
-  bool _initialized = false;
-  bool _initializationFailed = false;
+  Future<void> initFromAssets({String asset = 'assets/rag/chunks.json'}) =>
+      _loading ??= _init(asset);
 
-  bool get isInitialized => _initialized;
-  bool get hasFailedInitialization => _initializationFailed;
-
-  /// True si les embeddings chargés ont la dimension attendue et peuvent
-  /// donc être utilisés pour une recherche par similarité fiable. Si les
-  /// assets embarqués n'ont pas encore été régénérés avec le bon modèle
-  /// d'embedding (dimension différente), on désactive silencieusement la
-  /// recherche vectorielle plutôt que de renvoyer des scores incohérents.
-  bool get embeddingsUsable =>
-      _initialized && embeddings != null && vectorDim == expectedVectorDim;
-
-  /// Load chunks.json and embeddings float32 binary from assets.
-  Future<void> initFromAssets({String chunksAsset = 'assets/rag/chunks.json', String embeddingsAsset = 'assets/rag/embeddings_f32.bin'}) async {
-    if (_initialized) {
-      debugPrint('RAG Service already initialized');
-      return;
-    }
-    if (_initializationFailed) {
-      debugPrint('RAG Service initialization previously failed, skipping retry');
-      return;
-    }
-
+  Future<void> _init(String asset) async {
     try {
-      debugPrint('RAG Service: Starting initialization...');
-      
-      // Load chunks.json
-      debugPrint('RAG Service: Loading chunks from $chunksAsset...');
-      final chunksJson = await rootBundle.loadString(chunksAsset);
-      final List<dynamic> parsed = json.decode(chunksJson) as List<dynamic>;
-      chunks = parsed.map((e) => RagChunk.fromJson(e as Map<String, dynamic>)).toList();
-      debugPrint('RAG Service: Loaded ${chunks.length} chunks');
-
-      // Validate chunks
-      if (chunks.isEmpty) {
-        throw StateError('No chunks loaded from $chunksAsset');
-      }
-
-      // Load embeddings
-      debugPrint('RAG Service: Loading embeddings from $embeddingsAsset...');
-      final ByteData bd = await rootBundle.load(embeddingsAsset);
-      final Uint8List bytes = bd.buffer.asUint8List();
-      
-      // Validate embeddings size
-      if (bytes.isEmpty) {
-        throw StateError('Embeddings file is empty');
-      }
-      
-      // Create Float32List view over the bytes
-      final f32 = bytes.buffer.asFloat32List();
-      embeddings = Float32List.fromList(f32);
-      debugPrint('RAG Service: Loaded ${embeddings!.length} embedding values');
-
-      if (chunks.isNotEmpty) {
-        vectorDim = embeddings!.length ~/ chunks.length;
-        debugPrint('RAG Service: Vector dimension = $vectorDim');
-
-        // Validate dimension
-        if (vectorDim != null && (vectorDim! <= 0 || embeddings!.length % chunks.length != 0)) {
-          throw StateError('Invalid embeddings dimension: ${embeddings!.length} values for ${chunks.length} chunks');
-        }
-        if (vectorDim != expectedVectorDim) {
-          debugPrint(
-            'RAG Service: ⚠ embeddings_f32.bin a une dimension de $vectorDim, '
-            'attendu $expectedVectorDim (models/text-embedding-004). La recherche par '
-            'similarité sera désactivée (repli sur la recherche par mots-clés) '
-            'tant que les embeddings ne sont pas régénérés avec tools/rag/build_embeddings.py.',
-          );
-        }
-      } else {
-        vectorDim = 0;
-      }
-
-      _initialized = true;
-      debugPrint('RAG Service: Initialization completed successfully');
-    } catch (e, stackTrace) {
-      _initializationFailed = true;
-      debugPrint('RAG Service: Initialization FAILED: $e');
-      debugPrint('Stack trace: $stackTrace');
-      
-      // Clear partial data
-      chunks = [];
-      embeddings = null;
-      vectorDim = null;
-      
-      // Don't rethrow - allow app to continue without RAG
-      debugPrint('RAG Service: App will continue without RAG functionality');
+      final raw = await rootBundle.loadString(asset);
+      final parsed = (jsonDecode(raw) as List<dynamic>)
+          .map((e) => RagChunk.fromJson(e as Map<String, dynamic>))
+          .where((c) => c.text.trim().length > 40)
+          .toList();
+      final texts = parsed.map((c) => c.text).toList();
+      _index = await Isolate.run(() => _Bm25Index.build(texts));
+      chunks = parsed;
+    } catch (e) {
+      debugPrint('RAG indisponible : $e');
+      _loading = null;
     }
   }
 
-  /// Compute top-k matches given a query embedding (List<double> or Float32List).
-  /// Runs the CPU-heavy work in a background isolate using `compute`.
-  ///
-  /// Renvoie une liste vide si les embeddings ne sont pas utilisables (non
-  /// initialisés, ou dimension incompatible avec le modèle d'embedding
-  /// attendu) — l'appelant doit alors se replier sur une autre stratégie de
-  /// recherche plutôt que d'interpréter un résultat vide comme "aucun match".
-  Future<List<Map<String, dynamic>>> searchByEmbedding(List<double> queryEmbedding, {int topK = 5}) async {
-    if (!_initialized) throw StateError('RagService not initialized');
-    if (!embeddingsUsable) return [];
-    if (queryEmbedding.length != vectorDim) {
-      debugPrint(
-        'RAG Service: dimension du vecteur de requête (${queryEmbedding.length}) '
-        'différente de celle des embeddings chargés ($vectorDim) — recherche ignorée.',
-      );
-      return [];
-    }
-
-    // prepare params for isolate
-    final params = {
-      'query': queryEmbedding,
-      'embeddings': embeddings!,
-      'n_chunks': chunks.length,
-      'dim': vectorDim!,
-      'top_k': topK,
-    };
-
-    final result = await compute(_isolateSimilaritySearch, params);
-    // result is List<Map<String, dynamic>> with keys: index, score
-    final List<Map<String, dynamic>> out = [];
-    for (final item in result as List<dynamic>) {
-      final idx = item['index'] as int;
-      final score = item['score'] as double;
-      final c = chunks[idx];
-      out.add({
-        'id': c.id,
-        'source': c.source,
-        'page': c.page,
-        'chunk_index': c.chunkIndex,
-        'text': c.text,
-        'score': score,
-      });
-    }
-    return out;
+  /// Les [topK] extraits les plus pertinents pour [query] (vide si rien de
+  /// pertinent ou si l'index n'est pas prêt).
+  List<RagChunk> search(String query, {int topK = 3}) {
+    final index = _index;
+    if (index == null) return const [];
+    return index.search(query, topK).map((i) => chunks[i]).toList();
   }
+
+  @visibleForTesting
+  static List<int> searchTexts(List<String> texts, String query, {int topK = 3}) =>
+      _Bm25Index.build(texts).search(query, topK);
 }
 
-/// Background isolate function to compute cosine similarity top-k.
-/// Receives a Map with keys: query (List<double>), embeddings (Float32List), n_chunks, dim, top_k
-List<Map<String, dynamic>> _isolateSimilaritySearch(Map<String, dynamic> params) {
-  final List<dynamic> qlist = params['query'] as List<dynamic>;
-  final Float32List embeddings = params['embeddings'] as Float32List;
-  final int nChunks = params['n_chunks'] as int;
-  final int dim = params['dim'] as int;
-  final int topK = params['top_k'] as int;
+/// Index BM25 (k1 = 1,5 ; b = 0,75), jetons sans accents ni mots vides.
+class _Bm25Index {
+  static const _k1 = 1.5;
+  static const _b = 0.75;
 
-  final Float32List q = Float32List(qlist.length);
-  for (var i = 0; i < qlist.length; i++) {
-    q[i] = (qlist[i] as num).toDouble();
-  }
+  final List<Map<String, int>> termFreqs;
+  final List<int> lengths;
+  final Map<String, int> docFreq;
+  final double avgLength;
 
-  // normalize query
-  double qnorm = 0;
-  for (var i = 0; i < dim; i++) {
-    qnorm += q[i] * q[i];
-  }
-  qnorm = qnorm <= 0 ? 1.0 : sqrt(qnorm);
+  _Bm25Index(this.termFreqs, this.lengths, this.docFreq, this.avgLength);
 
-  // compute dot products and norms
-  final List<Map<String, dynamic>> scores = List.generate(nChunks, (i) => {'score': 0.0, 'index': i});
-  for (var ci = 0; ci < nChunks; ci++) {
-    final int base = ci * dim;
-    double dot = 0.0;
-    double norm = 0.0;
-    for (var d = 0; d < dim; d++) {
-      final double v = embeddings[base + d];
-      dot += v * q[d];
-      norm += v * v;
+  static _Bm25Index build(List<String> texts) {
+    final tfs = <Map<String, int>>[];
+    final lengths = <int>[];
+    final df = <String, int>{};
+    var total = 0;
+    for (final t in texts) {
+      final tokens = tokenize(t);
+      final tf = <String, int>{};
+      for (final tok in tokens) {
+        tf[tok] = (tf[tok] ?? 0) + 1;
+      }
+      for (final k in tf.keys) {
+        df[k] = (df[k] ?? 0) + 1;
+      }
+      tfs.add(tf);
+      lengths.add(tokens.length);
+      total += tokens.length;
     }
-    final double denom = (norm <= 0.0 ? 1.0 : sqrt(norm)) * qnorm;
-    final double sim = denom == 0.0 ? 0.0 : dot / denom;
-    scores[ci] = {'score': sim, 'index': ci};
+    return _Bm25Index(tfs, lengths, df, texts.isEmpty ? 0 : total / texts.length);
   }
 
-  scores.sort((a, b) => (b['score'] as double).compareTo(a['score'] as double));
-  final top = scores.take(topK).toList();
-  return top.cast<Map<String, dynamic>>();
+  List<int> search(String query, int topK) {
+    final terms = tokenize(query).toSet();
+    if (terms.isEmpty || termFreqs.isEmpty) return const [];
+    final n = termFreqs.length;
+    final scores = List<double>.filled(n, 0);
+    for (final term in terms) {
+      final dfT = docFreq[term];
+      if (dfT == null) continue;
+      final idf = math.log(1 + (n - dfT + 0.5) / (dfT + 0.5));
+      for (var i = 0; i < n; i++) {
+        final f = termFreqs[i][term];
+        if (f == null) continue;
+        final norm = f * (_k1 + 1) / (f + _k1 * (1 - _b + _b * lengths[i] / avgLength));
+        scores[i] += idf * norm;
+      }
+    }
+    final ranked = List<int>.generate(n, (i) => i)
+      ..removeWhere((i) => scores[i] <= 0)
+      ..sort((a, b) => scores[b].compareTo(scores[a]));
+    return ranked.take(topK).toList();
+  }
+
+  static const _stopwords = {
+    'les', 'des', 'une', 'est', 'pour', 'dans', 'que', 'qui', 'par', 'sur', 'avec', 'pas', 'plus',
+    'son', 'ses', 'aux', 'mais', 'ont', 'sont', 'cette', 'ces', 'comme', 'elle', 'ils', 'leur',
+    'leurs', 'peut', 'tout', 'tous', 'fait', 'faire', 'entre', 'aussi', 'bien', 'sans', 'dont',
+    'the', 'and', 'for', 'with', 'are', 'that', 'this', 'from', 'was', 'were', 'which', 'has',
+    'have', 'not', 'can', 'its', 'quoi', 'comment', 'quel', 'quelle', 'quels', 'quelles',
+    'mon', 'mes', 'votre', 'vos', 'nous', 'vous', 'moi', 'toi', 'avoir', 'etre', 'what', 'how',
+  };
+
+  static List<String> tokenize(String text) {
+    const accents = {
+      'à': 'a', 'â': 'a', 'ä': 'a', 'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
+      'î': 'i', 'ï': 'i', 'ô': 'o', 'ö': 'o', 'ù': 'u', 'û': 'u', 'ü': 'u', 'ç': 'c', 'œ': 'oe',
+    };
+    var s = text.toLowerCase();
+    accents.forEach((k, v) => s = s.replaceAll(k, v));
+    return s
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((w) => w.length > 2 && !_stopwords.contains(w))
+        .map(_stem)
+        .toList();
+  }
+
+  /// Racinisation minimale (pluriels français et anglais).
+  static String _stem(String w) {
+    if (w.length > 4 && (w.endsWith('es') || w.endsWith('ux'))) return w.substring(0, w.length - 2);
+    if (w.length > 3 && w.endsWith('s')) return w.substring(0, w.length - 1);
+    return w;
+  }
 }

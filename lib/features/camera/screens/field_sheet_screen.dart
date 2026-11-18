@@ -1,329 +1,367 @@
-import 'dart:io';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/theme/spacing.dart';
+import '../../../models/disease_catalog_model.dart';
 import '../../../models/scan_result_model.dart';
 import '../../../providers/diseases_provider.dart';
-import '../../../providers/theme_provider.dart';
 import '../../../providers/locale_provider.dart';
-import '../../../models/disease_catalog_model.dart';
-import '../../../core/constants/app_constants.dart';
+import '../../../services/green_web/photo_sync_service.dart';
+import '../../../services/history_service.dart';
+import '../../../shared/ui/ui.dart';
+import '../../../utils/date_formatter.dart';
+import '../../history/scan_labels.dart';
 
+/// Fiche terrain d'une analyse (hors ligne).
+///
+/// Corrections v2 :
+/// - la gravité vient de la fiche de la maladie, et non plus de la confiance
+///   du modèle (une plante saine reconnue à 95 % s'affichait « gravité très
+///   élevée ») ; la confiance est montrée à part ;
+/// - la fiche est rattachée par correspondance exacte de classe, et non par
+///   ressemblance de nom (« Mildiou » de la tomate pouvait ouvrir celle du maïs) ;
+/// - résultat incertain : les trois possibilités sont présentées, avec le
+///   conseil de reprendre la photo ;
+/// - photo permanente, page entièrement défilable, retour cohérent.
 class FieldSheetScreen extends StatefulWidget {
-  final ScanResultModel scanResult;
-  const FieldSheetScreen({required this.scanResult, super.key});
+  final String scanId;
+  const FieldSheetScreen({super.key, required this.scanId});
 
   @override
   State<FieldSheetScreen> createState() => _FieldSheetScreenState();
 }
 
-class _FieldSheetScreenState extends State<FieldSheetScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
+class _FieldSheetScreenState extends State<FieldSheetScreen> {
+  late Future<ScanResultModel?> _future = historyService.findById(widget.scanId);
+  StreamSubscription<void>? _changes;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    )..forward();
+    // L'état d'envoi (GREEN Web) peut changer pendant que la fiche est ouverte.
+    _changes = historyService.onChanged.listen((_) {
+      if (mounted) setState(() => _future = historyService.findById(widget.scanId));
+    });
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    _changes?.cancel();
     super.dispose();
   }
 
-  bool _isHealthy() {
-    return widget.scanResult.diseaseName.toLowerCase() == 'saine' ||
-        widget.scanResult.diseaseName.toLowerCase() == 'healthy' ||
-        widget.scanResult.diseaseId == 'healthy';
+  Future<void> _delete(ScanResultModel scan) async {
+    final t = context.read<LocaleProvider>().t;
+    final ok = await showConfirmDialog(
+      context,
+      title: t('deleteScanTitle'),
+      message: t('deleteScanMessage'),
+      confirmLabel: t('delete'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    final sync = context.read<PhotoSyncService>();
+    final removed = await historyService.removeScan(scan.id);
+    if (removed != null) {
+      await historyService.purgeFiles(removed);
+      await sync.cancel(removed.id);
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('scanDeleted'))));
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/home');
+    }
   }
 
-  String _severityLabel(double severityLevel, String Function(String) t) {
-    if (severityLevel >= 90) return t('severityVeryHigh');
-    if (severityLevel >= 75) return t('severityHigh');
-    if (severityLevel >= 50) return t('severityModerate');
-    if (severityLevel >= 25) return t('severityLow');
-    return t('severityLowSuspicion');
-  }
-
-  Color _severityColor(double severityLevel) {
-    if (severityLevel >= 90) return Colors.red.shade700;
-    if (severityLevel >= 75) return Colors.orange.shade700;
-    if (severityLevel >= 50) return Colors.amber.shade700;
-    return Colors.green.shade600;
+  void _askBot(ScanResultModel scan, String plant, String disease) {
+    final l = context.read<LocaleProvider>();
+    final prompt = scan.isUncertain
+        ? l.tf('chatPromptUncertain', {'plant': plant})
+        : l.tf('chatPromptTemplate', {'disease': disease, 'plant': plant});
+    context.go('/chat', extra: {
+      'initialMessage': prompt,
+      'cacheKey': scan.isUncertain ? null : (scan.diseaseId ?? scan.label),
+      'autoSend': true,
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final diseasesProv = context.read<DiseasesProvider>();
-    final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    final t = context.watch<LocaleProvider>().t;
-    final isHealthy = _isHealthy();
+    final l = context.watch<LocaleProvider>();
+    final t = l.t;
+    final catalog = context.watch<DiseasesProvider>();
 
-    return FutureBuilder(
-      future: diseasesProv.load(),
-      builder: (context, snapshot) {
-        final DiseaseCatalogModel? diseaseInfo = diseasesProv.findByName(widget.scanResult.diseaseName);
-
-        final screenW = MediaQuery.of(context).size.width;
-        final imageSize = (screenW * 0.34).clamp(80.0, 160.0);
-        final plantName = widget.scanResult.affectedPlants.isNotEmpty
-            ? widget.scanResult.affectedPlants.first
-            : t('unknownPlant');
-
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(t('fieldSheet')),
-            centerTitle: false,
-            elevation: 0,
-            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-            foregroundColor: Theme.of(context).textTheme.titleLarge?.color,
-          ),
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConstants.paddingMedium),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Image et gravité (en haut)
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Image à gauche
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                        child: Image.file(
-                          File(widget.scanResult.imageUrl),
-                          width: imageSize,
-                          height: imageSize,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      const SizedBox(width: AppConstants.paddingMedium),
-                      // Gravité à droite (sauf si plante saine)
-                      if (!isHealthy)
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t('severityLevel'),
-                                style: const TextStyle(
-                                    fontSize: 12, fontWeight: FontWeight.w600),
-                              ),
-                              const SizedBox(height: 12),
-                              // Barre de progression animée
-                              ScaleTransition(
-                                scale: Tween<double>(begin: 0.0, end: 1.0)
-                                    .animate(CurvedAnimation(
-                                  parent: _animationController,
-                                  curve: Curves.easeOut,
-                                )),
-                                alignment: Alignment.centerLeft,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: LinearProgressIndicator(
-                                        value: widget.scanResult.severityLevel / 100,
-                                        minHeight: 12,
-                                        backgroundColor: isDarkMode
-                                            ? const Color.fromRGBO(
-                                                66, 66, 66, 0.3)
-                                            : const Color.fromRGBO(
-                                                224, 224, 224, 0.5),
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                          _severityColor(
-                                              widget.scanResult.severityLevel),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      _severityLabel(
-                                          widget.scanResult.severityLevel, t),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                '${t('confidenceLabel')}:\n${(widget.scanResult.confidence * 100).round()}%',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(Icons.check_circle,
-                                  color: Colors.green, size: 48),
-                              const SizedBox(height: 12),
-                              Text(
-                                t('healthyPlant'),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: AppConstants.paddingLarge),
-
-                  // Nom de la plante
-                  Text(
-                    t('plantLabel'),
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    plantName,
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: AppConstants.paddingMedium),
-
-                  // Nom de la maladie (sauf si plante saine)
-                  if (!isHealthy) ...[
-                    Text(
-                      t('detectedDisease'),
-                      style: Theme.of(context).textTheme.labelMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.scanResult.diseaseName,
-                      style: Theme.of(context).textTheme.titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: AppConstants.paddingLarge),
-
-                    // Symptômes
-                    Text(
-                      t('symptoms'),
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    if (diseaseInfo != null && diseaseInfo.symptoms.isNotEmpty)
-                      ...diseaseInfo.symptoms
-                          .map((s) => _bulletItem(context, s))
-                    else
-                      Text(
-                        t('insufficientSymptomsInfo'),
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    const SizedBox(height: AppConstants.paddingLarge),
-
-                    // Actions recommandées
-                    Text(
-                      t('recommendedActions'),
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    if (diseaseInfo != null && diseaseInfo.actions.isNotEmpty)
-                      ...diseaseInfo.actions.map((a) => _bulletItem(context, a))
-                    else
-                      Text(
-                        t('noLocalRecommendation'),
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                  ] else ...[
-                    Text(
-                      t('noTreatmentNeeded'),
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(color: Colors.green),
-                    ),
-                    const SizedBox(height: AppConstants.paddingLarge),
-                    Text(
-                      t('preventiveAdvice'),
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 8),
-                    _bulletItem(context, t('keepObservingPlant')),
-                    _bulletItem(context, t('maintainGardenHygiene')),
-                    _bulletItem(context, t('ensureRegularWatering')),
-                  ],
-                  const SizedBox(height: AppConstants.paddingLarge),
-
-                  // Boutons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: const Icon(Icons.check_circle),
-                          label: Text(t('understood')),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      if (!isHealthy)
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              final prompt = t('chatPromptTemplate')
-                                  .replaceAll('{disease}', widget.scanResult.diseaseName)
-                                  .replaceAll('{plant}', plantName);
-                              Navigator.pop(context);
-                              Future.microtask(() => context.go('/chat',
-                                  extra: {
-                                    'initialMessage': prompt,
-                                    'autoSend': true
-                                  }));
-                            },
-                            icon: const Icon(Icons.chat_bubble),
-                            label: Text(t('greenBot')),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green.shade600,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+    return FutureBuilder<ScanResultModel?>(
+      future: _future,
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        final scan = snap.data;
+        if (scan == null) {
+          return Scaffold(
+            appBar: AppBar(title: Text(t('fieldSheet'))),
+            body: EmptyState(icon: Icons.search_off_rounded, title: t('scanNotFound')),
+          );
+        }
+        final entry = ScanLabels.entry(scan, catalog);
+        final plant = ScanLabels.plant(scan, catalog, l.locale, t);
+        final title = ScanLabels.title(scan, catalog, l.locale, t);
+        return _buildSheet(context, l, catalog, scan, entry, plant, title);
       },
     );
   }
 
-  Widget _bulletItem(BuildContext context, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(width: 6),
-          Container(width: 6, height: 6, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, shape: BoxShape.circle)),
-          const SizedBox(width: 12),
-          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+  Widget _buildSheet(
+    BuildContext context,
+    LocaleProvider l,
+    DiseasesProvider catalog,
+    ScanResultModel scan,
+    DiseaseCatalogModel? entry,
+    String plant,
+    String title,
+  ) {
+    final t = l.t;
+    final loc = l.locale;
+    final theme = Theme.of(context);
+    final style = scanStatusStyle(scan.status);
+    final healthyAdvice = scan.isHealthy
+        ? (entry ?? catalog.diseases.where((d) => d.isHealthy && d.crops.contains(scan.cropId)).firstOrNull)
+        : null;
+
+    return Scaffold(
+      body: SafeArea(
+        top: false,
+        child: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            expandedHeight: 280,
+            title: Text(t('fieldSheet')),
+            actions: [
+              PopupMenuButton<String>(
+                onSelected: (v) {
+                  if (v == 'delete') _delete(scan);
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      leading: const Icon(Icons.delete_outline_rounded),
+                      title: Text(t('delete')),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            flexibleSpace: FlexibleSpaceBar(
+              background: Hero(
+                tag: 'scan-${scan.id}',
+                child: LocalImage(path: scan.imagePath, borderRadius: BorderRadius.zero, cacheWidth: 1080),
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(Spacing.gutter, Spacing.xl, Spacing.gutter, 40),
+            sliver: SliverList.list(
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    StatusPill(label: ScanLabels.status(scan, t), color: style.color, icon: style.icon),
+                    if (scan.isDiseased && entry != null)
+                      StatusPill(
+                        label: '${t('severityLabel')} : ${ScanLabels.severity(entry.severity, t)}',
+                        color: severityColor(entry.severity),
+                      ),
+                    _SyncPill(sync: scan.sync, t: t),
+                  ],
+                ),
+                Spacing.gapBlock,
+                Text(title, style: theme.textTheme.headlineSmall),
+                if (scan.isDiseased && entry != null && entry.scientificName.isNotEmpty)
+                  Text(entry.scientificName, style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic)),
+                const SizedBox(height: 4),
+                Text(
+                  '$plant · ${formatDateTime(scan.scannedAt, loc)}',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: 16),
+                SectionCard(
+                  child: ConfidenceBar(value: scan.confidence, label: t('confidenceLabel')),
+                ),
+                if (scan.sync.serverDiagnosis != null) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(Icons.cloud_done_outlined, size: 18, color: theme.colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          l.tf('serverDiagnosis', {
+                            'name': scan.sync.serverDiagnosis!,
+                            'pct': scan.sync.serverConfidence == null ? '–' : (scan.sync.serverConfidence! * 100).round(),
+                          }),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                Spacing.gapBlock,
+                if (scan.isUncertain) ..._uncertain(context, scan, catalog, l),
+                if (scan.isDiseased && entry != null) ..._disease(entry, loc, t),
+                if (scan.isDiseased && entry == null)
+                  SectionCard(child: Text(t('noLocalRecommendation'))),
+                if (scan.isHealthy) ..._healthy(healthyAdvice, loc, t),
+                const SizedBox(height: 4),
+                _Disclaimer(text: t('diagnosisDisclaimer')),
+                const SizedBox(height: 20),
+                if (!scan.isHealthy)
+                  FilledButton.icon(
+                    onPressed: () => _askBot(scan, plant, title),
+                    icon: const Icon(Icons.chat_bubble_rounded),
+                    label: Text(t('askGreenBot')),
+                  ),
+                Spacing.gapBlock,
+                OutlinedButton.icon(
+                  onPressed: () => context.go('/camera'),
+                  icon: const Icon(Icons.center_focus_strong_rounded),
+                  label: Text(t('newScan')),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
+      ),
+    );
+  }
+
+  List<Widget> _uncertain(BuildContext context, ScanResultModel scan, DiseasesProvider catalog, LocaleProvider l) {
+    final t = l.t;
+    return [
+      SectionCard(
+        title: t('modelHesitates'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final p in scan.topPredictions)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: ConfidenceBar(value: p.confidence, label: ScanLabels.labelName(p.label, catalog, l.locale)),
+              ),
+            const SizedBox(height: 8),
+            Text(t('uncertainAdvice')),
+          ],
+        ),
+      ),
+      Spacing.gapBlock,
+      SectionCard(
+        title: t('goodPhotoTips'),
+        child: BulletList(
+          icon: Icons.check_rounded,
+          items: [t('instructionStep1'), t('instructionStep2'), t('instructionStep3')],
+        ),
+      ),
+      Spacing.gapBlock,
+    ];
+  }
+
+  List<Widget> _disease(DiseaseCatalogModel e, String loc, String Function(String) t) {
+    Widget section(String title, List<String> items, IconData icon, {Color? color}) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: SectionCard(title: title, child: BulletList(items: items, icon: icon, color: color)),
+        );
+    final out = <Widget>[];
+    final actions = e.actions.of(loc);
+    if (actions.isNotEmpty) out.add(section(t('whatToDoNow'), actions, Icons.task_alt_rounded));
+    final symptoms = e.symptoms.of(loc);
+    if (symptoms.isNotEmpty) out.add(section(t('symptoms'), symptoms, Icons.visibility_outlined));
+    final cause = e.causes.of(loc);
+    if (cause.isNotEmpty) {
+      out.add(Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: SectionCard(title: t('cause'), child: Text(cause)),
+      ));
+    }
+    final conditions = e.conditions.of(loc);
+    if (conditions.isNotEmpty) out.add(section(t('favorableConditions'), conditions, Icons.thermostat_rounded));
+    final prevention = e.prevention.of(loc);
+    if (prevention.isNotEmpty) out.add(section(t('prevention'), prevention, Icons.shield_outlined));
+    final look = e.lookalikes.of(loc);
+    if (look.isNotEmpty) {
+      out.add(Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: SectionCard(title: t('lookalikes'), child: Text(look)),
+      ));
+    }
+    final help = e.whenToSeekHelp.of(loc);
+    if (help.isNotEmpty) {
+      out.add(Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: SectionCard(title: t('whenToSeekHelp'), child: Text(help)),
+      ));
+    }
+    return out;
+  }
+
+  List<Widget> _healthy(DiseaseCatalogModel? e, String loc, String Function(String) t) {
+    final items = e?.prevention.of(loc) ?? const <String>[];
+    return [
+      SectionCard(
+        title: t('preventiveAdvice'),
+        child: BulletList(
+          icon: Icons.eco_outlined,
+          items: items.isNotEmpty ? items : [t('keepObservingPlant'), t('maintainGardenHygiene'), t('ensureRegularWatering')],
+        ),
+      ),
+      Spacing.gapBlock,
+    ];
+  }
+}
+
+class _SyncPill extends StatelessWidget {
+  final SyncState sync;
+  final String Function(String) t;
+  const _SyncPill({required this.sync, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color, icon) = switch (sync.status) {
+      SyncStatus.sent => (t('syncSent'), Colors.teal, Icons.cloud_done_rounded),
+      SyncStatus.pending => (t('syncPending'), Colors.blueGrey, Icons.cloud_upload_outlined),
+      SyncStatus.failed => (t('syncFailed'), Colors.deepOrange, Icons.cloud_off_rounded),
+      SyncStatus.local => (t('syncLocal'), Colors.grey, Icons.phone_android_rounded),
+    };
+    return StatusPill(label: label, color: color, icon: icon);
+  }
+}
+
+class _Disclaimer extends StatelessWidget {
+  final String text;
+  const _Disclaimer({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.info_outline_rounded, size: 18, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(text, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        ),
+      ],
     );
   }
 }

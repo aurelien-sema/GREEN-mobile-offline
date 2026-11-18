@@ -1,230 +1,120 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../providers/theme_provider.dart';
+
+import '../../../core/theme/spacing.dart';
 import '../../../providers/locale_provider.dart';
-import '../../../services/weather_service.dart';
-import '../../../shared/widgets/gradient_background.dart';
-import '../../../shared/widgets/app_pop_scope.dart';
+import '../../../providers/weather_provider.dart';
+import '../../../shared/ui/ui.dart';
+import '../../../utils/date_formatter.dart';
+import '../weather_texts.dart';
 
-class WeatherScreen extends StatefulWidget {
-  /// Coordonnées transmises depuis l'accueil quand l'utilisateur a activé la
-  /// localisation ; si absentes, on retombe sur la ville par défaut.
-  final double? lat;
-  final double? lon;
-
-  const WeatherScreen({super.key, this.lat, this.lon});
-
-  @override
-  State<WeatherScreen> createState() => _WeatherScreenState();
-}
-
-class _WeatherScreenState extends State<WeatherScreen> {
-  Future<WeatherData>? _weatherFuture;
-
-  static const String _defaultCity = 'Douala';
-
-  bool get _hasCoordinates => widget.lat != null && widget.lon != null;
-
-  String get _locationLabel =>
-      _hasCoordinates ? context.read<LocaleProvider>().t('myLocation') : _defaultCity;
-
-  @override
-  void initState() {
-    super.initState();
-    // Load immediately if possible, or wait for didChangeDependencies
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_weatherFuture == null) {
-      _loadWeather();
-    }
-  }
-
-  void _loadWeather() {
-    final locale = context.read<LocaleProvider>().locale;
-    setState(() {
-      _weatherFuture = _hasCoordinates
-          ? weatherService.fetchWeatherForCoordinates(widget.lat!, widget.lon!, lang: locale)
-          : weatherService.fetchWeatherForCity(_defaultCity, lang: locale);
-    });
-  }
-
-  void _refresh() {
-    _loadWeather();
-  }
+/// Météo détaillée. Toutes les valeurs viennent d'OpenWeatherMap (la v1
+/// affichait une pression fixe « 1012 hPa » et une météo inventée sans clé).
+class WeatherScreen extends StatelessWidget {
+  const WeatherScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    final t = context.watch<LocaleProvider>().t;
+    final l = context.watch<LocaleProvider>();
+    final t = l.t;
+    final w = context.watch<WeatherProvider>();
+    final theme = Theme.of(context);
+    final d = w.data;
 
-    return AppPopScope(
-      onWillPop: () async {
-        if (Navigator.canPop(context)) return true;
-        context.go('/home');
-        return false;
-      },
-      child: Scaffold(
-        backgroundColor: isDarkMode ? AppColors.darkBackground : AppColors.lightBackground,
-        appBar: AppBar(
-          title: Text(t('detailedWeather')),
-          centerTitle: false,
-          elevation: 0,
-          backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/home'),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _refresh,
-            ),
-          ],
-        ),
-        body: GradientBackground(
-          isDarkMode: isDarkMode,
-          opacity: 0.1,
-          child: SafeArea(
-            child: FutureBuilder<WeatherData>(
-              future: _weatherFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('${t('errorPrefix')}: ${snapshot.error}'));
-                }
-                
-                final w = snapshot.data!;
-                
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                  child: Column(
-                    children: [
-                      // Main Card
-                      GradientCard(
-                        isDarkMode: isDarkMode,
-                        opacity: 0.2,
-                        borderRadius: AppConstants.radiusXLarge,
-                        padding: const EdgeInsets.all(32),
-                        child: Column(
-                          children: [
-                            Text(
-                              _locationLabel,
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 16),
-                            Icon(
-                              Icons.wb_sunny, 
-                              size: 80,
-                              color: isDarkMode ? Colors.white : AppColors.lightPrimary,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              '${w.temperature.toStringAsFixed(1)}°C',
-                              style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                              ),
-                            ),
-                            Text(
-                              w.description,
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                          ],
-                        ),
-                      ).animate().fadeIn().slideY(begin: 20, end: 0),
-                      
-                      const SizedBox(height: 24),
-                      
-                      // Grid details
-                      GridView.count(
-                        crossAxisCount: 2,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 16,
-                        crossAxisSpacing: 16,
-                        childAspectRatio: 1.5,
-                        children: [
-                          _buildDetailCard(
-                            context,
-                            t('humidity'),
-                            '${w.humidity}%',
-                            Icons.water_drop,
-                            isDarkMode,
-                            iconColor: const Color(0xFF2196F3),
-                          ),
-                          _buildDetailCard(
-                            context,
-                            t('wind'),
-                            '${w.windSpeed} m/s',
-                            Icons.air,
-                            isDarkMode,
-                            iconColor: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                          ),
-                          _buildDetailCard(
-                            context,
-                            t('pressure'),
-                            '1012 hPa', // Mocked as not in WeatherData yet
-                            Icons.speed,
-                            isDarkMode,
-                            iconColor: const Color(0xFF9C27B0),
-                          ),
-                          _buildDetailCard(
-                            context,
-                            t('visibility'),
-                            '10 km', // Mocked
-                            Icons.visibility,
-                            isDarkMode,
-                            iconColor: isDarkMode ? AppColors.darkPriceAccent : AppColors.lightPriceAccent,
-                          ),
-                        ],
-                      ).animate(delay: 200.ms).fadeIn().slideY(begin: 20, end: 0),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailCard(BuildContext context, String label, String value, IconData icon, bool isDarkMode, {Color? iconColor}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-        borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-        border: Border.all(
-          color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: iconColor ?? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-            ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(t('detailedWeather')),
+        actions: [
+          IconButton(
+            tooltip: t('refresh'),
+            onPressed: w.loading ? null : () => w.load(lang: l.locale),
+            icon: const Icon(Icons.refresh_rounded),
           ),
         ],
+      ),
+      body: SafeArea(
+        top: false,
+        child: RefreshIndicator(
+        onRefresh: () => w.load(lang: l.locale),
+        child: ListView(
+          padding: Spacing.page,
+          children: [
+            if (w.loading && d == null)
+              const Padding(padding: EdgeInsets.all(48), child: Center(child: CircularProgressIndicator()))
+            else if (d == null)
+              EmptyState(
+                icon: Icons.cloud_off_rounded,
+                title: t('weatherUnavailable'),
+                message: weatherErrorText(w.error, t),
+                action: FilledButton(onPressed: () => w.load(lang: l.locale), child: Text(t('retry'))),
+              )
+            else ...[
+              Card(
+                color: theme.colorScheme.primaryContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Icon(weatherIcon(d.condition), size: 64, color: theme.colorScheme.onPrimaryContainer),
+                      const SizedBox(height: 8),
+                      Text('${d.temperature.round()}°C', style: theme.textTheme.displaySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
+                      Text(capitalize(d.description), style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer)),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${w.usingLocation ? (d.place.isEmpty ? t('myLocation') : d.place) : WeatherProvider.defaultCity} · ${l.tf('observedAt', {'time': formatTime(d.observedAt)})}',
+                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SectionCard(
+                title: t('fieldConditions'),
+                child: Column(
+                  children: [
+                    InfoRow(label: t('feelsLike'), value: '${d.feelsLike.round()}°C'),
+                    InfoRow(label: t('humidity'), value: '${d.humidity} %'),
+                    InfoRow(label: t('wind'), value: '${(d.windSpeed * 3.6).round()} km/h'),
+                    InfoRow(label: t('cloudiness'), value: '${d.cloudiness} %'),
+                    InfoRow(label: t('rainLastHour'), value: '${d.rainLastHour.toStringAsFixed(1)} mm'),
+                    InfoRow(label: t('pressure'), value: '${d.pressure} hPa'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SectionCard(
+                title: t('farmAdvice'),
+                child: BulletList(
+                  icon: Icons.lightbulb_outline_rounded,
+                  items: [
+                    t(d.sprayingDiscouraged ? 'sprayNoLong' : 'sprayOkLong'),
+                    if (d.humidity >= 85) t('highHumidityAdvice'),
+                    if (d.temperature >= 33) t('heatAdvice'),
+                  ],
+                ),
+              ),
+              if (!w.usingLocation) ...[
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await w.load(lang: l.locale, requestLocation: true);
+                    if (!context.mounted || w.locationIssue == LocationIssue.none) return;
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(t(w.locationIssue == LocationIssue.serviceDisabled ? 'gpsDisabled' : 'locationPermissionDenied')),
+                      action: SnackBarAction(label: t('openSettings'), onPressed: w.openLocationSettings),
+                    ));
+                  },
+                  icon: const Icon(Icons.my_location_rounded),
+                  label: Text(t('useMyLocation')),
+                ),
+              ],
+              Spacing.gapBlock,
+              Text(t('weatherSource'), style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
+            ],
+          ],
+        ),
+      ),
       ),
     );
   }

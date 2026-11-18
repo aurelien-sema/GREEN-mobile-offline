@@ -1,53 +1,31 @@
-# Flutter wrapper
--keep class io.flutter.app.** { *; }
--keep class io.flutter.plugin.** { *; }
--keep class io.flutter.util.** { *; }
--keep class io.flutter.view.** { *; }
+# Règles R8 de l'APK release (minification + suppression des ressources).
+# Les plugins Flutter fournissent leurs propres règles « consumer » ; seules
+# les bibliothèques chargées par réflexion ou JNI sont protégées ici.
+
+# Moteur Flutter
 -keep class io.flutter.** { *; }
--keep class io.flutter.plugins.** { *; }
 -dontwarn io.flutter.embedding.**
 
-# Provider
--keep class provider.** { *; }
--keep interface provider.** { *; }
+# ONNX Runtime : classes appelées depuis le code natif (JNI)
+-keep class ai.onnxruntime.** { *; }
 
-# Go Router
--keep class go_router.** { *; }
+# TensorFlow Lite / LiteRT (tflite_flutter) : bibliothèque C chargée par
+# FFI et classes du délégué GPU référencées sans être toujours présentes
+# (erreur R8 connue « Missing class …GpuDelegateFactory$Options »).
+-keep class org.tensorflow.lite.** { *; }
+-keep class com.google.ai.edge.litert.** { *; }
+-dontwarn org.tensorflow.lite.gpu.**
+-dontwarn com.google.ai.edge.litert.**
 
-# Dio
--keep class io.square.okhttp3.** { *; }
--keep class retrofit2.** { *; }
--keep interface retrofit2.** { *; }
--dontwarn retrofit2.**
--dontwarn okio.**
--dontwarn com.google.appengine.api.urlfetch.**
+# uCrop (recadrage de la photo de profil)
+-keep class com.yalantis.ucrop.** { *; }
+-dontwarn com.yalantis.ucrop.**
 
-# Shared Preferences
--keep class android.content.SharedPreferences { *; }
+# Tink (chiffrement de flutter_secure_storage) : annotations optionnelles
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**
 
-# Image Picker & Camera
--keep class com.google.android.material.** { *; }
--keep interface com.google.android.material.** { *; }
+# Play Core n'est pas embarqué (pas de modules dynamiques)
+-dontwarn com.google.android.play.core.**
 
-# Keep generic signature of Call, Response (R8 full mode strips signatures from non-kept items).
--keep,allowobfuscation,allowshrinking interface retrofit2.Call
-
-# With R8 full mode generic signatures are stripped for classes that are not
-# explicitly kept. Suspend functions with generic List or Map return types
-# decompile but require generic signatures to be parsed by the IDE.
-# Retrofit resolves these types via reflection.
--keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
-
-# Keep @Parcelize annotated classes
--keep @kotlinx.parcelize.Parcelize class * extends android.os.Parcelable
-
-# General
--keep class **.R$* {
-    <fields>;
-}
--keepclassmembers class * {
-    static <fields>;
-    static <methods>;
-}
--keepattributes *Annotation*,InnerClasses
--keep class **.BuildConfig { *; }
+-keepattributes *Annotation*,InnerClasses,Signature

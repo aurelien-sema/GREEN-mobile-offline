@@ -1,80 +1,82 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../providers/locale_provider.dart';
-import '../../features/auth/screens/splash_screen.dart';
+
+import '../../features/auth/screens/account_recovery_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
-import '../../features/auth/screens/forgot_password_screen.dart';
-import '../../features/home/screens/home_screen.dart';
+import '../../features/auth/screens/security_question_screen.dart';
+import '../../features/auth/screens/splash_screen.dart';
 import '../../features/camera/screens/camera_screen.dart';
+import '../../features/camera/screens/field_sheet_screen.dart';
 import '../../features/chat/screens/chat_screen.dart';
 import '../../features/diseases/screens/diseases_screen.dart';
-import '../../features/profile/screens/settings_screen.dart';
-import '../../features/profile/screens/profile_screen.dart';
-
-import '../../features/profile/screens/preferences_screen.dart';
-import '../../features/profile/screens/about_screen.dart';
-import '../../shared/widgets/main_navigation_shell.dart';
 import '../../features/history/screens/history_screen.dart';
-import '../../features/weather/screens/weather_screen.dart';
+import '../../features/home/screens/home_screen.dart';
+import '../../features/marketplace/screens/cart_screen.dart';
+import '../../features/marketplace/screens/category_products_screen.dart';
 import '../../features/marketplace/screens/marketplace_screen.dart';
 import '../../features/marketplace/screens/product_detail_screen.dart';
-import '../../features/marketplace/screens/category_products_screen.dart';
-import '../../features/marketplace/screens/cart_screen.dart';
+import '../../features/profile/screens/about_screen.dart';
+import '../../features/profile/screens/profile_screen.dart';
+import '../../features/profile/screens/settings_screen.dart';
+import '../../features/weather/screens/weather_screen.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/locale_provider.dart';
+import '../../shared/widgets/main_navigation_shell.dart';
 
-final appRouter = GoRouter(
-  routes: [
-    GoRoute(
-      path: '/',
-      name: 'splash',
-      builder: (context, state) => const SplashScreen(),
-    ),
-    GoRoute(
-      path: '/login',
-      name: 'login',
-      builder: (context, state) => const LoginScreen(),
-    ),
-    GoRoute(
-      path: '/register',
-      name: 'register',
-      builder: (context, state) => const RegisterScreen(),
-    ),
-    GoRoute(
-      path: '/forgot-password',
-      name: 'forgot-password',
-      builder: (context, state) => const ForgotPasswordScreen(),
-    ),
-    // Main navigation with BottomNavigationBar
-    StatefulShellRoute.indexedStack(
-      builder: (context, state, navigationShell) {
-        return MainNavigationShell(navigationShell: navigationShell);
-      },
-      branches: [
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/home',
-              name: 'home',
-              builder: (context, state) => const HomeScreen(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/camera',
-              name: 'camera',
-              builder: (context, state) => const CameraScreen(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
+/// Navigation de l'application.
+///
+/// Règles v2 :
+/// - les quatre onglets vivent dans la coque ; tout le reste est empilé
+///   par-dessus avec `push`, si bien que le bouton retour (et le geste
+///   système) ramène toujours à l'écran précédent — la v1 utilisait `go` et
+///   un paramètre « from » qui cassait la pile de navigation ;
+/// - garde d'accès : sans session, toute page protégée renvoie à la connexion.
+GoRouter createRouter(AuthProvider auth) {
+  const publicPaths = {'/', '/login', '/register', '/recover'};
+
+  return GoRouter(
+    initialLocation: '/',
+    refreshListenable: auth,
+    redirect: (context, state) {
+      final path = state.matchedLocation;
+      if (path == '/') return null; // le démarrage décide lui-même
+      final loggedIn = auth.isAuthenticated;
+      if (!loggedIn && !publicPaths.contains(path)) return '/login';
+      // Ancien compte sans question de sécurité : configuration obligatoire.
+      if (loggedIn && auth.currentUser?.hasSecurityQuestion == false && path != '/security-setup') {
+        return '/security-setup';
+      }
+      if (loggedIn && (path == '/login' || path == '/register' || path == '/recover')) return '/home';
+      return null;
+    },
+    routes: [
+      GoRoute(path: '/', builder: (_, _) => const SplashScreen()),
+      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+      GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
+      GoRoute(
+        path: '/recover',
+        builder: (_, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? const {};
+          return AccountRecoveryScreen(
+            identifier: extra['identifier'] as String? ?? '',
+            questionId: extra['questionId'] as String? ?? 'q1',
+          );
+        },
+      ),
+      GoRoute(path: '/forgot-password', redirect: (_, _) => '/login'),
+      GoRoute(path: '/security-setup', builder: (_, _) => const SecurityQuestionScreen()),
+      GoRoute(path: '/security-question', builder: (_, _) => const SecurityQuestionScreen(change: true)),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, shell) => MainNavigationShell(navigationShell: shell),
+        branches: [
+          StatefulShellBranch(routes: [GoRoute(path: '/home', builder: (_, _) => const HomeScreen())]),
+          StatefulShellBranch(routes: [GoRoute(path: '/camera', builder: (_, _) => const CameraScreen())]),
+          StatefulShellBranch(routes: [
             GoRoute(
               path: '/chat',
-              name: 'chat',
-              builder: (context, state) {
+              builder: (_, state) {
                 final extra = state.extra as Map<String, dynamic>?;
                 return ChatScreen(
                   initialMessage: extra?['initialMessage'] as String?,
@@ -83,111 +85,42 @@ final appRouter = GoRouter(
                 );
               },
             ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: '/marketplace',
-              name: 'marketplace',
-              builder: (context, state) => const MarketplaceScreen(),
-            ),
-          ],
-        ),
-      ],
-    ),
-    // Profile (outside bottom nav with back button)
-    GoRoute(
-      path: '/profile',
-      name: 'profile',
-      builder: (context, state) =>
-          ProfileScreen(from: (state.extra as Map?)?['from'] as String?),
-    ),
-    // Product detail (outside bottom nav)
-    GoRoute(
-      path: '/product-detail',
-      name: 'product-detail',
-      builder: (context, state) {
-        final productId = (state.extra as Map?)?['productId'] as String? ?? '';
-        return ProductDetailScreen(productId: productId);
-      },
-    ),
-    // Tous les produits d'une catégorie ("Voir tout" depuis la Marketplace)
-    GoRoute(
-      path: '/marketplace/category',
-      name: 'marketplace-category',
-      builder: (context, state) {
-        final categoryId = (state.extra as Map?)?['categoryId'] as String? ?? '';
-        return CategoryProductsScreen(categoryId: categoryId);
-      },
-    ),
-    // Panier
-    GoRoute(
-      path: '/cart',
-      name: 'cart',
-      builder: (context, state) => const CartScreen(),
-    ),
-    // Diseases (accessible from drawer or home)
-    GoRoute(
-      path: '/diseases',
-      name: 'diseases',
-      builder: (context, state) => const DiseasesScreen(),
-    ),
-    // Settings and other routes (without bottom nav)
-    GoRoute(
-      path: '/settings',
-      name: 'settings',
-      builder: (context, state) =>
-          SettingsScreen(from: (state.extra as Map?)?['from'] as String?),
-    ),
-
-    GoRoute(
-      path: '/preferences',
-      name: 'preferences',
-      builder: (context, state) =>
-          PreferencesScreen(from: (state.extra as Map?)?['from'] as String?),
-    ),
-    GoRoute(
-      path: '/about',
-      name: 'about',
-      builder: (context, state) =>
-          AboutScreen(from: (state.extra as Map?)?['from'] as String?),
-    ),
-    GoRoute(
-      path: '/weather',
-      name: 'weather',
-      builder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>?;
-        return WeatherScreen(
-          lat: extra?['lat'] as double?,
-          lon: extra?['lon'] as double?,
-        );
-      },
-    ),
-    GoRoute(
-      path: '/history',
-      name: 'history',
-      builder: (context, state) => const HistoryScreen(),
-    ),
-  ],
-  initialLocation: '/',
-  errorBuilder: (context, state) {
-    final t = context.watch<LocaleProvider>().t;
-    return Scaffold(
-    appBar: AppBar(title: Text(t('error'))),
-    body: Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text('${t('error')}: ${state.error}'),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => context.go('/home'),
-            child: Text(t('returnToHome')),
-          ),
+          ]),
+          StatefulShellBranch(routes: [GoRoute(path: '/marketplace', builder: (_, _) => const MarketplaceScreen())]),
         ],
       ),
-    ),
+      GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
+      GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+      GoRoute(path: '/preferences', redirect: (_, _) => '/settings'),
+      GoRoute(path: '/about', builder: (_, _) => const AboutScreen()),
+      GoRoute(path: '/weather', builder: (_, _) => const WeatherScreen()),
+      GoRoute(path: '/history', builder: (_, _) => const HistoryScreen()),
+      GoRoute(path: '/scan/:id', builder: (_, state) => FieldSheetScreen(scanId: state.pathParameters['id']!)),
+      GoRoute(path: '/diseases', builder: (_, _) => const DiseasesScreen()),
+      GoRoute(
+        path: '/diseases/:id',
+        builder: (_, state) => DiseaseDetailScreen(diseaseId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/product-detail',
+        builder: (_, state) =>
+            ProductDetailScreen(productId: (state.extra as Map?)?['productId'] as String? ?? ''),
+      ),
+      GoRoute(
+        path: '/marketplace/category',
+        builder: (_, state) =>
+            CategoryProductsScreen(categoryId: (state.extra as Map?)?['categoryId'] as String? ?? ''),
+      ),
+      GoRoute(path: '/cart', builder: (_, _) => const CartScreen()),
+    ],
+    errorBuilder: (context, state) {
+      final t = context.watch<LocaleProvider>().t;
+      return Scaffold(
+        appBar: AppBar(title: Text(t('error'))),
+        body: Center(
+          child: FilledButton(onPressed: () => context.go('/home'), child: Text(t('returnToHome'))),
+        ),
+      );
+    },
   );
-  },
-);
+}

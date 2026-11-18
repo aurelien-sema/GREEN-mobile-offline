@@ -9,7 +9,7 @@ class MarketplaceProvider with ChangeNotifier {
 
   late List<CategoryModel> _categories;
   late List<ProductModel> _products;
-  List<OrderModel> _orders = [];
+  final List<OrderModel> _orders = [];
 
   MarketplaceProvider() {
     _initializeData();
@@ -65,7 +65,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Limbe, Cameroun',
         priceMin: 25000,
         priceMax: 35000,
-        imageUrl: 'assets/images/1 Semences de maïs hybride – SAC 20 kg.jpg',
+        imageUrl: 'assets/images/p01_semences_mais_hybride_20kg.jpg',
         tags: ['maïs', 'hybride', 'rendement'],
         rating: 0,
         reviewCount: 0,
@@ -87,7 +87,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Douala, Cameroun',
         priceMin: 5000,
         priceMax: 12000,
-        imageUrl: 'assets/images/2 Semences de tomate hybride F1.jpg',
+        imageUrl: 'assets/images/p02_semences_tomate_hybride_f1.jpg',
         tags: ['tomate', 'maraîchage', 'hybride'],
         rating: 0,
         reviewCount: 0,
@@ -109,7 +109,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Sud & Littoral, Cameroun',
         priceMin: 100,
         priceMax: 300,
-        imageUrl: 'assets/images/3 Boutures de manioc amélioré.jpg',
+        imageUrl: 'assets/images/p03_boutures_manioc_ameliore.jpg',
         tags: ['manioc', 'bouture', 'amélioré'],
         rating: 0,
         reviewCount: 0,
@@ -132,7 +132,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Douala / Yaoundé, Cameroun',
         priceMin: 25000,
         priceMax: 32000,
-        imageUrl: 'assets/images/4 Engrais NPK 15-15-15 – sac 50 kg.jpg',
+        imageUrl: 'assets/images/p04_engrais_npk_15_15_15_50kg.jpg',
         tags: ['engrais', 'npk', 'minéral'],
         rating: 0,
         reviewCount: 0,
@@ -153,7 +153,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Cameroun',
         priceMin: 23000,
         priceMax: 30000,
-        imageUrl: 'assets/images/5 Urée 46 % – sac 50 kg.jpg',
+        imageUrl: 'assets/images/p05_uree_46_50kg.jpg',
         tags: ['urée', 'azote', 'engrais'],
         rating: 0,
         reviewCount: 0,
@@ -174,7 +174,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Cameroun',
         priceMin: 2000,
         priceMax: 4000,
-        imageUrl: 'assets/images/6 Compost organique local.jpg',
+        imageUrl: 'assets/images/p06_compost_organique.jpg',
         tags: ['compost', 'organique', 'naturel'],
         rating: 0,
         reviewCount: 0,
@@ -197,7 +197,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Cameroun',
         priceMin: 6000,
         priceMax: 12000,
-        imageUrl: 'assets/images/7 Fongicide cuivre Nordox 75 WG.webp',
+        imageUrl: 'assets/images/p07_fongicide_cuivre_nordox.webp',
         tags: ['fongicide', 'cuivre', 'maladies'],
         rating: 0,
         reviewCount: 0,
@@ -262,7 +262,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Cameroun',
         priceMin: 5000,
         priceMax: 10000,
-        imageUrl: 'assets/images/10 Kit EPI agricole.webp',
+        imageUrl: 'assets/images/p10_kit_epi_agricole.webp',
         tags: ['protection', 'epi', 'sécurité'],
         rating: 0,
         reviewCount: 0,
@@ -283,7 +283,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Cameroun',
         priceMin: 2000,
         priceMax: 4000,
-        imageUrl: 'assets/images/11 Plateau de semis 50 alvéoles.webp',
+        imageUrl: 'assets/images/p11_plateau_semis_50.webp',
         tags: ['semis', 'pépinière', 'plateau'],
         rating: 0,
         reviewCount: 0,
@@ -304,7 +304,7 @@ class MarketplaceProvider with ChangeNotifier {
         location: 'Cameroun',
         priceMin: 30000,
         priceMax: 60000,
-        imageUrl: 'assets/images/12 kit irrigation.jpg',
+        imageUrl: 'assets/images/p12_kit_irrigation.jpg',
         tags: ['irrigation', 'goutte-à-goutte', 'économique'],
         rating: 0,
         reviewCount: 0,

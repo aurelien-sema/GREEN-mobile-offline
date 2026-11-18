@@ -1,300 +1,323 @@
-import 'dart:typed_data';
+import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:http/http.dart' as http;
+
 import '../rag_service.dart';
 import '../storage/storage_service.dart';
 import '../user_scope.dart';
 
+/// Erreur affichable de GreenBot (sans détail technique).
+class GreenBotException implements Exception {
+  /// no-key | network | busy (modèles saturés) | quota | blocked | empty | unknown
+  final String code;
+  const GreenBotException(this.code);
+  @override
+  String toString() => 'GreenBotException($code)';
+}
+
+/// Résultat de la transcription d'un message vocal.
+class VoiceTranscript {
+  final String text;
+  final bool inaudible;
+  const VoiceTranscript(this.text, {this.inaudible = false});
+}
+
+/// Ce que l'appel à un modèle a rencontré, et ce qu'il faut en faire.
+enum GeminiFailure {
+  /// Modèle inconnu pour cette clé, ou option non prise en charge → modèle suivant.
+  modelUnavailable,
+
+  /// Modèle saturé (503 « high demand »), erreur serveur ou délai dépassé → modèle suivant.
+  overloaded,
+
+  /// Quota de la clé atteint (429) → modèle suivant (quotas par modèle).
+  quota,
+
+  /// Clé invalide ou refusée → arrêt.
+  auth,
+
+  /// Réponse bloquée par les filtres de sécurité → arrêt.
+  blocked,
+
+  /// Pas de réseau → arrêt.
+  network,
+
+  unknown,
+}
+
+/// GreenBot : conversation agricole via l'API Gemini, enrichie par la
+/// recherche documentaire hors ligne (RAG BM25), et transcription des
+/// messages vocaux.
+///
+/// Modèles vérifiés le 9 novembre 2026 avec la clé du projet (liste de
+/// l'API + appels réels, voir CHANGELOG 2.1.0) :
+/// - gemini-3.5-flash-lite : ~1 à 4 s, sans « réflexion » → premier choix ;
+/// - gemini-3.5-flash : ~10 à 13 s, raisonne avant de répondre ;
+/// - gemini-3.8-flash : souvent saturé (503 ou plus de 60 s).
+/// Chaque modèle a [requestTimeout] pour répondre ; s'il est saturé,
+/// introuvable ou hors quota, le suivant est essayé.
+///
+/// Les modèles 3.x « réfléchissent » avant de répondre et ces jetons de
+/// réflexion comptent dans maxOutputTokens : avec 700 jetons (v2.0), une
+/// réponse pouvait être coupée net (constaté : 284 jetons de réflexion
+/// pour 12 de réponse avec un plafond de 300). Le plafond passe à 4096 ;
+/// la longueur des réponses reste réglée par le prompt (3 à 5 phrases).
 class GeminiService {
-  late GenerativeModel _model;
-  GenerativeModel? _embeddingModel;
+  static const defaultChatModels = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
 
-  /// Doit rester identique au modèle utilisé pour construire
-  /// assets/rag/embeddings_f32.bin (voir tools/rag/build_embeddings.py) —
-  /// requête et documents doivent vivre dans le même espace vectoriel.
-  static const String _embeddingModelName = 'models/text-embedding-004';
+  /// gemini-3.5-transcribe n'accepte pas d'instruction système : les modèles
+  /// généralistes transcrivent et traduisent mieux à partir de la consigne.
+  static const defaultAudioModels = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash'];
 
-  /// Initialiser le service Gemini avec une clé API
-  /// Vous devez obtenir une clé API gratuite depuis https://makersuite.google.com/app/apikey
-  void initialize(String apiKey) {
-    _model = GenerativeModel(
-      model: 'gemini-2.5-flash',
-      apiKey: apiKey,
-      safetySettings: [
-        SafetySetting(HarmCategory.harassment, HarmBlockThreshold.medium),
-        SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.medium),
-      ],
-    );
-    // Même clé API, modèle dédié à l'embedding (utilisé pour le RAG sémantique).
-    _embeddingModel = GenerativeModel(model: _embeddingModelName, apiKey: apiKey);
+  static const maxOutputTokens = 4096;
+
+  /// Durée maximale d'un message vocal (WAV 16 kHz mono ≈ 3,8 Mo).
+  static const maxVoiceDuration = Duration(minutes: 2);
+
+  /// Client HTTP (injecté dans les tests ; null = client par défaut).
+  final http.Client? httpClient;
+  final Duration requestTimeout;
+
+  String? _apiKey;
+  List<String> _chatModels = defaultChatModels;
+  List<String> _audioModels = defaultAudioModels;
+
+  /// Dernier modèle ayant répondu et durée de l'appel (mesures, tests).
+  String? lastModel;
+  Duration? lastLatency;
+
+  GeminiService({this.httpClient, this.requestTimeout = const Duration(seconds: 25)});
+
+  bool get isConfigured => (_apiKey ?? '').isNotEmpty;
+  List<String> get chatModels => List.unmodifiable(_chatModels);
+  List<String> get audioModels => List.unmodifiable(_audioModels);
+
+  void initialize(String apiKey, {String? chatModel, String? audioModel}) {
+    _apiKey = apiKey.trim();
+    _chatModels = defaultChatModels;
+    _audioModels = defaultAudioModels;
+    if (chatModel != null && chatModel.trim().isNotEmpty) {
+      final m = chatModel.trim();
+      _chatModels = [m, ...defaultChatModels.where((x) => x != m)];
+    }
+    if (audioModel != null && audioModel.trim().isNotEmpty) {
+      final m = audioModel.trim();
+      _audioModels = [m, ...defaultAudioModels.where((x) => x != m)];
+    }
   }
 
-  /// Recherche par similarité sémantique (embeddings) dans les chunks RAG.
-  /// Retourne null si indisponible (RAG non initialisé, dimension
-  /// incompatible, pas de clé/erreur réseau) pour laisser l'appelant se
-  /// replier sur la recherche par mots-clés.
-  Future<List<Map<String, dynamic>>?> _searchRagByEmbedding(String query, {int topK = 5}) async {
-    if (_embeddingModel == null) return null;
-    if (!RagService.instance.embeddingsUsable) return null;
-
-    try {
-      final response = await _embeddingModel!.embedContent(
-        Content.text(query),
-        taskType: TaskType.retrievalQuery,
+  GenerativeModel _model(String name, String systemPrompt) => GenerativeModel(
+        model: name,
+        apiKey: _apiKey!,
+        httpClient: httpClient,
+        systemInstruction: Content.system(systemPrompt),
+        generationConfig: GenerationConfig(temperature: 0.4, maxOutputTokens: maxOutputTokens),
+        // Seuil « élevé seulement » : au seuil moyen (v2.0), des réponses
+        // agricoles banales étaient bloquées comme « harcèlement » (mesuré le
+        // 9 novembre 2026 : 1 réponse sur 2 à la question « feuilles de
+        // manioc jaunes »), et la bibliothèque échouait sur la réponse vide.
+        // Les garde-fous métier (pas de doses, pas de produits interdits)
+        // sont dans la consigne système.
+        safetySettings: [
+          SafetySetting(HarmCategory.harassment, HarmBlockThreshold.high),
+          SafetySetting(HarmCategory.hateSpeech, HarmBlockThreshold.high),
+          SafetySetting(HarmCategory.dangerousContent, HarmBlockThreshold.high),
+        ],
       );
-      final values = response.embedding.values;
-      final results = await RagService.instance.searchByEmbedding(values, topK: topK);
-      return results.isEmpty ? null : results;
-    } catch (e) {
-      debugPrint('GeminiService: recherche RAG par embedding indisponible ($e), repli mots-clés.');
-      return null;
+
+  /// Classe une erreur de l'API (testé sur les messages réels de Gemini).
+  @visibleForTesting
+  static GeminiFailure classify(Object e) {
+    if (e is SocketException || e is http.ClientException || e is HandshakeException) return GeminiFailure.network;
+    if (e is TimeoutException) return GeminiFailure.overloaded;
+    if (e is InvalidApiKey) return GeminiFailure.auth;
+    final msg = (e is GenerativeAIException ? e.message : '$e').toLowerCase();
+    if (msg.contains('socketexception') || msg.contains('failed host lookup') || msg.contains('connection closed')) {
+      return GeminiFailure.network;
     }
+    if (msg.contains('not found') || msg.contains('is not supported') || msg.contains('not enabled for this model')) {
+      return GeminiFailure.modelUnavailable;
+    }
+    // Réponse vide (candidat filtré : « Content: {} ») que la bibliothèque
+    // ne sait pas lire : on retente avec le modèle suivant.
+    if (msg.contains('unhandled format')) return GeminiFailure.overloaded;
+    if (msg.contains('high demand') || msg.contains('overloaded') || msg.contains('unavailable') ||
+        msg.contains('server error [5') || msg.contains('try again later') || msg.contains('internal error')) {
+      return GeminiFailure.overloaded;
+    }
+    if (msg.contains('quota') || msg.contains('rate limit') || msg.contains('resource has been exhausted') ||
+        msg.contains('resource_exhausted')) {
+      return GeminiFailure.quota;
+    }
+    if (msg.contains('api key') || msg.contains('permission') || msg.contains('unauthenticated') ||
+        msg.contains('api_key')) {
+      return GeminiFailure.auth;
+    }
+    if (msg.contains('safety') || msg.contains('blocked')) return GeminiFailure.blocked;
+    return GeminiFailure.unknown;
   }
 
-  /// Recherche par mots-clés (repli utilisé si la recherche sémantique n'est
-  /// pas disponible ou échoue).
-  List<String> _searchRagByKeywords(String query, {int limit = 3}) {
-    final queryLower = query.toLowerCase();
-    final keywords = queryLower.split(RegExp(r'\s+'));
-
-    return RagService.instance.chunks
-        .where((chunk) {
-          final text = chunk.text.toLowerCase();
-          return keywords.any((kw) => text.contains(kw) && kw.length > 2);
-        })
-        .map((chunk) => chunk.text)
-        .take(limit)
-        .toList();
+  /// Appelle le premier modèle de [names] qui répond.
+  Future<String> _generate(List<String> names, String systemPrompt, List<Content> contents) async {
+    if (!isConfigured) throw const GreenBotException('no-key');
+    final failures = <GeminiFailure>[];
+    for (final name in names) {
+      final watch = Stopwatch()..start();
+      try {
+        final res = await _model(name, systemPrompt).generateContent(contents).timeout(requestTimeout);
+        final text = res.text?.trim();
+        if (text == null || text.isEmpty) {
+          // Réponse vide (réflexion qui a épuisé le budget, par ex.) : modèle suivant.
+          failures.add(GeminiFailure.overloaded);
+          continue;
+        }
+        lastModel = name;
+        lastLatency = watch.elapsed;
+        return text;
+      } catch (e) {
+        final f = classify(e);
+        failures.add(f);
+        final detail = '$e'.replaceAll(RegExp(r'\s+'), ' ');
+        debugPrint('GreenBot : $name → ${f.name} (${watch.elapsed.inMilliseconds} ms) '
+            '${detail.length > 240 ? '${detail.substring(0, 240)}…' : detail}');
+        switch (f) {
+          case GeminiFailure.modelUnavailable:
+          case GeminiFailure.overloaded:
+          case GeminiFailure.quota:
+            continue;
+          case GeminiFailure.auth:
+            throw const GreenBotException('no-key');
+          case GeminiFailure.blocked:
+            throw const GreenBotException('blocked');
+          case GeminiFailure.network:
+            throw const GreenBotException('network');
+          case GeminiFailure.unknown:
+            continue;
+        }
+      }
+    }
+    if (failures.contains(GeminiFailure.quota) && !failures.contains(GeminiFailure.overloaded)) {
+      throw const GreenBotException('quota');
+    }
+    if (failures.contains(GeminiFailure.overloaded)) throw const GreenBotException('busy');
+    throw const GreenBotException('unknown');
   }
 
-  /// Build RAG context from retrieved chunks for a query : recherche
-  /// sémantique par embeddings en priorité, repli sur la recherche par
-  /// mots-clés si indisponible.
-  Future<String> _buildRagContext(String query) async {
-    try {
-      List<String> relevant;
+  String _ragContext(String query) {
+    final hits = RagService.instance.search(query, topK: 3);
+    if (hits.isEmpty) return '';
+    return hits.map((c) => c.text.trim()).join('\n---\n');
+  }
 
-      final semanticResults = await _searchRagByEmbedding(query, topK: 3);
-      if (semanticResults != null) {
-        relevant = semanticResults.map((r) => r['text'] as String).toList();
+  String _systemPrompt({required String ragContext, required String language}) {
+    final lang = switch (language) {
+      'en' => 'anglais simple',
+      'pid' => 'pidgin camerounais simple',
+      _ => 'français simple',
+    };
+    return '''Tu es GREEN, l'assistant agricole de l'application GREEN (diagnostic des maladies des plantes par photo, puis conseils).
+
+LANGUE : réponds en $lang.
+
+COMMENT TU PARLES :
+- Réponses courtes : 3 à 5 phrases, sauf si l'agriculteur demande plus de détails.
+- Mots simples, sans jargon : beaucoup d'agriculteurs ont peu été à l'école.
+- Concret : dis quoi faire, une étape à la fois, puis propose la suite par une question simple.
+- Pas de mise en forme : pas de **, pas de #, pas de listes à tirets. Pour des étapes, numérote : "1. ... 2. ...".
+
+APRÈS UN DIAGNOSTIC : 1) ce que la plante a, en une phrase ; 2) ce qui arrive si on ne fait rien ; 3) UNE première action accessible localement ; 4) demande s'il veut la suite.
+
+PRUDENCE : une photo donne une maladie probable, pas une certitude. Ne donne jamais de dose de produit chimique ; conseille un produit homologué et l'avis d'un technicien agricole ou d'un vendeur agréé. Ne recommande aucun produit interdit.
+
+DOCUMENTS : utilise d'abord les extraits ci-dessous s'ils répondent à la question. Sinon dis-le et donne un conseil prudent général ; n'invente aucun chiffre ni détail technique.
+${ragContext.isEmpty ? '' : '\nEXTRAITS DE DOCUMENTS AGRONOMIQUES :\n$ragContext'}''';
+  }
+
+  /// Réponse de GreenBot à [message], en tenant compte des derniers échanges.
+  Future<String> reply(
+    String message, {
+    List<({bool isUser, String text})> history = const [],
+    String language = 'fr',
+  }) async {
+    final system = _systemPrompt(ragContext: _ragContext(message), language: language);
+    // Les 8 derniers messages (v1 : les 5 PREMIERS, d'où des réponses qui
+    // ignoraient la fin de la conversation).
+    final recent = history.length > 8 ? history.sublist(history.length - 8) : history;
+    // L'API exige une alternance utilisateur / modèle : les messages
+    // consécutifs d'un même rôle (question restée sans réponse après une
+    // coupure réseau, par exemple) sont fusionnés, et l'échange commence par
+    // l'utilisateur.
+    final turns = <({bool isUser, String text})>[];
+    for (final m in [...recent, (isUser: true, text: message)]) {
+      if (turns.isEmpty && !m.isUser) continue;
+      if (turns.isNotEmpty && turns.last.isUser == m.isUser) {
+        final last = turns.removeLast();
+        turns.add((isUser: last.isUser, text: '${last.text}\n${m.text}'));
       } else {
-        relevant = _searchRagByKeywords(query, limit: 3);
+        turns.add(m);
       }
-
-      if (relevant.isEmpty) {
-        return '';
-      }
-      return 'Contexte agricole et agronomique pertinent:\n\n${relevant.join('\n\n---\n\n')}\n\n';
-    } catch (e) {
-      // Si RAG échoue, on continue sans contexte
-      return '';
     }
+    final contents = [
+      for (final m in turns) m.isUser ? Content.text(m.text) : Content.model([TextPart(m.text)]),
+    ];
+    return _stripMarkdown(await _generate(_chatModels, system, contents));
   }
 
-  /// Envoyer un message et obtenir une réponse du bot Green avec contexte RAG
-  /// Prompt système commun à [generateResponse] et [generateResponseWithContext].
-  ///
-  /// Réécrit pour privilégier des réponses courtes, directes et progressives
-  /// (une étape à la fois plutôt qu'un pavé de conseils d'un coup), en
-  /// langage très simple — le public cible vit en milieu rural, souvent avec
-  /// peu d'éducation formelle : tout doit rester concret et terre-à-terre,
-  /// sans jargon ni tournures abstraites.
-  String _buildSystemPrompt({required String ragContext, String conversationContext = ''}) {
-    return '''Tu es GREEN, l'assistant agricole de l'application Green (diagnostic des maladies des plantes par photo, puis conseils par chat).
-
-COMMENT TU PARLES (règles strictes) :
-- Réponses COURTES : 3 à 5 phrases maximum, sauf si l'agriculteur demande plus de détails.
-- Langage TRÈS SIMPLE, comme si tu parlais à quelqu'un qui n'a pas beaucoup été à l'école. Pas de mots compliqués, pas de jargon scientifique.
-- Direct et concret : va droit au but, dis quoi faire, pas de grands discours.
-- PROGRESSIF : donne une seule étape ou un seul conseil à la fois. Termine par une question simple ou une proposition ("Tu veux que je t'explique comment faire ?") plutôt que de tout déballer en une fois.
-- Terre-à-terre : parle de choses concrètes (le champ, la plante, l'argent, le temps), pas de théorie.
-- N'utilise JAMAIS de symboles de mise en forme (pas de **, pas de *, pas de tirets "-" pour des listes, pas de titres avec #). Écris des phrases normales. Si tu dois faire une liste d'étapes, numérote-les simplement : "1. ... 2. ... 3. ..."
-$conversationContext
-QUAND TU RÉPONDS APRÈS UN DIAGNOSTIC :
-1. Dis en une phrase simple ce que la plante a.
-2. Dis en une phrase ce qui va se passer si on ne fait rien.
-3. Propose UNE seule action à faire en premier (la plus urgente et la plus accessible localement).
-4. Demande si l'agriculteur veut la suite des conseils.
-
-CONSEILS ÉCONOMIQUES : si utile, dis simplement si ça vaut le coup de dépenser ou d'attendre — pas de chiffres précis, juste "c'est peu cher" / "ça coûte plus cher, réfléchis avant".
-
-RAG : utilise en priorité les informations ci-dessous si présentes. Si l'info n'y est pas, dis-le simplement et donne un conseil prudent général — n'invente jamais un détail technique précis.
-
-SÉCURITÉ : ne donne jamais de dosage chimique précis, ne recommande pas de produit dangereux ou interdit.
-${ragContext.isNotEmpty ? '\n📚 INFOS UTILES:\n$ragContext' : ''}''';
+  /// Conseil mis en cache par compte (fiche terrain → GreenBot).
+  Future<String> adviceWithCache(String prompt, String cacheKey, {String language = 'fr'}) async {
+    final key = 'advice_${UserScope.userId ?? 'guest'}_${language}_$cacheKey';
+    final storage = StorageService();
+    try {
+      final cached = storage.getString(key);
+      if (cached != null && cached.isNotEmpty) return cached;
+    } catch (_) {}
+    final answer = await reply(prompt, language: language);
+    try {
+      await storage.setString(key, answer);
+    } catch (_) {}
+    return answer;
   }
 
-  /// Filet de sécurité si le modèle utilise quand même des symboles markdown
-  /// (**gras**, listes à tirets/étoiles, titres #) malgré la consigne du
-  /// prompt système — le chat affiche du texte brut (AnimatedChatMessage),
-  /// donc ces symboles s'afficheraient sinon littéralement à l'écran.
-  String _stripMarkdown(String text) {
+  /// Transcrit (et traduit si besoin) un message vocal WAV dans la langue
+  /// de l'application. Le texte obtenu est ensuite envoyé à GreenBot comme
+  /// un message écrit.
+  Future<VoiceTranscript> transcribe(Uint8List wav, {String language = 'fr'}) async {
+    final target = switch (language) {
+      'en' => 'anglais',
+      'pid' => 'pidgin camerounais',
+      _ => 'français',
+    };
+    const marker = '[INAUDIBLE]';
+    final system = '''Tu transcris les messages vocaux d'agriculteurs pour l'assistant GREEN.
+Écris exactement ce que dit la personne, en $target. Si elle parle une autre langue (pidgin, langue locale camerounaise, anglais, français), traduis fidèlement en $target.
+Corrige seulement les hésitations ("euh", répétitions). Ne réponds pas à la question, n'ajoute aucun commentaire, aucun guillemet.
+Si l'audio est vide ou incompréhensible, écris exactement : $marker''';
+    final text = await _generate(_audioModels, system, [
+      Content.multi([
+        TextPart('Transcris ce message vocal.'),
+        DataPart('audio/wav', wav),
+      ]),
+    ]);
+    final clean = text.replaceAll('"', '').trim();
+    if (clean.isEmpty || clean.contains(marker)) return const VoiceTranscript('', inaudible: true);
+    return VoiceTranscript(clean);
+  }
+
+  /// Filet de sécurité si le modèle utilise quand même du Markdown : le chat
+  /// affiche du texte brut.
+  static String _stripMarkdown(String text) {
     var out = text.replaceAllMapped(RegExp(r'\*\*(.*?)\*\*'), (m) => m.group(1) ?? '');
-    out = out.replaceAll(RegExp(r'^[ \t]*[-*]\s+', multiLine: true), '');
+    out = out.replaceAllMapped(RegExp(r'(?<!\w)\*(\S.*?)\*(?!\w)'), (m) => m.group(1) ?? '');
+    out = out.replaceAll(RegExp(r'^[ \t]*[-*•]\s+', multiLine: true), '');
     out = out.replaceAll(RegExp(r'^#{1,6}\s*', multiLine: true), '');
     return out.trim();
   }
 
-  Future<String> generateResponse(String userMessage) async {
-    try {
-      final ragContext = await _buildRagContext(userMessage);
-      final systemPrompt = _buildSystemPrompt(ragContext: ragContext);
-
-      final response = await _model.generateContent([
-        Content.text(systemPrompt),
-        Content.text('\nQuestion de l\'agriculteur: $userMessage'),
-      ]);
-
-      final text = response.text;
-      if (text == null) return 'Je n\'ai pas compris, pouvez-vous répéter ?';
-      return _stripMarkdown(text);
-    } catch (e) {
-      return 'Désolé, problème technique: $e';
-    }
-  }
-
-  /// Getting detailed advice for a specific plant/disease prompt with caching
-  Future<String> getAdviceWithCache(String prompt, String cacheKey) async {
-    // Clé préfixée par l'utilisateur courant : deux comptes sur le même
-    // appareil ne doivent pas voir les conseils mis en cache l'un de l'autre.
-    final storageKey = 'advice_${UserScope.userId ?? 'guest'}_$cacheKey';
-
-    // Try to get from storage first
-    try {
-      final cached = StorageService().getString(storageKey);
-      if (cached != null && cached.isNotEmpty) {
-         return cached; // Return offline/cached version
-      }
-    } catch (e) {
-      // Un cache illisible ne doit pas bloquer la génération, mais on trace
-      // l'erreur au lieu de la masquer complètement.
-      debugPrint('GeminiService: lecture du cache échouée pour $storageKey: $e');
-    }
-
-    // If not found, generate
-    final response = await generateResponse(prompt);
-
-    // Cache it if successful
-    if (response.isNotEmpty && !response.contains('Error')) {
-      try {
-        await StorageService().setString(storageKey, response);
-      } catch (e) {
-        debugPrint('GeminiService: écriture du cache échouée pour $storageKey: $e');
-      }
-    }
-    return response;
-  }
-
-  /// Generate response with chat context awareness
-  Future<String> generateResponseWithContext(String userMessage, List<Map<String, dynamic>> chatHistory) async {
-    try {
-      // Récupérer le contexte RAG pertinent
-      final ragContext = await _buildRagContext(userMessage);
-
-      // Construire un historique pour le contexte
-      String conversationContext = '';
-      if (chatHistory.isNotEmpty) {
-        conversationContext = 'Historique de la conversation:\n';
-        for (var i = 0; i < chatHistory.length && i < 5; i++) {
-          final msg = chatHistory[i];
-          final role = msg['role'] == 'user' ? 'Agriculteur' : 'GREEN';
-          conversationContext += '$role: ${msg['content']}\n';
-        }
-        conversationContext += '\nTiens compte de cet historique pour répondre de manière cohérente et progressive.\n';
-      }
-
-      final systemPrompt = _buildSystemPrompt(
-        ragContext: ragContext,
-        conversationContext: conversationContext.isNotEmpty
-            ? '\nHISTORIQUE RÉCENT (reste cohérent avec ce qui a déjà été dit, ne répète pas) :\n$conversationContext'
-            : '',
-      );
-
-      final response = await _model.generateContent([
-        Content.text(systemPrompt),
-        Content.text('\nNouvelle question de l\'agriculteur: $userMessage'),
-      ]);
-
-      final text = response.text;
-      if (text == null) return 'Je n\'ai pas compris, pouvez-vous répéter ?';
-      return _stripMarkdown(text);
-    } catch (e) {
-      return 'Désolé, problème technique: $e';
-    }
-  }
-
-  /// Analyser une image de plante avec contexte RAG
-  Future<String> analyzePlantImage(List<int> imageBytes) async {
-    try {
-      final systemPrompt = '''Regarde cette photo de plante pour un agriculteur.
-Dis-moi simplement :
-1. C'est quelle plante ?
-2. Est-ce qu'elle est malade ou en bonne santé ?
-3. Que doit faire l'agriculteur ? (Conseils simples et pratiques)
-
-Parle comme un expert agronome qui explique à un cultivateur de village.
-Utilise des mots simples.''';
-
-      final response = await _model.generateContent([
-        Content.multi([
-          TextPart(systemPrompt),
-          DataPart('image/jpeg', Uint8List.fromList(imageBytes)),
-        ]),
-      ]);
-
-      return response.text ?? 'Je ne vois pas bien l\'image.';
-    } catch (e) {
-      return 'Erreur d\'analyse: $e';
-    }
-  }
-
-  /// Obtenir des conseils sur les soins des plantes avec contexte RAG
-  Future<String> getPlantCareAdvice(String plantName) async {
-    try {
-      // Récupérer le contexte RAG pour cette plante
-      final ragContext = await _buildRagContext('conseils soins $plantName agronomie culture');
-
-      final systemPrompt = '''Donne des conseils simples pour cultiver "$plantName".
-Explique comment arroser, quand planter, et comment protéger la plante.
-Langage simple, maximum 3-4 phrases, conseils PRATIQUES locaux.
-
-${ragContext.isNotEmpty ? 'Ressources: $ragContext' : ''}''';
-
-      final response = await _model.generateContent([
-        Content.text(systemPrompt),
-      ]);
-
-      return response.text ?? 'Pas de conseils trouvés.';
-    } catch (e) {
-      return 'Erreur: $e';
-    }
-  }
-
-  /// Identify disease from plant image with RAG agricultural context
-  Future<String> identifyPlantDisease(List<int> imageBytes) async {
-    try {
-      final systemPrompt = '''Analyse cette plante malade rapidement.
-Dis en 2-3 phrases :
-1. La maladie (nom simple)
-2. Symptômes visibles
-3. Traitement simple et accessible localement
-
-Parle français paysan, sois direct.''';
-
-      final response = await _model.generateContent([
-        Content.multi([
-          TextPart(systemPrompt),
-          DataPart('image/jpeg', Uint8List.fromList(imageBytes)),
-        ]),
-      ]);
-
-      return response.text ?? 'Je ne reconnais pas la maladie.';
-    } catch (e) {
-      return 'Erreur: $e';
-    }
-  }
+  @visibleForTesting
+  static String stripMarkdownForTest(String text) => _stripMarkdown(text);
 }
 
-// Instance singleton
 final geminiService = GeminiService();

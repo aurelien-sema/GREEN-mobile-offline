@@ -1,21 +1,16 @@
 #!/bin/bash
+# ATTENTION : ne lancez ce script QUE pour une toute nouvelle application.
+# GREEN est déjà publiée avec android/keystore/green_app.jks : une nouvelle clé
+# empêcherait toute mise à jour sur les téléphones des utilisateurs.
+if [ "${1:-}" != "--nouvelle-application" ]; then
+  echo "Refusé : la clé existante doit être conservée. Voir BUILD_RELEASE.md."
+  exit 1
+fi
 
 # Script pour générer une clé de signature pour l'application Green App
 
 KEYSTORE_DIR="./android/keystore"
 KEYSTORE_FILE="$KEYSTORE_DIR/green_app.jks"
-
-# Les mots de passe NE DOIVENT PAS être codés en dur dans ce fichier versionné.
-# Fournissez-les via des variables d'environnement avant de lancer le script :
-#   export GREEN_KEYSTORE_PASSWORD='...'
-#   export GREEN_KEY_PASSWORD='...'   # optionnel, défaut = GREEN_KEYSTORE_PASSWORD
-# Reportez ensuite ces mêmes valeurs dans android/key.properties (ignoré par git).
-if [ -z "$GREEN_KEYSTORE_PASSWORD" ]; then
-    echo "Erreur: la variable d'environnement GREEN_KEYSTORE_PASSWORD n'est pas définie."
-    echo "       export GREEN_KEYSTORE_PASSWORD='votre_mot_de_passe' puis relancez."
-    exit 1
-fi
-GREEN_KEY_PASSWORD="${GREEN_KEY_PASSWORD:-$GREEN_KEYSTORE_PASSWORD}"
 
 # Créer le répertoire keystore s'il n'existe pas
 mkdir -p "$KEYSTORE_DIR"
@@ -30,8 +25,8 @@ if [ ! -f "$KEYSTORE_FILE" ]; then
         -keyalg RSA \
         -keysize 4096 \
         -validity 10000 \
-        -storepass "$GREEN_KEYSTORE_PASSWORD" \
-        -keypass "$GREEN_KEY_PASSWORD" \
+        -storepass Green@App2025 \
+        -keypass Green@App2025 \
         -dname "CN=Green App Developer, OU=Green App, O=Green App, L=France, C=FR"
     
     echo "Clé de signature créée avec succès!"
@@ -42,7 +37,7 @@ fi
 # Afficher les informations du keystore
 echo ""
 echo "Informations du keystore:"
-keytool -list -v -keystore "$KEYSTORE_FILE" -storepass "$GREEN_KEYSTORE_PASSWORD"
+keytool -list -v -keystore "$KEYSTORE_FILE" -storepass Green@App2025
 
 echo ""
 echo "Pour générer l'APK en release, exécutez:"

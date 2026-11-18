@@ -1,0 +1,18 @@
+{
+  "_comment": "Configuration du modèle ONNX EfficientNet-B0 (11 classes) de la v2.0, conservée pour pouvoir le rebrancher.",
+  "id": "efficientnet-b0-11c-onnx",
+  "format": "onnx",
+  "model": "assets/models/onnx/efficientnet_11classes.onnx",
+  "labels": "assets/models/onnx/labels.txt",
+  "input": {
+    "name": "input",
+    "layout": "nchw",
+    "width": 224,
+    "height": 224,
+    "pixels": "imagenet",
+    "resize": "shorter_side_center_crop",
+    "shorterSide": 255
+  },
+  "output": { "name": "output", "kind": "logits" },
+  "threads": 4
+}

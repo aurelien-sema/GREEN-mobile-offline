@@ -1,9 +1,4 @@
 class AppConstants {
-  // API Configuration
-  static const String apiBaseUrl = 'http://localhost:8000';
-  static const String visionApiEndpoint = '/api/vision/detect';
-  static const String chatbotApiEndpoint = '/api/chat/message';
-
   // Font Sizes
   static const double fontSizeSmall = 12.0;
   static const double fontSizeRegular = 14.0;
@@ -25,26 +20,30 @@ class AppConstants {
   static const double radiusLarge = 16.0;
   static const double radiusXLarge = 24.0;
 
-  // Animation Durations
-  static const Duration animationFast = Duration(milliseconds: 360);
-  static const Duration animationNormal = Duration(milliseconds: 600);
-  static const Duration animationSlow = Duration(milliseconds: 1000);
-
-  // Storage Keys
-  static const String themeKey = 'theme_mode';
-  static const String userToken = 'user_token';
-  static const String userId = 'user_id';
-  static const String userName = 'user_name';
-  static const String userEmail = 'user_email';
+  // Durées d'animation (Material 3 : retours courts, jamais décoratifs).
+  // Désactivées automatiquement si l'utilisateur a coupé les animations
+  // dans les réglages d'accessibilité d'Android (voir Motion.of).
+  static const Duration animationFast = Duration(milliseconds: 150);
+  static const Duration animationNormal = Duration(milliseconds: 250);
+  static const Duration animationSlow = Duration(milliseconds: 400);
 
   // Validation
   static const int minPasswordLength = 8;
   static const int maxPasswordLength = 128;
 
   // Vision (détection de maladies)
-  // En dessous de ce seuil, un résultat est considéré comme incertain et
-  // n'est pas présenté comme un diagnostic fiable. Référencé à la fois par
-  // VisionService (décision d'acceptation) et ScanResultModel (calcul de la
-  // gravité affichée), pour éviter toute divergence entre les deux.
+  // En dessous de ce seuil (probabilité softmax de la 1re classe), le
+  // résultat est présenté comme incertain et non comme un diagnostic.
   static const double visionConfidenceThreshold = 0.70;
+
+  // Écart minimal entre la 1re et la 2e classe : en dessous, le modèle hésite
+  // entre deux réponses et le résultat est présenté comme incertain.
+  static const double visionMarginThreshold = 0.15;
+
+  // Comptes : au plus 4 comptes peuvent être créés depuis un même téléphone
+  // (le 5e est refusé) ; la question de sécurité est demandée après 3 échecs.
+  static const int maxAccountsPerDevice = 4;
+  static const int maxFailedLoginsBeforeChallenge = 3;
+  static const int maxFailedSecurityAnswers = 3;
+  static const Duration securityLockDuration = Duration(minutes: 15);
 }

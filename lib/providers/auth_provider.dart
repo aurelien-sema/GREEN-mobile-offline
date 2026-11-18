@@ -1,157 +1,89 @@
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:green_app/models/user_model.dart';
-import 'package:green_app/services/auth_service.dart' as svc;
-import 'package:green_app/services/auth_service.dart' show authService;
-import 'package:green_app/services/user_scope.dart';
+import 'dart:io';
 
-/// Provider pour gérer l'authentification
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../models/user_model.dart';
+import '../services/auth_service.dart';
+import '../services/user_scope.dart';
+
+/// Session de l'utilisateur connecté.
+///
+/// Seul l'identifiant du compte est gardé dans les préférences ; le profil
+/// (dont la photo) est relu dans users.json à chaque démarrage. Avant la v2,
+/// tout le profil vivait dans un cache effacé à la déconnexion : la photo de
+/// profil disparaissait donc à chaque reconnexion.
 class AuthProvider with ChangeNotifier {
+  static const _sessionKey = 'session_account_id';
+  static const _legacyCacheKey = 'auth_user_cache';
+
+  final AuthService _auth;
   UserModel? _currentUser;
-  bool _isAuthenticated = false;
-  bool _isLoading = false;
-  static const String _cacheKey = 'auth_user_cache';
+
+  AuthProvider({AuthService? service}) : _auth = service ?? authService;
 
   UserModel? get currentUser => _currentUser;
-  bool get isAuthenticated => _isAuthenticated;
-  bool get isLoading => _isLoading;
+  bool get isAuthenticated => _currentUser != null;
 
-  /// Connexion utilisateur
-  Future<bool> login(String email, String password) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final svc.UserModel? svcUser = await authService
-          .loginWithIdentifierAndPassword(email, password);
-      if (svcUser == null) {
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-      _currentUser = UserModel(
-        id: svcUser.id,
-        name: svcUser.name,
-        username: svcUser.email.split('@').first,
-        email: svcUser.email,
-        phone: svcUser.phone,
-        profession: null,
-        memberSince: DateTime.now(),
-      );
-      _isAuthenticated = true;
-      UserScope.setUserId(_currentUser!.id);
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _isLoading = false;
-      notifyListeners();
-      debugPrint('Erreur de connexion: $e');
-      return false;
-    }
-  }
-
-  /// Inscription utilisateur
-  Future<bool> register(String name, String email, String password) async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final id = DateTime.now().millisecondsSinceEpoch.toString();
-      // The actual registration flow may be handled from the screens via authService
-      _currentUser = UserModel(
-        id: id,
-        name: name,
-        username: email.split('@').first,
-        email: email,
-        memberSince: DateTime.now(),
-      );
-      _isAuthenticated = true;
-      UserScope.setUserId(_currentUser!.id);
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _isLoading = false;
-      notifyListeners();
-      debugPrint('Erreur d\'inscription: $e');
-      return false;
-    }
-  }
-
-  /// Déconnexion
-  Future<void> logout() async {
-    _currentUser = null;
-    _isAuthenticated = false;
-    UserScope.setUserId(null);
+  Future<void> restoreSession() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_cacheKey);
-    notifyListeners();
-  }
+    var id = prefs.getString(_sessionKey);
 
-  /// Mettre à jour le profil utilisateur (nom, photo, etc.) et persister le
-  /// changement en cache — sans cela, une mise à jour (ex: nouvelle photo de
-  /// profil) était perdue au prochain lancement de l'app, contrairement à
-  /// [setCurrentUserFromService] qui persiste déjà correctement.
-  Future<bool> updateProfile(UserModel updatedUser) async {
-    try {
-      _currentUser = updatedUser;
-      await _saveToCache();
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('Erreur de mise à jour du profil: $e');
-      return false;
-    }
-  }
-
-  /// Helper to set current user from the internal auth service model
-  void setCurrentUserFromService(svc.UserModel svcUser) {
-    _currentUser = UserModel(
-      id: svcUser.id,
-      name: svcUser.name,
-      username: svcUser.email.contains('@')
-          ? svcUser.email.split('@').first
-          : (svcUser.phone.isNotEmpty ? svcUser.phone : svcUser.id),
-      email: svcUser.email,
-      phone: svcUser.phone.isNotEmpty ? svcUser.phone : null,
-      profession: null,
-      memberSince: DateTime.now(),
-    );
-    _isAuthenticated = true;
-    UserScope.setUserId(_currentUser!.id);
-    _saveToCache();
-    notifyListeners();
-  }
-
-  /// Sauvegarder l'utilisateur actuel en cache (SharedPreferences)
-  Future<void> _saveToCache() async {
-    if (_currentUser == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    final json = jsonEncode(_currentUser?.toJson() ?? {});
-    await prefs.setString(_cacheKey, json);
-  }
-
-  /// Restaurer l'utilisateur depuis le cache au démarrage
-  Future<void> restoreFromCache() async {
-    _isLoading = true;
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    final cached = prefs.getString(_cacheKey);
-    if (cached != null) {
+    // Migration de la session v1 (profil complet en cache).
+    final legacy = prefs.getString(_legacyCacheKey);
+    if (id == null && legacy != null) {
       try {
-        final decoded = jsonDecode(cached) as Map<String, dynamic>;
-        _currentUser = UserModel.fromJson(decoded);
-        _isAuthenticated = true;
-        UserScope.setUserId(_currentUser!.id);
+        final json = jsonDecode(legacy) as Map<String, dynamic>;
+        id = json['id'] as String?;
+        final oldAvatar = json['avatar_url'] as String?;
+        if (id != null && oldAvatar != null && File(oldAvatar).existsSync()) {
+          final account = await _auth.findById(id);
+          if (account != null && account.avatarPath == null) {
+            await _auth.setAvatarPath(id, oldAvatar);
+          }
+        }
+        if (id != null) await prefs.setString(_sessionKey, id);
       } catch (e) {
-        debugPrint('Erreur restauration cache: $e');
-        _currentUser = null;
-        _isAuthenticated = false;
+        debugPrint('Migration de session ignorée : $e');
       }
+      await prefs.remove(_legacyCacheKey);
     }
-    _isLoading = false;
+
+    if (id == null) return;
+    final account = await _auth.findById(id);
+    if (account == null) {
+      await prefs.remove(_sessionKey);
+      return;
+    }
+    _setUser(UserModel.fromAccount(account));
+  }
+
+  Future<void> signIn(AccountRecord account) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_sessionKey, account.id);
+    _setUser(UserModel.fromAccount(account));
+  }
+
+  /// Relit le profil depuis users.json (après une modification).
+  Future<void> refresh() async {
+    final id = _currentUser?.id;
+    if (id == null) return;
+    final account = await _auth.findById(id);
+    if (account != null) _setUser(UserModel.fromAccount(account));
+  }
+
+  Future<void> logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_sessionKey);
+    _currentUser = null;
+    UserScope.setUserId(null);
+    notifyListeners();
+  }
+
+  void _setUser(UserModel user) {
+    _currentUser = user;
+    UserScope.setUserId(user.id);
     notifyListeners();
   }
 }

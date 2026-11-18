@@ -1,7 +1,6 @@
-## Copiez ce fichier en "key.properties" (même dossier) et renseignez vos
-## vraies valeurs. key.properties est ignoré par git (.gitignore) — ne jamais
-## committer le vrai fichier ni ses identifiants en clair ailleurs dans le repo.
-storePassword=CHANGE_ME
-keyPassword=CHANGE_ME
+# Copier ce fichier en android/key.properties (ignoré par git) et compléter.
+# La clé elle-même ne change pas : android/keystore/green_app.jks, alias green_app_key.
+storeFile=keystore/green_app.jks
 keyAlias=green_app_key
-storeFile=../keystore/green_app.jks
+storePassword=MOT_DE_PASSE_DU_KEYSTORE
+keyPassword=MOT_DE_PASSE_DE_LA_CLE

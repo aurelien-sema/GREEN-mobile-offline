@@ -1,79 +1,127 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
+
 import '../models/disease_catalog_model.dart';
 
-/// Provider qui charge et met à disposition la base de maladies en local (assets)
+/// Base de maladies hors ligne (assets/data/diseases.json, format v2).
 class DiseasesProvider with ChangeNotifier {
+  static const assetPath = 'assets/data/diseases.json';
+
   final List<DiseaseCatalogModel> _diseases = [];
+  final Map<String, LocalizedText> _crops = {};
+  final Map<String, DiseaseCatalogModel> _byLabel = {};
   bool _loaded = false;
+  Future<void>? _loading;
+  Set<String> _activeLabels = const {};
 
   List<DiseaseCatalogModel> get diseases => List.unmodifiable(_diseases);
+  Map<String, LocalizedText> get crops => Map.unmodifiable(_crops);
+  bool get isLoaded => _loaded;
 
-  /// Charge une fois depuis les assets (caché ensuite)
-  Future<void> load() async {
-    if (_loaded) return;
+  Future<void> load() => _loading ??= _load();
+
+  Future<void> _load() async {
     try {
-      final raw = await rootBundle.loadString('assets/data/diseases.json');
-      final data = jsonDecode(raw) as List<dynamic>;
-      _diseases.clear();
-      for (var i = 0; i < data.length; i++) {
-        try {
-          _diseases.add(DiseaseCatalogModel.fromJson(data[i] as Map<String, dynamic>));
-        } catch (e) {
-          // Une entrée malformée ne doit pas empêcher le chargement des
-          // autres ; on log l'index fautif pour faciliter le débogage de
-          // diseases.json plutôt que de masquer l'erreur silencieusement.
-          debugPrint('Error parsing diseases.json entry #$i: $e');
-        }
-      }
-      _loaded = true;
-      notifyListeners();
+      final raw = await rootBundle.loadString(assetPath);
+      loadFromJson(raw);
     } catch (e) {
-      // Keep empty list if loading fails; callers may fallback gracefully
-      debugPrint('Error loading diseases asset: $e');
+      debugPrint('Base de maladies illisible : $e');
     }
   }
 
-  /// Recherche simple par nom (tolère accents, underscores, casse)
-  DiseaseCatalogModel? findByName(String name) {
-    final n = _normalize(name);
-    for (final d in _diseases) {
-      if (_normalize(d.name) == n) return d;
-      if (d.aliases.any((a) => _normalize(a) == n)) return d;
+  /// Exposé pour les tests.
+  @visibleForTesting
+  void loadFromJson(String raw) {
+    final data = jsonDecode(raw) as Map<String, dynamic>;
+    _diseases.clear();
+    _crops.clear();
+    _byLabel.clear();
+    (data['crops'] as Map<String, dynamic>? ?? {}).forEach((id, v) {
+      _crops[id] = LocalizedText.parse(v);
+    });
+    final list = data['diseases'] as List<dynamic>? ?? [];
+    for (var i = 0; i < list.length; i++) {
+      try {
+        final d = DiseaseCatalogModel.fromJson(list[i] as Map<String, dynamic>);
+        _diseases.add(d);
+        for (final l in d.modelLabels) {
+          _byLabel[l.toLowerCase()] = d;
+        }
+      } catch (e) {
+        debugPrint('diseases.json, entrée n°$i ignorée : $e');
+      }
     }
-    // fallback: contains
+    _loaded = true;
+    notifyListeners();
+  }
+
+  DiseaseCatalogModel? findById(String? id) {
+    if (id == null) return null;
     for (final d in _diseases) {
-      if (_normalize(d.name).contains(n)) return d;
-      if (d.aliases.any((a) => _normalize(a).contains(n))) return d;
+      if (d.id == id) return d;
     }
     return null;
   }
 
-  /// Recherche / filtre par texte
-  List<DiseaseCatalogModel> search(String query) {
-    final q = _normalize(query);
-    if (q.isEmpty) return diseases;
+  /// Fiche correspondant à une classe du modèle de vision (correspondance
+  /// explicite, plus de recherche approximative par nom).
+  DiseaseCatalogModel? findByModelLabel(String? label) =>
+      label == null ? null : _byLabel[label.toLowerCase()];
 
-    return _diseases.where((d) {
-      return _normalize(d.name).contains(q) || _normalize(d.scientificName).contains(q) || d.affectedPlants.any((p) => _normalize(p).contains(q));
-    }).toList();
+  /// Classes du modèle de vision actif (assets/models/active_model.json).
+  void setActiveModelLabels(List<String> labels) {
+    _activeLabels = labels.map((l) => l.toLowerCase()).toSet();
+    notifyListeners();
   }
 
-  String _normalize(String s) {
-    // Small normalization: remove underscores, lowercase, remove accents common ones
+  /// La fiche correspond-elle à une classe que le modèle ACTIF sait
+  /// reconnaître ? (Les correspondances d'un autre modèle, ex. ONNX, restent
+  /// dans diseases.json mais ne sont pas annoncées.)
+  bool isDetectable(DiseaseCatalogModel d) =>
+      d.modelLabels.any((l) => _activeLabels.contains(l.toLowerCase()));
+
+  String cropName(String cropId, String locale) => _crops[cropId]?.of(locale) ?? cropId;
+
+  /// Recherche plein texte (nom, nom scientifique, alias, cultures), insensible
+  /// à la casse et aux accents, avec filtres facultatifs.
+  List<DiseaseCatalogModel> search(
+    String query, {
+    required String locale,
+    String? cropId,
+    DiseaseType? type,
+  }) {
+    final q = normalize(query);
+    return _diseases.where((d) {
+      if (d.isHealthy && cropId == null && q.isEmpty) return false;
+      if (cropId != null && !d.crops.contains(cropId)) return false;
+      if (type != null && d.type != type) return false;
+      if (q.isEmpty) return true;
+      final haystack = [
+        d.name.of(locale),
+        d.name.of('fr'),
+        d.name.of('en'),
+        d.scientificName,
+        ...d.aliases,
+        ...d.crops.map((c) => cropName(c, locale)),
+      ].map(normalize).join(' ');
+      return q.split(' ').every(haystack.contains);
+    }).toList()
+      ..sort((a, b) => normalize(a.name.of(locale)).compareTo(normalize(b.name.of(locale))));
+  }
+
+  static String normalize(String s) {
     var x = s.toLowerCase().replaceAll('_', ' ').trim();
     const accents = {
-      'à': 'a', 'á': 'a', 'â': 'a', 'ä': 'a', 'ã': 'a', 'å': 'a',
+      'à': 'a', 'á': 'a', 'â': 'a', 'ä': 'a', 'ã': 'a',
       'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
       'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
-      'ò': 'o', 'ó': 'o', 'ô': 'o', 'ö': 'o', 'õ': 'o',
+      'ò': 'o', 'ó': 'o', 'ô': 'o', 'ö': 'o',
       'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
-      'ç': 'c', 'ñ': 'n'
+      'ç': 'c', 'ñ': 'n', 'œ': 'oe',
     };
-    accents.forEach((k, v) {
-      x = x.replaceAll(k, v);
-    });
-    return x;
+    accents.forEach((k, v) => x = x.replaceAll(k, v));
+    return x.replaceAll(RegExp(r'\s+'), ' ');
   }
 }

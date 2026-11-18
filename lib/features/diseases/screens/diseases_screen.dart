@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:green_app/models/disease_catalog_model.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/diseases_provider.dart';
-import '../../../shared/widgets/app_pop_scope.dart';
-import '../../../services/history_service.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../providers/locale_provider.dart';
-import '../../../shared/widgets/animation_effects.dart';
-import '../../../shared/widgets/gradient_background.dart';
-import '../../../shared/widgets/custom_scroll_physics.dart';
-import '../../../core/utils/disease_status.dart';
 
+import '../../../core/theme/spacing.dart';
+import '../../../models/disease_catalog_model.dart';
+import '../../../providers/diseases_provider.dart';
+import '../../../providers/locale_provider.dart';
+import '../../../shared/ui/ui.dart';
+import '../../history/scan_labels.dart';
+
+/// Base des maladies, ravageurs et carences, consultable hors ligne.
 class DiseasesScreen extends StatefulWidget {
   const DiseasesScreen({super.key});
 
@@ -23,318 +19,226 @@ class DiseasesScreen extends StatefulWidget {
 }
 
 class _DiseasesScreenState extends State<DiseasesScreen> {
-  late TextEditingController _searchController;
-  List<DiseaseCatalogModel> _diseases = [];
-  List<DiseaseCatalogModel> _filteredDiseases = [];
+  final _search = TextEditingController();
+  String? _crop;
+  DiseaseType? _type;
 
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
-    _loadDiseases();
-  }
-
-  Future<void> _loadDiseases() async {
-    try {
-      await context.read<DiseasesProvider>().load();
-      final providerDiseases = context.read<DiseasesProvider>().diseases;
-      final List<DiseaseCatalogModel> combined = List<DiseaseCatalogModel>.from(providerDiseases);
-
-      // Add unique diseases from history (by name) — lightweight conversion
-      try {
-        final historyDiseases = await historyService.getUniqueDiseases();
-        for (final d in historyDiseases) {
-          final name = d['name'] ?? '';
-          if (name.isEmpty) continue;
-          if (!combined.any((e) => e.name.toLowerCase() == name.toLowerCase())) {
-            combined.add(DiseaseCatalogModel(
-              id: name.toLowerCase().replaceAll(' ', '-'),
-              name: name,
-              scientificName: d['scientificName'] ?? '',
-              affectedPlants: (d['affectedPlants'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
-              symptoms: [d['description'] ?? ''],
-              actions: [d['treatment'] ?? ''],
-              aliases: [],
-            ));
-          }
-        }
-      } catch (e) {
-        // L'historique est un enrichissement optionnel du catalogue : en cas
-        // d'échec on garde les maladies du provider, mais on trace l'erreur.
-        debugPrint('DiseasesScreen: échec de la fusion de l\'historique: $e');
-      }
-
-      if (mounted) {
-        setState(() {
-          _diseases = combined;
-          _filteredDiseases = _diseases;
-        });
-      }
-    } catch (e) {
-      debugPrint('DiseasesScreen: échec du chargement des maladies: $e');
-    }
+    context.read<DiseasesProvider>().load();
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _search.dispose();
     super.dispose();
   }
 
-  void _filterDiseases(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredDiseases = _diseases;
-      } else {
-        _filteredDiseases = _diseases
-            .where(
-              (disease) =>
-                  disease.name.toLowerCase().contains(query.toLowerCase()) ||
-                  disease.scientificName.toLowerCase().contains(query.toLowerCase()),
-            )
-            .toList();
-      }
-    });
-  }
+  String _typeLabel(DiseaseType type, String Function(String) t) => t('type_${type.name}');
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    final t = context.watch<LocaleProvider>().t;
+    final l = context.watch<LocaleProvider>();
+    final t = l.t;
+    final catalog = context.watch<DiseasesProvider>();
+    final items = catalog.search(_search.text, locale: l.locale, cropId: _crop, type: _type)
+        .where((d) => !d.isHealthy)
+        .toList();
+    final cropIds = catalog.crops.keys.toList()
+      ..sort((a, b) => catalog.cropName(a, l.locale).compareTo(catalog.cropName(b, l.locale)));
 
-    return AppPopScope(
-      onWillPop: () async {
-        if (Navigator.canPop(context)) {
-          return true;
-        }
-        context.go('/camera'); // Redirect to Camera (Scanner) as requested
-        return false;
-      },
-      child: Scaffold(
-        backgroundColor: isDarkMode
-            ? AppColors.darkBackground
-            : AppColors.lightBackground,
-        appBar: AppBar(
-          title: Text(t('diseasesTitle')),
-          centerTitle: false,
-          elevation: 0,
-          backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () => context.go('/camera'),
-          ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: Center(
-                child: GestureDetector(
-                  onTap: () => context.go('/profile'),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isDarkMode ? AppColors.darkChipNeutralBg : AppColors.lightChipNeutralBg,
-                    ),
-                    child: Icon(
-                      Icons.person_outline,
-                      color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      body: GradientBackground(
-        isDarkMode: isDarkMode,
-        opacity: 0.1,
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Search Bar
-              Padding(
-                    padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: _filterDiseases,
-                      decoration: InputDecoration(
-                        hintText: t('searchDiseaseHint'),
-                        prefixIcon: Icon(
-                          Icons.search,
-                          color: isDarkMode
-                              ? AppColors.darkPrimary
-                              : AppColors.lightPrimary,
-                        ),
-                        filled: true,
-                        fillColor: isDarkMode
-                            ? const Color.fromRGBO(27, 94, 32, 0.3)
-                            : const Color.fromRGBO(232, 245, 233, 0.5),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.radiusMedium,
-                          ),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                  )
-                  .animate()
-                  .fadeIn(duration: AppConstants.animationNormal)
-                  .slideY(begin: -10, end: 0),
-
-              // Diseases List
-              Expanded(
-                child: _filteredDiseases.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.search_off,
-                              size: 80,
-                              color: isDarkMode
-                                  ? AppColors.darkHint
-                                  : AppColors.lightHint,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              t('noDiseaseFound'),
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        physics: const SmoothScrollPhysics(),
-                        padding: const EdgeInsets.all(
-                          AppConstants.paddingMedium,
-                        ),
-                        itemCount: _filteredDiseases.length,
-                        itemBuilder: (context, index) {
-                          final disease = _filteredDiseases[index];
-                          return _buildDiseaseCard(
-                            context,
-                            disease,
-                            index,
-                            isDarkMode,
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    )
-    );
-  }
-
-  Widget _buildDiseaseCard(
-    BuildContext context,
-    DiseaseCatalogModel disease,
-    int index,
-    bool isDarkMode,
-  ) {
-    final t = context.read<LocaleProvider>().t;
-    final bool healthy = isHealthyDiseaseName(disease.name);
-    final Color statusBg = healthy
-        ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
-        : (isDarkMode ? AppColors.darkChipAmberBg : AppColors.lightChipAmberBg);
-    final Color statusFg = healthy
-        ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)
-        : (isDarkMode ? AppColors.darkChipAmberText : AppColors.lightChipAmberText);
-    final Color chipBg = healthy
-        ? (isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary)
-        : (isDarkMode ? AppColors.darkChipAmberBg : AppColors.lightChipAmberBg);
-    final Color chipFg = healthy
-        ? (isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary)
-        : (isDarkMode ? AppColors.darkChipAmberText : AppColors.lightChipAmberText);
-    return GradientCard(
-          isDarkMode: isDarkMode,
-          opacity: 0.12,
-          borderRadius: AppConstants.radiusLarge,
-          margin: const EdgeInsets.only(bottom: AppConstants.paddingMedium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  PulseAnimation(
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: statusBg,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        healthy ? Icons.check_circle : Icons.warning_amber_rounded,
-                        color: statusFg,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppConstants.paddingMedium),
-                  Expanded(
+    return Scaffold(
+      appBar: AppBar(title: Text(t('diseasesLibrary'))),
+      body: SafeArea(
+        top: false,
+        child: !catalog.isLoaded
+          ? const Center(child: CircularProgressIndicator())
+          : CustomScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(Spacing.gutter, Spacing.md, Spacing.gutter, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          disease.name,
-                          style: Theme.of(context).textTheme.titleMedium,
+                        TextField(
+                          controller: _search,
+                          textInputAction: TextInputAction.search,
+                          inputFormatters: [LengthLimitingTextInputFormatter(60)],
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            hintText: t('searchDisease'),
+                            prefixIcon: const Icon(Icons.search_rounded),
+                            suffixIcon: _search.text.isEmpty
+                                ? null
+                                : IconButton(
+                                    tooltip: t('clear'),
+                                    onPressed: () => setState(_search.clear),
+                                    icon: const Icon(Icons.close_rounded),
+                                  ),
+                          ),
                         ),
-                        Text(
-                          disease.scientificName,
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: isDarkMode
-                                    ? AppColors.darkHint
-                                    : AppColors.lightHint,
-                                fontStyle: FontStyle.italic,
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 40,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: ChoiceChip(
+                                  label: Text(t('allCrops')),
+                                  selected: _crop == null,
+                                  onSelected: (_) => setState(() => _crop = null),
+                                ),
                               ),
+                              for (final c in cropIds)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: ChoiceChip(
+                                    label: Text(catalog.cropName(c, l.locale)),
+                                    selected: _crop == c,
+                                    onSelected: (_) => setState(() => _crop = _crop == c ? null : c),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(height: 4),
+                        SizedBox(
+                          height: 40,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              for (final type in DiseaseType.values.where((x) => x != DiseaseType.healthy))
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: FilterChip(
+                                    avatar: Icon(diseaseTypeIcon(type), size: 18),
+                                    label: Text(_typeLabel(type, t)),
+                                    selected: _type == type,
+                                    onSelected: (v) => setState(() => _type = v ? type : null),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(l.tf('resultsCount', {'n': items.length}), style: Theme.of(context).textTheme.bodySmall),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: AppConstants.paddingMedium),
-              Text(
-                '${t('affectedPlantsLabel')}:',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: disease.affectedPlants
-                    .map((p) => Chip(
-                          label: Text(p, style: TextStyle(color: chipFg)),
-                          backgroundColor: chipBg,
-                          side: BorderSide.none,
-                        ))
-                    .toList(),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '${t('mainSymptomsLabel')}:',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 6),
-              ...disease.symptoms.map((s) => Text('- $s', style: Theme.of(context).textTheme.bodySmall)),
-              const SizedBox(height: 12),
-              Text(
-                '${t('recommendedActions')}:',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 6),
-              ...disease.actions.map((a) => Text('- $a', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary, fontWeight: FontWeight.w500))),
+                ),
+                if (items.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: EmptyState(icon: Icons.search_off_rounded, title: t('noResults')),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(Spacing.gutter, 0, Spacing.gutter, Spacing.xxxl),
+                    sliver: SliverList.separated(
+                      itemCount: items.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, i) {
+                        final d = items[i];
+                        return Card(
+                          clipBehavior: Clip.antiAlias,
+                          child: ListTile(
+                            onTap: () => context.push('/diseases/${d.id}'),
+                            leading: CircleAvatar(
+                              backgroundColor: severityColor(d.severity).withValues(alpha: 0.14),
+                              child: Icon(diseaseTypeIcon(d.type), color: severityColor(d.severity)),
+                            ),
+                            title: Text(d.name.of(l.locale)),
+                            subtitle: Text(
+                              '${d.crops.map((c) => catalog.cropName(c, l.locale)).join(', ')} · ${_typeLabel(d.type, t)}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: catalog.isDetectable(d)
+                                ? Tooltip(message: t('detectableByScan'), child: const Icon(Icons.center_focus_strong_rounded))
+                                : null,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+      ),
+    );
+  }
+}
+
+class DiseaseDetailScreen extends StatelessWidget {
+  final String diseaseId;
+  const DiseaseDetailScreen({super.key, required this.diseaseId});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.watch<LocaleProvider>();
+    final t = l.t;
+    final loc = l.locale;
+    final catalog = context.watch<DiseasesProvider>();
+    final d = catalog.findById(diseaseId);
+    final theme = Theme.of(context);
+    if (d == null) {
+      return Scaffold(appBar: AppBar(), body: EmptyState(icon: Icons.search_off_rounded, title: t('noResults')));
+    }
+    Widget list(String title, List<String> items, IconData icon) => items.isEmpty
+        ? const SizedBox.shrink()
+        : Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SectionCard(title: title, child: BulletList(items: items, icon: icon)),
+          );
+    Widget text(String title, String value) => value.isEmpty
+        ? const SizedBox.shrink()
+        : Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SectionCard(title: title, child: Text(value)),
+          );
+
+    return Scaffold(
+      appBar: AppBar(title: Text(d.name.of(loc), maxLines: 1, overflow: TextOverflow.ellipsis)),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+        padding: Spacing.page,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              StatusPill(label: t('type_${d.type.name}'), color: theme.colorScheme.primary, icon: diseaseTypeIcon(d.type)),
+              if (!d.isHealthy)
+                StatusPill(label: '${t('severityLabel')} : ${ScanLabels.severity(d.severity, t)}', color: severityColor(d.severity)),
+              if (catalog.isDetectable(d))
+                StatusPill(label: t('detectableByScan'), color: Colors.teal, icon: Icons.center_focus_strong_rounded),
             ],
           ),
-        )
-        .animate(delay: Duration(milliseconds: index * 50))
-        .fadeSlideIn(delayMs: index * 50);
+          const SizedBox(height: 12),
+          Text(d.name.of(loc), style: theme.textTheme.headlineSmall),
+          if (d.scientificName.isNotEmpty)
+            Text(d.scientificName, style: theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic)),
+          const SizedBox(height: 4),
+          Text(d.crops.map((c) => catalog.cropName(c, loc)).join(', '), style: theme.textTheme.bodyMedium),
+          const SizedBox(height: 16),
+          list(t('symptoms'), d.symptoms.of(loc), Icons.visibility_outlined),
+          text(t('cause'), d.causes.of(loc)),
+          list(t('favorableConditions'), d.conditions.of(loc), Icons.thermostat_rounded),
+          list(t('whatToDoNow'), d.actions.of(loc), Icons.task_alt_rounded),
+          list(t('prevention'), d.prevention.of(loc), Icons.shield_outlined),
+          text(t('lookalikes'), d.lookalikes.of(loc)),
+          text(t('whenToSeekHelp'), d.whenToSeekHelp.of(loc)),
+          const SizedBox(height: 4),
+          Text(t('libraryDisclaimer'), style: theme.textTheme.bodySmall),
+        ],
+      ),
+      ),
+    );
   }
 }

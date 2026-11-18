@@ -1,557 +1,300 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:async';
-import 'package:provider/provider.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../services/auth_service.dart';
-import '../../../services/history_service.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../providers/locale_provider.dart';
-
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/theme/spacing.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/diseases_provider.dart';
+import '../../../providers/locale_provider.dart';
+import '../../../services/auth_service.dart';
+import '../../../services/chat_history_service.dart';
+import '../../../services/green_web/photo_sync_service.dart';
+import '../../../services/history_service.dart';
 import '../../../services/profile_image_service.dart';
-import '../../../shared/widgets/app_pop_scope.dart';
-import '../../../core/extensions/context_extensions.dart';
+import '../../../shared/ui/ui.dart';
+import '../../../utils/date_formatter.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final String? from;
-  const ProfileScreen({super.key, this.from});
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  Map<String, dynamic>? _stats;
-  late StreamSubscription<void> _histSub;
-  
-  @override
-  void initState() {
-    super.initState();
-    _loadStats();
-    _histSub = historyService.onChanged.listen((_) {
-      _loadStats();
-    });
-  }
+  late Future<HistoryStats> _stats = historyService.statistics();
 
-  Future<void> _loadStats() async {
-    try {
-      final s = await historyService.getStatistics();
-      if (mounted) setState(() => _stats = s);
-    } catch (_) {
-      if (mounted) setState(() => _stats = null);
-    }
-  }
-
-  Future<void> _showImagePickerOptions(BuildContext context) async {
+  Future<void> _changePhoto() async {
     final t = context.read<LocaleProvider>().t;
-    showModalBottomSheet(
+    final user = context.read<AuthProvider>().currentUser;
+    final choice = await showModalBottomSheet<String>(
       context: context,
       builder: (ctx) => SafeArea(
-        child: Wrap(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: Text(t('gallery')),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await _pickImage(ImageSource.gallery);
-              },
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: Text(t('takePhoto')),
+              onTap: () => Navigator.pop(ctx, 'camera'),
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: Text(t('cameraSource')),
-              onTap: () async {
-                Navigator.pop(ctx);
-                await _pickImage(ImageSource.camera);
-              },
+              leading: const Icon(Icons.photo_library_outlined),
+              title: Text(t('gallery')),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
             ),
+            if (user?.avatarPath != null)
+              ListTile(
+                leading: Icon(Icons.delete_outline_rounded, color: Theme.of(ctx).colorScheme.error),
+                title: Text(t('removePhoto'), style: TextStyle(color: Theme.of(ctx).colorScheme.error)),
+                onTap: () => Navigator.pop(ctx, 'remove'),
+              ),
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
+    if (choice == null || user == null || !mounted) return;
+    final auth = context.read<AuthProvider>();
+    if (choice == 'remove') {
+      final ok = await showConfirmDialog(
+        context,
+        title: t('removePhoto'),
+        message: t('removePhotoConfirm'),
+        confirmLabel: t('delete'),
+        cancelLabel: t('cancel'),
+        destructive: true,
+      );
+      if (!ok) return;
+      await profileImageService.delete(user.avatarPath);
+      await authService.setAvatarPath(user.id, null);
+      await auth.refresh();
+      return;
+    }
+    try {
+      final path = await profileImageService.pickAndStore(
+        source: choice == 'camera' ? ImageSource.camera : ImageSource.gallery,
+        userId: user.id,
+        cropTitle: t('cropPhotoTitle'),
+        toolbarColor: Theme.of(context).colorScheme.primary,
+      );
+      if (path == null) return;
+      final previous = user.avatarPath;
+      await authService.setAvatarPath(user.id, path);
+      if (previous != null && previous != path) await profileImageService.delete(previous);
+      await auth.refresh();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('imagePickErrorMessage'))));
+    }
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final cropTitle = context.read<LocaleProvider>().t('cropPhotoTitle');
-      final path = await profileImageService.pickAndSaveImage(source, cropTitle: cropTitle);
-      if (path != null && mounted) {
-        final auth = context.read<AuthProvider>();
-        final currentUser = auth.currentUser;
-        if (currentUser != null) {
-          final updatedUser = currentUser.copyWith(avatarUrl: path);
-          await auth.updateProfile(updatedUser);
-        }
-      }
-    } catch (e) {
-      debugPrint('Error in profile screen pick image: $e');
-      if (mounted) {
-        context.showSnackBarMessage(
-          context.read<LocaleProvider>().t('imagePickErrorMessage'),
-        );
-      }
+  Future<void> _logout() async {
+    final t = context.read<LocaleProvider>().t;
+    final ok = await showConfirmDialog(
+      context,
+      title: t('logout'),
+      message: t('logoutConfirm'),
+      confirmLabel: t('logout'),
+      cancelLabel: t('cancel'),
+    );
+    if (!ok || !mounted) return;
+    await context.read<AuthProvider>().logout();
+    if (mounted) context.go('/login');
+  }
+
+  Future<void> _deleteAccount() async {
+    final t = context.read<LocaleProvider>().t;
+    final auth = context.read<AuthProvider>();
+    final sync = context.read<PhotoSyncService>();
+    final user = auth.currentUser;
+    if (user == null) return;
+    final password = await showPasswordPrompt(
+      context,
+      title: t('deleteAccount'),
+      message: t('deleteAccountConfirm'),
+      fieldLabel: t('currentPassword'),
+      confirmLabel: t('delete'),
+      cancelLabel: t('cancel'),
+      destructive: true,
+    );
+    if (password == null || !mounted) return;
+    final ok = await authService.deleteAccount(user.id, password);
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('wrongCurrentPassword'))));
+      return;
     }
+    await historyService.deleteAllFor(user.id);
+    await chatHistoryService.deleteAllFor(user.id);
+    await profileImageService.delete(user.avatarPath);
+    await sync.forget(user.id);
+    await auth.logout();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('accountDeleted'))));
+    context.go('/login');
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    final t = context.watch<LocaleProvider>().t;
-    final auth = context.watch<AuthProvider>();
-    final user = auth.currentUser;
-    final contact = (user != null && (user.email.isNotEmpty))
-        ? user.email
-        : (user?.phone ?? '');
+    final l = context.watch<LocaleProvider>();
+    final t = l.t;
+    final user = context.watch<AuthProvider>().currentUser;
+    final catalog = context.watch<DiseasesProvider>();
+    final theme = Theme.of(context);
 
-    return AppPopScope(
-      onWillPop: () async {
-        context.go(widget.from ?? '/home');
-        return false;
-      },
-      child: Scaffold(
-      backgroundColor: isDarkMode
-          ? AppColors.darkBackground
-          : AppColors.lightBackground,
-      appBar: AppBar(
-        title: Text(t('profile')),
-        centerTitle: false,
-        elevation: 0,
-        backgroundColor: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(widget.from ?? '/home'),
-        ),
-      ),
+    return Scaffold(
+      appBar: AppBar(title: Text(t('profile'))),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.paddingMedium),
-          child: Column(
-            children: [
-                  // Profile Header
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: isDarkMode
-                          ? AppColors.darkGradient
-                          : AppColors.lightGradient,
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.radiusXLarge,
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                    child: Column(
+        top: false,
+        child: user == null
+          ? const SizedBox.shrink()
+          : RefreshIndicator(
+              onRefresh: () async => setState(() => _stats = historyService.statistics()),
+              child: ListView(
+                padding: Spacing.page,
+                children: [
+                  Center(
+                    child: Stack(
                       children: [
-                        Stack(
-                          children: [
-                            GestureDetector(
-                              onTap: () => _showImagePickerOptions(context),
-                              child: Container(
-                                width: 100,
-                                height: 100,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: const Color.fromRGBO(255, 255, 255, 0.2),
-                                  border: Border.all(color: Colors.white, width: 3),
-                                  image: user?.avatarUrl != null
-                                      ? DecorationImage(
-                                          image: FileImage(File(user!.avatarUrl!)),
-                                          fit: BoxFit.cover,
-                                        )
-                                      : null,
-                                ),
-                                child: user?.avatarUrl == null
-                                    ? const Icon(
-                                        Icons.person,
-                                        color: Colors.white,
-                                        size: 50,
-                                      )
-                                    : null,
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: () => _showImagePickerOptions(context),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.edit,
-                                    size: 16,
-                                    color: AppColors.lightPrimary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ).animate().scale(
-                          duration: AppConstants.animationNormal,
+                        GestureDetector(
+                          onTap: _changePhoto,
+                          child: UserAvatar(user: user, radius: 52),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          user?.name ?? t('defaultUserName'),
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          contact,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: const Color.fromRGBO(255, 255, 255, 0.9),
-                              ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: IconButton.filled(
+                            tooltip: t('changePhoto'),
+                            onPressed: _changePhoto,
+                            icon: const Icon(Icons.photo_camera_rounded, size: 20),
+                          ),
                         ),
                       ],
                     ),
-                  )
-                  .animate()
-                  .fadeIn(duration: AppConstants.animationNormal)
-                  .slideY(begin: -20, end: 0),
-              const SizedBox(height: AppConstants.paddingLarge),
-
-              // Statistics
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      t('scansStat'),
-                      _stats != null ? '${_stats!['total'] ?? 0}' : '...',
-                      isDarkMode,
-                      100,
-                    ),
                   ),
-                  const SizedBox(width: AppConstants.paddingMedium),
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      t('avgConfidenceStat'),
-                      _stats != null
-                          ? '${((_stats!['avgConfidence'] ?? 0.0) * 100).round()}%'
-                          : '...',
-                      isDarkMode,
-                      150,
-                    ),
+                  Spacing.gapBlock,
+                  Text(user.name, style: theme.textTheme.headlineSmall, textAlign: TextAlign.center),
+                  Text(
+                    user.contact,
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(width: AppConstants.paddingMedium),
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      t('mostFrequentStat'),
-                      _stats != null ? (_stats!['mostCommon'] ?? '-') : '...',
-                      isDarkMode,
-                      200,
+                  const SizedBox(height: 4),
+                  Text(
+                    l.tf('memberSince', {'date': formatDate(user.memberSince, l.locale)}),
+                    style: theme.textTheme.bodySmall,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  FutureBuilder<HistoryStats>(
+                    future: _stats,
+                    builder: (context, snap) {
+                      final s = snap.data;
+                      final top = catalog.findById(s?.mostFrequentDiseaseId) ?? catalog.findByModelLabel(s?.mostFrequentDiseaseId);
+                      return Column(
+                        children: [
+                          Row(
+                            children: [
+                              _Stat(value: '${s?.total ?? '–'}', label: t('scansStat')),
+                              const SizedBox(width: 8),
+                              _Stat(value: '${s?.diseased ?? '–'}', label: t('filterDiseased')),
+                              const SizedBox(width: 8),
+                              _Stat(value: '${s?.healthy ?? '–'}', label: t('filterHealthy')),
+                            ],
+                          ),
+                          if (top != null) ...[
+                            const SizedBox(height: 8),
+                            SectionCard(
+                              child: Row(
+                                children: [
+                                  Icon(Icons.trending_up_rounded, color: theme.colorScheme.primary),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: Text(l.tf('mostFrequentIs', {'name': top.name.of(l.locale)}))),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                  GroupLabel(t('myActivity')),
+                  SettingsGroup(children: [
+                    ListTile(
+                      leading: const Icon(Icons.history_rounded),
+                      title: Text(t('history')),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => context.push('/history'),
                     ),
+                    ListTile(
+                      leading: const Icon(Icons.menu_book_rounded),
+                      title: Text(t('diseasesLibrary')),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => context.push('/diseases'),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.wb_sunny_outlined),
+                      title: Text(t('detailedWeather')),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => context.push('/weather'),
+                    ),
+                  ]),
+                  GroupLabel(t('settingsSectionHeader')),
+                  SettingsGroup(children: [
+                    ListTile(
+                      leading: const Icon(Icons.settings_outlined),
+                      title: Text(t('settingsLabel')),
+                      subtitle: Text(t('settingsSubtitle')),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => context.push('/settings'),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.info_outline_rounded),
+                      title: Text(t('about')),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => context.push('/about'),
+                    ),
+                  ]),
+                  const SizedBox(height: 24),
+                  OutlinedButton.icon(onPressed: _logout, icon: const Icon(Icons.logout_rounded), label: Text(t('logout'))),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+                    onPressed: _deleteAccount,
+                    icon: const Icon(Icons.delete_forever_outlined),
+                    label: Text(t('deleteAccount')),
                   ),
                 ],
               ),
-              const SizedBox(height: AppConstants.paddingLarge),
-
-              // Menu Items
-              _buildMenuSection(context, isDarkMode),
-            ],
-          ),
-        ),
-      ),
+            ),
       ),
     );
   }
+}
 
-  Widget _buildStatCard(
-    BuildContext context,
-    String label,
-    String value,
-    bool isDarkMode,
-    int delay,
-  ) {
-    return Card(
-          elevation: 0,
-          color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
-            side: BorderSide(
-              color: isDarkMode
-                  ? const Color.fromRGBO(66, 66, 66, 0.3)
-                  : const Color.fromRGBO(224, 224, 224, 0.5),
-              width: 1,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppConstants.paddingMedium),
-            child: Column(
-              children: [
-                Text(
-                  value,
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: isDarkMode
-                        ? AppColors.darkPrimary
-                        : AppColors.lightPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  label,
-                  style: Theme.of(context).textTheme.labelSmall,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        )
-        .animate(delay: Duration(milliseconds: delay))
-        .fadeIn(duration: AppConstants.animationNormal)
-        .slideY(begin: 10, end: 0);
-  }
-
-  Widget _buildMenuSection(BuildContext context, bool isDarkMode) {
-    final t = context.read<LocaleProvider>().t;
-    final menuItems = [
-      (t('settingsLabel'), Icons.settings, '/settings'),
-      (t('preferences'), Icons.tune, '/preferences'),
-      (t('about'), Icons.info, '/about'),
-      (t('logout'), Icons.logout, '/login'),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(t('menu'), style: Theme.of(context).textTheme.headlineSmall)
-            .animate(delay: const Duration(milliseconds: 250))
-            .fadeIn(duration: AppConstants.animationNormal),
-        const SizedBox(height: AppConstants.paddingMedium),
-        ...List.generate(
-          menuItems.length,
-          (index) => _buildMenuItem(
-            context,
-            menuItems[index].$1,
-            menuItems[index].$2,
-            menuItems[index].$3,
-            isDarkMode,
-            300 + (index * 50),
-          ),
-        ),
-        const SizedBox(height: AppConstants.paddingMedium),
-        _buildDeleteAccountButton(context, isDarkMode),
-      ],
-    );
-  }
-
-  Widget _buildMenuItem(
-    BuildContext context,
-    String label,
-    IconData icon,
-    String? route,
-    bool isDarkMode,
-    int delay,
-  ) {
-    return GestureDetector(
-      onTap: () async {
-        if (route == '/login') {
-          // "Se déconnecter" : invalider la session avant de naviguer,
-          // sinon l'utilisateur reste authentifié et splash_screen le
-          // renvoie directement sur /home au prochain lancement.
-          await context.read<AuthProvider>().logout();
-          if (!context.mounted) return;
-          context.go('/login');
-          return;
-        }
-        if (route != null) {
-          context.go(route, extra: {'from': 'profile'});
-        }
-      },
-      child:
-          Card(
-                elevation: 0,
-                color: isDarkMode
-                    ? AppColors.darkSurface
-                    : AppColors.lightSurface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(
-                    AppConstants.radiusMedium,
-                  ),
-                  side: BorderSide(
-                    color: isDarkMode
-                        ? const Color.fromRGBO(66, 66, 66, 0.3)
-                        : const Color.fromRGBO(224, 224, 224, 0.5),
-                    width: 1,
-                  ),
-                ),
-                margin: const EdgeInsets.only(
-                  bottom: AppConstants.paddingSmall,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppConstants.paddingMedium,
-                    vertical: AppConstants.paddingMedium,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isDarkMode
-                              ? AppColors.darkTertiary
-                              : AppColors.lightTertiary,
-                        ),
-                        child: Icon(
-                          icon,
-                          color: isDarkMode
-                              ? AppColors.darkPrimary
-                              : AppColors.lightPrimary,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: AppConstants.paddingMedium),
-                      Expanded(
-                        child: Text(
-                          label,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: isDarkMode
-                            ? AppColors.darkHint
-                            : AppColors.lightHint,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-              .animate(delay: Duration(milliseconds: delay))
-              .fadeIn(duration: AppConstants.animationNormal)
-              .slideX(begin: 10, end: 0),
-    );
-  }
+class _Stat extends StatelessWidget {
+  final String value;
+  final String label;
+  const _Stat({required this.value, required this.label});
 
   @override
-  void dispose() {
-    try {
-      _histSub.cancel();
-    } catch (_) {}
-    super.dispose();
-  }
-
-  /// Build delete account button (red text)
-  Widget _buildDeleteAccountButton(BuildContext context, bool isDarkMode) {
-    final t = context.read<LocaleProvider>().t;
-    return GestureDetector(
-      onTap: () {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text(t('deleteAccount')),
-            content: Text(
-              t('confirmIrreversibleAction'),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(t('cancel')),
-              ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(ctx);
-                  await _deleteAccount();
-                },
-                child: Text(
-                  t('delete'),
-                  style: const TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Expanded(
       child: Card(
-        elevation: 0,
-        color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-          side: const BorderSide(color: Colors.red, width: 1),
-        ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.paddingMedium,
-            vertical: AppConstants.paddingMedium,
-          ),
-          child: Row(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          child: Column(
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color.fromRGBO(244, 67, 54, 0.12),
-                ),
-                child: const Icon(Icons.delete, color: Colors.red, size: 20),
-              ),
-              const SizedBox(width: AppConstants.paddingMedium),
-              Expanded(
-                child: Text(
-                  t('deleteAccount'),
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.red),
+              Text(value, style: theme.textTheme.headlineSmall?.copyWith(color: theme.colorScheme.primary)),
+              const SizedBox(height: 2),
+              Text(label, style: theme.textTheme.labelMedium, textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
             ],
           ),
         ),
       ),
     );
-  }
-
-  /// Delete account logic
-  Future<void> _deleteAccount() async {
-    final auth = context.read<AuthProvider>();
-    final user = auth.currentUser;
-    if (user == null) return;
-
-    final contact = user.email.isNotEmpty ? user.email : (user.phone ?? '');
-    try {
-      // Delete from auth service
-      final deleted =
-          await authService.deleteUserByIdentifier(contact);
-      if (!deleted) {
-        if (mounted) {
-          context.showSnackBarMessage(
-            context.read<LocaleProvider>().t('userNotFoundError'),
-          );
-        }
-        return;
-      }
-
-      // Logout
-      await auth.logout();
-
-      if (mounted) {
-        context.go('/login');
-      }
-    } catch (e) {
-      if (mounted) {
-        context.showSnackBarMessage(
-          '${context.read<LocaleProvider>().t('errorPrefix')}: $e',
-        );
-      }
-    }
   }
 }

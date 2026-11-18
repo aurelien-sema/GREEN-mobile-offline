@@ -1,251 +1,135 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'core/theme/app_theme.dart';
+
+import 'core/bootstrap/app_bootstrap.dart';
 import 'core/routing/app_router.dart';
-import 'providers/theme_provider.dart';
+import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
-import 'providers/locale_provider.dart';
-import 'providers/font_size_provider.dart';
-import 'services/storage/storage_service.dart';
-import 'services/gemini/gemini_service.dart';
-import 'services/rag_service.dart';
-import 'providers/scan_provider.dart';
-import 'providers/diseases_provider.dart';
-import 'providers/marketplace_provider.dart';
 import 'providers/cart_provider.dart';
-import 'utils/french_translator.dart';
+import 'providers/diseases_provider.dart';
+import 'providers/font_size_provider.dart';
+import 'providers/locale_provider.dart';
+import 'providers/marketplace_provider.dart';
+import 'providers/theme_provider.dart';
+import 'providers/weather_provider.dart';
+import 'services/green_web/photo_sync_service.dart';
+import 'services/storage/storage_service.dart';
 
 final StorageService storageService = StorageService();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Configure global error handlers
-  FlutterError.onError = (FlutterErrorDetails details) {
+  FlutterError.onError = (details) {
     FlutterError.presentError(details);
-    debugPrint('Flutter Error: ${details.exception}');
-    debugPrint('Stack trace: ${details.stack}');
+    debugPrint('Erreur Flutter : ${details.exception}');
   };
-
-  // Handle errors in async code
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('Uncaught error: $error');
-    debugPrint('Stack trace: $stack');
+    debugPrint('Erreur non gérée : $error\n$stack');
     return true;
   };
 
-  // Custom error widget for better user experience
-  ErrorWidget.builder = (FlutterErrorDetails details) {
-    return MaterialApp(
-      home: Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                const Text(
-                  'Une erreur est survenue',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  details.exception.toString(),
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  };
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
-  debugPrint('=== Green App Initialization Started ===');
+  // Strict minimum avant le premier affichage ; le reste se fait pendant
+  // l'écran de démarrage (AppBootstrap.run).
+  await storageService.init();
+  await AppBootstrap.loadEnv();
+  final locale = LocaleProvider();
+  final fontSize = FontSizeProvider();
+  await Future.wait([locale.initialize(), fontSize.initialize()]);
 
-  // Initialiser le service de stockage
-  try {
-    await storageService.init();
-    debugPrint('✓ Storage service initialized');
-  } catch (e) {
-    debugPrint('✗ Storage service initialization failed: $e');
-    // Continue anyway - app can work without storage
-  }
-
-  // Charger les variables d'environnement (si .env absent, continuer sans planter)
-  // Try loading a packaged asset first (works when the .env is added to pubspec assets)
-  var loaded = false;
-  try {
-    await dotenv.load(fileName: 'assets/.env');
-    debugPrint('✓ Environment variables loaded from assets/.env');
-    loaded = true;
-  } catch (_) {
-    // ignore and try fallback
-  }
-
-  // Fallback: try loading from project root (useful during `flutter run` in some setups)
-  if (!loaded) {
-    try {
-      await dotenv.load(fileName: '.env');
-      debugPrint('✓ Environment variables loaded from .env at project root');
-      loaded = true;
-    } catch (e) {
-      debugPrint('⚠ Warning: .env file not found or error loading. Continuing without environment variables. ($e)');
-    }
-  }
-
-  String? geminiKey;
-  try {
-    geminiKey = dotenv.env['GEMINI_API_KEY'];
-  } catch (_) {
-    geminiKey = null;
-  }
-  // If not found in .env, allow passing via --dart-define at runtime/build time.
-  if (geminiKey == null || geminiKey.isEmpty) {
-    const fromDartDefine = String.fromEnvironment('GEMINI_API_KEY');
-    if (fromDartDefine.isNotEmpty) {
-      geminiKey = fromDartDefine;
-      debugPrint('✓ GEMINI_API_KEY retrieved from --dart-define');
-    }
-  }
-  if (geminiKey == null || geminiKey.isEmpty) {
-    debugPrint('⚠ No GEMINI_API_KEY found in environment variables. Gemini will not be initialized.');
-  } else {
-    try {
-      geminiService.initialize(geminiKey);
-      debugPrint('✓ Gemini service initialized');
-    } catch (e) {
-      debugPrint('✗ Error initializing Gemini: $e');
-    }
-  }
-
-  // Configuration de la barre de statut
-  try {
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.transparent,
-      ),
-    );
-    debugPrint('✓ System UI overlay configured');
-  } catch (e) {
-    debugPrint('✗ Error configuring system UI: $e');
-  }
-
-  // Portrait uniquement
-  try {
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]); 
-    debugPrint('✓ Orientation locked to portrait');
-  } catch (e) {
-    debugPrint('✗ Error setting orientation: $e');
-  }
-
-  // Initialize RAG assets in background before running the app (safe to continue if it fails)
-  try {
-    await RagService.instance.initFromAssets();
-    if (RagService.instance.isInitialized) {
-      debugPrint('✓ RAG assets loaded into memory');
-    } else {
-      debugPrint('⚠ RAG initialization completed but not fully initialized');
-    }
-  } catch (e) {
-    debugPrint('✗ RAG initialization failed: $e');
-  }
-
-  // Initialize French labels translator
-  try {
-    await frenchTranslator.initialize();
-    debugPrint('✓ French labels translator initialized');
-  } catch (e) {
-    debugPrint('✗ French labels translator initialization failed: $e');
-  }
-
-  // Initialize localization provider
-  final localeProvider = LocaleProvider();
-  try {
-    await localeProvider.initialize();
-    debugPrint('✓ Locale provider initialized: ${localeProvider.locale}');
-  } catch (e) {
-    debugPrint('✗ Locale provider initialization failed: $e');
-  }
-
-  // Initialize font size provider
-  final fontSizeProvider = FontSizeProvider();
-  try {
-    await fontSizeProvider.initialize();
-    debugPrint('✓ Font size provider initialized: ${fontSizeProvider.fontSize.name}');
-  } catch (e) {
-    debugPrint('✗ Font size provider initialization failed: $e');
-  }
-
-  // Restore user session from cache if available
-  final authProvider = AuthProvider();
-  try {
-    await authProvider.restoreFromCache();
-    debugPrint('✓ Auth session restored: ${authProvider.isAuthenticated}');
-  } catch (e) {
-    debugPrint('✗ Auth session restoration failed: $e');
-  }
-
-  debugPrint('=== Green App Initialization Completed ===');
-
-  runApp(GreenApp(
-    authProvider: authProvider,
-    localeProvider: localeProvider,
-    fontSizeProvider: fontSizeProvider,
-  ));
+  runApp(GreenApp(localeProvider: locale, fontSizeProvider: fontSize));
 }
 
-class GreenApp extends StatelessWidget {
-  final AuthProvider? authProvider;
+class GreenApp extends StatefulWidget {
   final LocaleProvider? localeProvider;
   final FontSizeProvider? fontSizeProvider;
-  const GreenApp({
-    this.authProvider,
-    this.localeProvider,
-    this.fontSizeProvider,
-    super.key,
-  });
+  final AuthProvider? authProvider;
+
+  const GreenApp({super.key, this.localeProvider, this.fontSizeProvider, this.authProvider});
+
+  @override
+  State<GreenApp> createState() => _GreenAppState();
+}
+
+class _GreenAppState extends State<GreenApp> {
+  late final AuthProvider _auth = widget.authProvider ?? AuthProvider();
+  late final GoRouter _router = createRouter(_auth);
+  final PhotoSyncService _sync = PhotoSyncService();
+  String? _attachedFor;
+
+  @override
+  void initState() {
+    super.initState();
+    // Envoi automatique vers GREEN Web : file commune au téléphone, démarrée
+    // une fois ; à chaque connexion, les analyses jamais envoyées du compte
+    // sont ajoutées à la file.
+    _sync.start();
+    _auth.addListener(_onAuthChanged);
+  }
+
+  void _onAuthChanged() {
+    final id = _auth.currentUser?.id;
+    if (id == _attachedFor) return;
+    _attachedFor = id;
+    _sync.onUserChanged(id);
+  }
+
+  @override
+  void dispose() {
+    _auth.removeListener(_onAuthChanged);
+    _sync.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider<AuthProvider>(create: (_) => authProvider ?? AuthProvider()),
-        ChangeNotifierProvider<LocaleProvider>(create: (_) => localeProvider ?? LocaleProvider()),
-        ChangeNotifierProvider<FontSizeProvider>(create: (_) => fontSizeProvider ?? FontSizeProvider()),
-        ChangeNotifierProvider(create: (_) => ScanProvider()),
+        ChangeNotifierProvider<AuthProvider>.value(value: _auth),
+        ChangeNotifierProvider<LocaleProvider>(create: (_) => widget.localeProvider ?? LocaleProvider()),
+        ChangeNotifierProvider<FontSizeProvider>(create: (_) => widget.fontSizeProvider ?? FontSizeProvider()),
         ChangeNotifierProvider(create: (_) => DiseasesProvider()),
+        ChangeNotifierProvider(create: (_) => WeatherProvider()),
+        ChangeNotifierProvider<PhotoSyncService>.value(value: _sync),
         ChangeNotifierProvider(create: (_) => MarketplaceProvider()),
         ChangeNotifierProvider(create: (_) => CartProvider()),
       ],
-      child: Consumer2<ThemeProvider, LocaleProvider>(
-        builder: (context, themeProvider, localeProvider, child) {
-          return MaterialApp.router(
-            title: 'Green',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme(),
-            darkTheme: AppTheme.darkTheme(),
-            themeMode: themeProvider.themeMode,
-            locale: Locale(localeProvider.locale),
-            // These would be needed for full localization delegate setup
-            // localizationsDelegates: [ ... ],
-            // supportedLocales: [ ... ],
-            routerConfig: appRouter,
-          );
-        },
+      child: Consumer3<ThemeProvider, LocaleProvider, FontSizeProvider>(
+        builder: (context, theme, locale, font, _) => MaterialApp.router(
+          title: 'GREEN',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme(),
+          darkTheme: AppTheme.darkTheme(),
+          themeMode: theme.themeMode,
+          locale: Locale(locale.materialLanguage),
+          supportedLocales: const [Locale('fr'), Locale('en')],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          routerConfig: _router,
+          // Taille du texte choisie dans les Paramètres, appliquée partout et
+          // combinée à celle du système (bornée pour garder des écrans lisibles).
+          builder: (context, child) {
+            final mq = MediaQuery.of(context);
+            final system = mq.textScaler.scale(14) / 14;
+            final factor = (system * font.scale).clamp(0.8, 2.0);
+            return MediaQuery(
+              data: mq.copyWith(textScaler: TextScaler.linear(factor)),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
+        ),
       ),
     );
   }

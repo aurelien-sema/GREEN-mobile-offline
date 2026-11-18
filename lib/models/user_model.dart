@@ -1,70 +1,45 @@
-/// Modèle utilisateur
+import '../services/auth/account_record.dart';
+
+/// Profil de l'utilisateur connecté, tel qu'affiché par l'interface.
 class UserModel {
   final String id;
   final String name;
-  final String username;
   final String email;
   final String? phone;
-  final String? profession;
-  final String? avatarUrl;
+  final String? avatarPath;
   final DateTime memberSince;
+  final bool hasSecurityQuestion;
+  final String? securityQuestionId;
 
-  UserModel({
+  const UserModel({
     required this.id,
     required this.name,
-    required this.username,
     required this.email,
     this.phone,
-    this.profession,
-    this.avatarUrl,
+    this.avatarPath,
     required this.memberSince,
+    this.hasSecurityQuestion = false,
+    this.securityQuestionId,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      username: json['username'] as String,
-      email: json['email'] as String,
-      phone: json['phone'] as String?,
-      profession: json['profession'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
-      memberSince: DateTime.parse(json['member_since'] as String),
-    );
-  }
+  factory UserModel.fromAccount(AccountRecord a) => UserModel(
+        id: a.id,
+        name: a.name,
+        email: a.email,
+        phone: a.phone.isEmpty ? null : a.phone,
+        avatarPath: a.avatarPath,
+        memberSince: a.createdAt,
+        hasSecurityQuestion: a.hasSecurityQuestion,
+        securityQuestionId: a.securityQuestionId,
+      );
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'username': username,
-      'email': email,
-      'phone': phone,
-      'profession': profession,
-      'avatar_url': avatarUrl,
-      'member_since': memberSince.toIso8601String(),
-    };
-  }
+  /// Identifiant de connexion principal à afficher.
+  String get contact => (phone ?? '').isNotEmpty ? phone! : email;
 
-  UserModel copyWith({
-    String? id,
-    String? name,
-    String? username,
-    String? email,
-    String? phone,
-    String? profession,
-    String? avatarUrl,
-    DateTime? memberSince,
-  }) {
-    return UserModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      username: username ?? this.username,
-      email: email ?? this.email,
-      phone: phone ?? this.phone,
-      profession: profession ?? this.profession,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
-      memberSince: memberSince ?? this.memberSince,
-    );
+  String get initials {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
   }
 }

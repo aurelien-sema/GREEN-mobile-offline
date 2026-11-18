@@ -1,112 +1,80 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// Photo de profil : l'image choisie est recadrée puis COPIÉE dans le dossier
+/// privé de l'application (`avatars/`). Cette copie est conservée tant que
+/// l'utilisateur ne la supprime pas, même si l'original est effacé de la
+/// galerie, et même après une déconnexion.
 class ProfileImageService {
-  static final ProfileImageService _instance = ProfileImageService._internal();
-  factory ProfileImageService() => _instance;
-  ProfileImageService._internal();
-
   final ImagePicker _picker = ImagePicker();
 
-  /// Pick and save profile image. [cropTitle] localise le titre de la barre
-  /// d'outils du recadrage natif (image_cropper), à fournir par l'appelant
-  /// qui a accès à la locale courante.
-  Future<String?> pickAndSaveImage(ImageSource source, {String cropTitle = 'Recadrer la photo'}) async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: source,
-        maxWidth: 1000,
-        maxHeight: 1000,
-        imageQuality: 85,
-      );
-
-      if (image == null) return null;
-
-      // Wrap cropping in try/catch to avoid crash if native cropper fails
-      CroppedFile? croppedFile;
-      try {
-        croppedFile = await ImageCropper().cropImage(
-          sourcePath: image.path,
-          aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-          compressQuality: 90,
-          maxWidth: 500,
-          maxHeight: 500,
-          uiSettings: [
-            AndroidUiSettings(
-              toolbarTitle: cropTitle,
-              toolbarColor: const Color(0xFF2E8B57),
-              toolbarWidgetColor: Colors.white,
-              initAspectRatio: CropAspectRatioPreset.square,
-              lockAspectRatio: true,
-            ),
-            IOSUiSettings(
-              title: cropTitle,
-              aspectRatioLockEnabled: true,
-              resetAspectRatioEnabled: false,
-            ),
-          ],
-        );
-      } catch (e) {
-        debugPrint('Cropping failedor cancelled: $e');
-        // If cropping fails, fallback to using the original image
-      }
-
-      // If croppedFile is null (user cancelled crop or error), decided how to handle.
-      // Current behavior: if crop returns null, maybe user just cancelled height.
-      // But if it crashed, we want to be safe. 
-      // User says "application closes", which suggests unhandled exception or native crash.
-      // We will try to save the original image if crop was not obtained?
-      // Usually if user cancels crop, we probably shouldn't save. 
-      // But if it was a crash, we need to be safe.
-      // Let's assume if crop returns null, we check if we should fallback or return null.
-      // If user cancels, it returns null.
-      
-      // If user explicitly cancelled crop (and it wasn't an error), croppedFile is null.
-      // If we just use original, it might be annoying if they cancelled. 
-      // However, to prevent "crash" feeling, let's just proceed with original ONLY IF it wasn't a standard cancellation??
-      // Actually, safest for "crash fix" is to allow original if crop fails.
-      // But if ImageCropper returns null, it usually means "User Cancelled".
-      // The user says "app closes" - this usually implies a crash in the native plugin or Main thread exception.
-      // We added try-catch. Let's return null if crop is null, BUT inside the catch we log.
-      
-      if (croppedFile == null) {
-          // If crop was cancelled, maybe try to use original? 
-          // Or just return null (do nothing).
-          // If the crash happens BEFORE this, it's in pickImage.
-          // I'll assume standard return null is fine, but I'll make sure we catch everything.
-          // Let's rely on the outer try-catch for big crashes.
-          // But I will add a small fix to use original if crop fails for *technical* reasons (simulated via flow).
-          // Actually, let's keep it simple: if crop is null, return null (cancel). 
-          // The crash might be a missing activity in AndroidManifest or something, which I can't fix here.
-          // But I can ensure Dart code doesn't throw.
-          return null;
-      }
-
-      // Save to local storage
-      final directory = await getApplicationDocumentsDirectory();
-      final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final savedImage = await File(croppedFile.path).copy('${directory.path}/$fileName');
-
-      return savedImage.path;
-    } catch (e) {
-      debugPrint('Error picking/saving image: $e');
-      return null;
-    }
+  Future<Directory> _dir() async {
+    final dir = Directory('${(await getApplicationDocumentsDirectory()).path}/avatars');
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
   }
 
-  /// Delete old profile image
-  Future<void> deleteImage(String path) async {
+  /// Renvoie le chemin de la nouvelle copie, ou null si l'utilisateur annule.
+  Future<String?> pickAndStore({
+    required ImageSource source,
+    required String userId,
+    required String cropTitle,
+    required Color toolbarColor,
+  }) async {
+    final picked = await _picker.pickImage(
+      source: source,
+      maxWidth: 1200,
+      maxHeight: 1200,
+      imageQuality: 90,
+      preferredCameraDevice: CameraDevice.front,
+    );
+    if (picked == null) return null;
+
+    String path = picked.path;
     try {
-      final file = File(path);
-      if (await file.exists()) {
-        await file.delete();
-      }
+      final cropped = await ImageCropper().cropImage(
+        sourcePath: picked.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        compressQuality: 90,
+        maxWidth: 600,
+        maxHeight: 600,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: cropTitle,
+            toolbarColor: toolbarColor,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+            hideBottomControls: true,
+          ),
+          IOSUiSettings(title: cropTitle, aspectRatioLockEnabled: true),
+        ],
+      );
+      if (cropped == null) return null; // recadrage annulé
+      path = cropped.path;
     } catch (e) {
-      debugPrint('Error deleting image: $e');
+      // Recadreur natif indisponible : on garde l'image (déjà réduite).
+      debugPrint('Recadrage impossible, image conservée sans recadrage : $e');
+    }
+
+    final dir = await _dir();
+    // Nom horodaté : force le rafraîchissement du cache d'images de Flutter.
+    final target = File('${dir.path}/${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    await File(path).copy(target.path);
+    return target.path;
+  }
+
+  Future<void> delete(String? path) async {
+    if (path == null) return;
+    try {
+      final f = File(path);
+      if (await f.exists()) await f.delete();
+    } catch (e) {
+      debugPrint('Suppression de la photo de profil impossible : $e');
     }
   }
 }

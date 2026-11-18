@@ -1,0 +1,7 @@
+# Tests en conditions réelles (clé Gemini, serveur GREEN Web) : ignorés par
+# défaut, lancés avec  GREEN_LIVE=1 flutter test test/live --tags live
+tags:
+  live:
+    timeout: 4x
+  # Captures d'écran : GREEN_SNAPSHOTS=1 flutter test test/snapshots --tags snapshots
+  snapshots:

@@ -1,139 +1,96 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../providers/locale_provider.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
 import 'package:provider/provider.dart';
-import '../../../shared/widgets/app_pop_scope.dart';
+
+import '../../../core/app_info.dart';
+import '../../../core/theme/spacing.dart';
+import '../../../providers/locale_provider.dart';
+import '../../../shared/ui/ui.dart';
+import '../../../utils/date_formatter.dart';
 
 class AboutScreen extends StatelessWidget {
-  final String? from;
-
-  const AboutScreen({super.key, this.from});
+  const AboutScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    final t = context.watch<LocaleProvider>().t;
+    final l = context.watch<LocaleProvider>();
+    final t = l.t;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-    return AppPopScope(
-      onWillPop: () async {
-        if (from == 'profile') {
-          context.go('/profile');
-        } else {
-          context.go('/home');
-        }
-        return false;
-      },
-      child: Scaffold(
-        backgroundColor: isDarkMode
-            ? AppColors.darkBackground
-            : AppColors.lightBackground,
-        appBar: CustomAppBar(title: t('about'), isDarkMode: isDarkMode),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConstants.paddingLarge),
-            child: Column(
+    return Scaffold(
+      appBar: AppBar(title: Text(t('about'))),
+      body: SafeArea(
+        top: false,
+        child: ListView(
+        padding: Spacing.page,
+        children: [
+          Center(
+            child: Image.asset(
+              isDark ? 'assets/images/logo_dark.png' : 'assets/images/logo_white.png',
+              width: 96,
+              height: 96,
+              cacheWidth: 300,
+            ),
+          ),
+          Spacing.gapBlock,
+          Text(AppInfo.name, style: theme.textTheme.headlineMedium?.copyWith(color: theme.colorScheme.primary), textAlign: TextAlign.center),
+          Text(t('appTagline'), style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
+          const SizedBox(height: 4),
+          Text(
+            '${t('version')} ${AppInfo.fullVersion} · ${formatDate(DateTime.parse(AppInfo.releaseDate), l.locale)}',
+            style: theme.textTheme.bodySmall,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          SectionCard(child: Text(t('aboutDescription'), style: theme.textTheme.bodyLarge)),
+          Spacing.gapBlock,
+          SectionCard(
+            title: t('whatGreenDoes'),
+            child: BulletList(
+              icon: Icons.check_circle_outline_rounded,
+              items: [t('aboutFeature1'), t('aboutFeature2'), t('aboutFeature3'), t('aboutFeature4'), t('aboutFeature5')],
+            ),
+          ),
+          Spacing.gapBlock,
+          SectionCard(
+            title: t('teamSection'),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Logo Section
-                Container(
-                  width: 120,
-                  height: 120,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color.fromRGBO(0, 0, 0, 0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Image.asset('assets/images/logo_dark.png'),
-                ).animate().scale(duration: AppConstants.animationNormal).then().shimmer(delay: 1.seconds, duration: 2.seconds),
-                const SizedBox(height: 24),
-                
-                Text(
-                  'GREEN',
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                  ),
-                ).animate().fadeIn().slideY(begin: 10, end: 0),
-                const SizedBox(height: 8),
-                Text(
-                  'v1.0.0',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Description
-                Text(
-                  t('appDescriptionLong'),
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ).animate(delay: 200.ms).fadeIn(),
-                const SizedBox(height: 32),
-
-                // Contributors Section
-                Container(
-                  padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? AppColors.darkSurface : AppColors.lightSurface,
-                    borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                    border: Border.all(
-                      color: isDarkMode ? AppColors.darkBorder : AppColors.lightBorder,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        t('teamSection'),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Divider(height: 24),
-                      Text(
-                        t('teamDescription'),
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'École Nationale Supérieure Polytechnique de Douala (ENSPD)',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ).animate(delay: 400.ms).fadeIn().slideY(begin: 20, end: 0),
-                
-                const SizedBox(height: 32),
-                
-                // Copyright
-                Text(
-                  t('copyrightNotice'),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-                  ),
-                ),
+                Icon(Icons.school_outlined, color: theme.colorScheme.primary),
+                const SizedBox(width: 12),
+                Expanded(child: Text(t('teamDescription'), style: theme.textTheme.bodyLarge)),
               ],
             ),
           ),
-        ),
+          Spacing.gapBlock,
+          SectionCard(
+            title: t('privacyTitle'),
+            child: BulletList(
+              icon: Icons.lock_outline_rounded,
+              items: [t('privacyPoint1'), t('privacyPoint2'), t('privacyPoint3')],
+            ),
+          ),
+          Spacing.gapBlock,
+          SectionCard(
+            title: t('limitsTitle'),
+            child: Text(t('diagnosisDisclaimer')),
+          ),
+          Spacing.gapBlock,
+          OutlinedButton.icon(
+            onPressed: () => showLicensePage(
+              context: context,
+              applicationName: AppInfo.name,
+              applicationVersion: AppInfo.fullVersion,
+            ),
+            icon: const Icon(Icons.description_outlined),
+            label: Text(t('openSourceLicenses')),
+          ),
+          const SizedBox(height: 16),
+          Text(t('copyrightNotice'), style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
+        ],
       ),
+      )
     );
   }
 }

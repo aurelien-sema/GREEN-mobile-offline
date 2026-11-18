@@ -1,282 +1,445 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
-import 'package:crypto/crypto.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
-enum RegisterResult { success, emailTaken, phoneTaken }
+import '../core/constants/app_constants.dart';
+import 'auth/account_record.dart';
+import 'auth/account_registry.dart';
+import 'auth/password_hasher.dart';
+import 'auth/security_questions.dart';
 
-class UserModel {
-  final String id;
-  final String name;
-  final String email;
-  final String phone;
-  final String passwordHash;
+export 'auth/account_record.dart' show AccountRecord, normalizePhone;
 
-  UserModel({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.phone,
-    required this.passwordHash,
-  });
+enum RegisterError { none, emailTaken, phoneTaken, deviceLimitReached }
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-    id: json['id'],
-    name: json['name'],
-    email: json['email'],
-    phone: json['phone'],
-    passwordHash: json['password_hash'],
-  );
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'email': email,
-    'phone': phone,
-    'password_hash': passwordHash,
-  };
+class RegisterResult {
+  final AccountRecord? account;
+  final RegisterError error;
+  const RegisterResult.ok(AccountRecord this.account) : error = RegisterError.none;
+  const RegisterResult.fail(this.error) : account = null;
+  bool get isSuccess => error == RegisterError.none;
 }
 
+/// Issue d'une tentative de connexion.
+sealed class LoginResult {
+  const LoginResult();
+}
+
+class LoginSuccess extends LoginResult {
+  final AccountRecord account;
+  const LoginSuccess(this.account);
+}
+
+/// Identifiants refusés. [attemptsLeft] : essais restants avant la question
+/// de sécurité (null si l'identifiant ne correspond à aucun compte).
+class LoginInvalid extends LoginResult {
+  final int? attemptsLeft;
+  const LoginInvalid(this.attemptsLeft);
+}
+
+/// Trois échecs : il faut maintenant le nom complet et la réponse à la
+/// question de sécurité du compte.
+class LoginChallengeRequired extends LoginResult {
+  final String accountId;
+  final String questionId;
+  const LoginChallengeRequired(this.accountId, this.questionId);
+}
+
+class LoginLocked extends LoginResult {
+  final DateTime until;
+  final bool noSecurityQuestion;
+  const LoginLocked(this.until, {this.noSecurityQuestion = false});
+}
+
+sealed class ChallengeResult {
+  const ChallengeResult();
+}
+
+class ChallengeSuccess extends ChallengeResult {
+  final String accountId;
+  const ChallengeSuccess(this.accountId);
+}
+
+class ChallengeWrong extends ChallengeResult {
+  final int attemptsLeft;
+  const ChallengeWrong(this.attemptsLeft);
+}
+
+class ChallengeLocked extends ChallengeResult {
+  final DateTime until;
+  const ChallengeLocked(this.until);
+}
+
+class ChallengeUnavailable extends ChallengeResult {
+  const ChallengeUnavailable();
+}
+
+/// Comptes locaux de l'application (aucun serveur : tout reste sur le
+/// téléphone, dans le dossier privé de l'application).
+///
+/// Fichiers :
+/// - `users.json` : comptes (mots de passe et réponses hachés) ;
+/// - `account_registry.json` : registre des comptes créés depuis ce
+///   téléphone, voir [AccountRegistry].
 class AuthService {
   static const _fileName = 'users.json';
-  List<UserModel> _users = [];
-  // OWASP recommande >= 210 000 itérations pour PBKDF2-HMAC-SHA256.
-  // La vérification lit le nombre d'itérations stocké dans chaque hash, donc
-  // augmenter cette constante reste rétro-compatible avec les hash existants.
-  static const _pbkdf2Iterations = 210000;
-  static const _saltLength = 16;
+  static const _recoveryGrantValidity = Duration(minutes: 10);
 
-  Future<File> _getFile() async {
-    final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/$_fileName');
+  final Future<Directory> Function() _dir;
+  final DateTime Function() _now;
+  late final AccountRegistry registry;
+
+  List<AccountRecord> _accounts = [];
+  bool _loaded = false;
+
+  /// Échecs sur des identifiants inconnus (mémoire seulement).
+  final Map<String, int> _unknownFailures = {};
+
+  /// Compte autorisé à changer son mot de passe après une réponse correcte.
+  String? _recoveryAccountId;
+  DateTime? _recoveryGrantedAt;
+
+  AuthService({Future<Directory> Function()? directory, DateTime Function()? clock})
+      : _dir = directory ?? getApplicationDocumentsDirectory,
+        _now = clock ?? DateTime.now {
+    registry = AccountRegistry(_dir);
   }
 
+  Future<File> _file() async => File('${(await _dir()).path}/$_fileName');
+
   Future<void> _load() async {
-    if (_users.isNotEmpty) return;
-    try {
-      final file = await _getFile();
-      if (!await file.exists()) {
-        _users = [];
-        return;
+    if (_loaded) return;
+    final f = await _file();
+    if (await f.exists()) {
+      try {
+        final list = jsonDecode(await f.readAsString()) as List<dynamic>;
+        _accounts = list.map((e) => AccountRecord.fromJson(e as Map<String, dynamic>)).toList();
+      } catch (_) {
+        await f.copy('${f.path}.corrupt');
+        _accounts = [];
       }
-      final content = await file.readAsString();
-      final list = jsonDecode(content) as List<dynamic>;
-      _users = list.map((e) => UserModel.fromJson(e)).toList();
-    } catch (e, st) {
-      // Un fichier users.json corrompu/illisible ne doit pas planter l'app,
-      // mais on trace l'erreur : sinon la connexion échouerait "sans raison"
-      // (liste vide) et le problème serait impossible à diagnostiquer.
-      debugPrint('AuthService: échec du chargement de $_fileName, liste vide utilisée: $e');
-      debugPrint('$st');
-      _users = [];
     }
+    // Normalise les numéros des comptes créés avant la v2.
+    _accounts = _accounts
+        .map((a) => a.phone.isEmpty ? a : a.copyWith(phone: normalizePhone(a.phone)))
+        .toList();
+    _loaded = true;
+    await registry.load();
+    await registry.backfill(_accounts.map((a) => RegistryEntry(
+          accountId: a.id,
+          fullName: a.name,
+          phone: a.phone,
+          email: a.email,
+          createdAt: a.createdAt,
+          securityQuestionId: a.securityQuestionId,
+          securityQuestion: SecurityQuestions.referenceText[a.securityQuestionId],
+          securityAnswerHash: a.securityAnswerHash,
+        )));
   }
 
   Future<void> _save() async {
-    final file = await _getFile();
-    await file.writeAsString(
-      jsonEncode(_users.map((e) => e.toJson()).toList()),
-    );
+    final f = await _file();
+    final tmp = File('${f.path}.tmp');
+    await tmp.writeAsString(jsonEncode(_accounts.map((e) => e.toJson()).toList()));
+    await tmp.rename(f.path);
   }
 
-  // Register with plaintext password; stores PBKDF2 hashed password with salt.
-  // Renvoie la raison précise d'un éventuel échec, pour que l'écran affiche
-  // un message correspondant à ce qui a réellement été saisi (email vs
-  // téléphone) plutôt qu'un message générique "email" quel que soit le cas.
-  Future<RegisterResult> registerWithPassword(UserModel user, String password) async {
+  void _replace(AccountRecord updated) {
+    final i = _accounts.indexWhere((a) => a.id == updated.id);
+    if (i != -1) _accounts[i] = updated;
+  }
+
+  // ---------------------------------------------------------------- lecture
+
+  Future<AccountRecord?> findById(String id) async {
     await _load();
-    // Prevent registering with an email or phone that already exists (if provided)
-    final emailLower = user.email.trim().toLowerCase();
-    final phoneTrim = user.phone.trim();
-    if (emailLower.isNotEmpty &&
-        _users.any((u) => u.email.toLowerCase() == emailLower)) {
-      return RegisterResult.emailTaken;
+    for (final a in _accounts) {
+      if (a.id == id) return a;
     }
-    if (phoneTrim.isNotEmpty &&
-        _users.any((u) => u.phone.trim() == phoneTrim)) {
-      return RegisterResult.phoneTaken;
-    }
-    final hashed = _hashPassword(password);
-    final stored = UserModel(
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      passwordHash: hashed,
-    );
-    _users.add(stored);
-    await _save();
-    return RegisterResult.success;
+    return null;
   }
 
-  /// Variante async sûre de [getUserByIdentifier] : garantit que les
-  /// utilisateurs ont bien été chargés depuis le disque avant la recherche
-  /// (contrairement à la version synchrone, utilisable seulement après un
-  /// premier appel qui a déjà déclenché [_load]).
-  Future<UserModel?> findUserByIdentifier(String identifier) async {
+  /// Recherche par e-mail (si l'identifiant contient « @ ») ou par téléphone.
+  Future<AccountRecord?> findByIdentifier(String identifier) async {
     await _load();
-    return getUserByIdentifier(identifier);
-  }
-
-  /// Réinitialise le mot de passe d'un utilisateur retrouvé par email ou
-  /// téléphone. Utilisé par l'écran "mot de passe oublié" : en l'absence de
-  /// tout backend/email/SMS, la seule vérification d'identité possible ici
-  /// est la connaissance de l'identifiant d'inscription (l'app est locale à
-  /// l'appareil — il n'y a pas de tiers distant à authentifier).
-  Future<bool> resetPasswordForIdentifier(String identifier, String newPassword) async {
-    await _load();
-    final user = getUserByIdentifier(identifier);
-    if (user == null) return false;
-    final index = _users.indexWhere((u) => u.id == user.id);
-    if (index == -1) return false;
-    _users[index] = UserModel(
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      passwordHash: _hashPassword(newPassword),
-    );
-    await _save();
-    return true;
-  }
-
-  /// Get a user by identifier: if identifier contains '@' search email, otherwise phone.
-  UserModel? getUserByIdentifier(String identifier) {
     final id = identifier.trim();
+    if (id.isEmpty) return null;
     if (id.contains('@')) {
-      try {
-        return _users.firstWhere(
-          (u) => u.email.toLowerCase() == id.toLowerCase(),
-        );
-      } catch (_) {
-        return null;
+      final lower = id.toLowerCase();
+      for (final a in _accounts) {
+        if (a.email.toLowerCase() == lower) return a;
       }
-    }
-    try {
-      return _users.firstWhere((u) => u.phone.trim() == id);
-    } catch (_) {
       return null;
     }
+    final phone = normalizePhone(id);
+    for (final a in _accounts) {
+      if (a.phone.isNotEmpty && a.phone == phone) return a;
+    }
+    return null;
   }
 
-  /// Login with either email or phone identifier.
-  Future<UserModel?> loginWithIdentifierAndPassword(
-    String identifier,
-    String password,
-  ) async {
+  /// Nombre de comptes encore créables depuis ce téléphone.
+  Future<int> remainingAccountSlots() async {
     await _load();
-    try {
-      final user = getUserByIdentifier(identifier);
-      if (user != null && _verifyPassword(password, user.passwordHash)) {
-        return user;
+    final left = AppConstants.maxAccountsPerDevice - registry.createdCount;
+    return left < 0 ? 0 : left;
+  }
+
+  // ------------------------------------------------------------- inscription
+
+  Future<RegisterResult> register({
+    required String name,
+    required String email,
+    required String phone,
+    required String password,
+    required String securityQuestionId,
+    required String securityAnswer,
+  }) async {
+    await _load();
+    if (registry.createdCount >= AppConstants.maxAccountsPerDevice) {
+      return const RegisterResult.fail(RegisterError.deviceLimitReached);
+    }
+    final emailLower = email.trim().toLowerCase();
+    final phoneNorm = phone.trim().isEmpty ? '' : normalizePhone(phone);
+    if (emailLower.isNotEmpty && _accounts.any((a) => a.email.toLowerCase() == emailLower)) {
+      return const RegisterResult.fail(RegisterError.emailTaken);
+    }
+    if (phoneNorm.isNotEmpty && _accounts.any((a) => a.phone == phoneNorm)) {
+      return const RegisterResult.fail(RegisterError.phoneTaken);
+    }
+    if (!SecurityQuestions.isValid(securityQuestionId)) {
+      throw ArgumentError.value(securityQuestionId, 'securityQuestionId');
+    }
+
+    final passwordHash = await PasswordHasher.hash(password);
+    final answerHash = await PasswordHasher.hash(normalizeSecret(securityAnswer));
+    final account = AccountRecord(
+      id: const Uuid().v4(),
+      name: name.trim().replaceAll(RegExp(r'\s+'), ' '),
+      email: emailLower,
+      phone: phoneNorm,
+      passwordHash: passwordHash,
+      createdAt: _now(),
+      securityQuestionId: securityQuestionId,
+      securityAnswerHash: answerHash,
+    );
+    _accounts.add(account);
+    await _save();
+    await registry.add(RegistryEntry(
+      accountId: account.id,
+      fullName: account.name,
+      phone: account.phone,
+      email: account.email,
+      createdAt: account.createdAt,
+      securityQuestionId: securityQuestionId,
+      securityQuestion: SecurityQuestions.referenceText[securityQuestionId],
+      securityAnswerHash: answerHash,
+    ));
+    return RegisterResult.ok(account);
+  }
+
+  // --------------------------------------------------------------- connexion
+
+  Future<LoginResult> login(String identifier, String password) async {
+    await _load();
+    final now = _now();
+    var account = await findByIdentifier(identifier);
+    final max = AppConstants.maxFailedLoginsBeforeChallenge;
+
+    if (account == null) {
+      final key = identifier.trim().toLowerCase();
+      final count = (_unknownFailures[key] ?? 0) + 1;
+      _unknownFailures[key] = count;
+      return const LoginInvalid(null);
+    }
+
+    if (account.isLocked(now)) {
+      return LoginLocked(account.lockedUntil!, noSecurityQuestion: !account.hasSecurityQuestion);
+    }
+    // Verrou expiré d'un compte sans question : nouvelle série d'essais.
+    if (account.lockedUntil != null && !account.hasSecurityQuestion) {
+      account = account.copyWith(failedLogins: 0, clearLock: true);
+      _replace(account);
+      await _save();
+    }
+
+    if (account.failedLogins >= max && account.hasSecurityQuestion) {
+      return LoginChallengeRequired(account.id, account.securityQuestionId!);
+    }
+
+    if (await PasswordHasher.verify(password, account.passwordHash)) {
+      final reset = account.copyWith(failedLogins: 0, failedAnswers: 0, clearLock: true);
+      _replace(reset);
+      await _save();
+      return LoginSuccess(reset);
+    }
+
+    final failures = account.failedLogins + 1;
+    if (failures >= max) {
+      if (account.hasSecurityQuestion) {
+        _replace(account.copyWith(failedLogins: failures));
+        await _save();
+        return LoginChallengeRequired(account.id, account.securityQuestionId!);
       }
-    } catch (e) {
-      debugPrint('AuthService: erreur inattendue lors de la connexion par identifiant: $e');
+      final until = now.add(AppConstants.securityLockDuration);
+      _replace(account.copyWith(failedLogins: failures, lockedUntil: until));
+      await _save();
+      return LoginLocked(until, noSecurityQuestion: true);
     }
-    return null;
+    _replace(account.copyWith(failedLogins: failures));
+    await _save();
+    return LoginInvalid(max - failures);
   }
 
-  // Login using plaintext password; verifies against stored PBKDF2 hash.
-  Future<UserModel?> loginWithEmailAndPassword(
-    String email,
-    String password,
-  ) async {
+  /// Vérification d'identité après trois échecs : nom complet + réponse à
+  /// la question de sécurité. Le message d'erreur ne dit pas lequel des
+  /// deux est faux.
+  Future<ChallengeResult> answerChallenge({
+    required String identifier,
+    required String fullName,
+    required String answer,
+  }) async {
     await _load();
-    try {
-      final user = _users.firstWhere(
-        (u) => u.email.toLowerCase() == email.toLowerCase(),
-      );
-      if (_verifyPassword(password, user.passwordHash)) return user;
-    } catch (e) {
-      debugPrint('AuthService: erreur inattendue lors de la connexion par email: $e');
+    final now = _now();
+    final account = await findByIdentifier(identifier);
+    if (account == null || !account.hasSecurityQuestion) return const ChallengeUnavailable();
+    if (account.failedLogins < AppConstants.maxFailedLoginsBeforeChallenge) {
+      return const ChallengeUnavailable();
     }
-    return null;
+    if (account.isLocked(now)) return ChallengeLocked(account.lockedUntil!);
+
+    final nameOk = normalizeSecret(fullName) == normalizeSecret(account.name);
+    final answerOk = await PasswordHasher.verify(normalizeSecret(answer), account.securityAnswerHash!);
+    if (nameOk && answerOk) {
+      _replace(account.copyWith(failedAnswers: 0, clearLock: true));
+      await _save();
+      _recoveryAccountId = account.id;
+      _recoveryGrantedAt = now;
+      return ChallengeSuccess(account.id);
+    }
+
+    final failures = account.failedAnswers + 1;
+    if (failures >= AppConstants.maxFailedSecurityAnswers) {
+      final until = now.add(AppConstants.securityLockDuration);
+      _replace(account.copyWith(failedAnswers: 0, lockedUntil: until));
+      await _save();
+      return ChallengeLocked(until);
+    }
+    _replace(account.copyWith(failedAnswers: failures));
+    await _save();
+    return ChallengeWrong(AppConstants.maxFailedSecurityAnswers - failures);
   }
 
-  // PBKDF2 implementation (HMAC-SHA256)
-  String _hashPassword(String password) {
-    final salt = _generateSalt(_saltLength);
-    final dk = _pbkdf2(utf8.encode(password), salt, _pbkdf2Iterations, 32);
-    final saltB64 = base64Encode(salt);
-    final dkB64 = base64Encode(dk);
-    return 'pbkdf2_sha256\$$_pbkdf2Iterations\$$saltB64\$$dkB64';
+  /// Nouveau mot de passe après une réponse correcte (valable 10 minutes).
+  Future<AccountRecord?> completeRecovery(String accountId, String newPassword) async {
+    await _load();
+    final granted = _recoveryGrantedAt;
+    if (_recoveryAccountId != accountId ||
+        granted == null ||
+        _now().difference(granted) > _recoveryGrantValidity) {
+      return null;
+    }
+    final account = await findById(accountId);
+    if (account == null) return null;
+    final updated = account.copyWith(
+      passwordHash: await PasswordHasher.hash(newPassword),
+      failedLogins: 0,
+      failedAnswers: 0,
+      clearLock: true,
+    );
+    _replace(updated);
+    await _save();
+    _recoveryAccountId = null;
+    _recoveryGrantedAt = null;
+    return updated;
   }
 
-  bool _verifyPassword(String password, String stored) {
-    try {
-      final parts = stored.split('\$');
-      if (parts.length != 4) return false;
-      final iterations = int.parse(parts[1]);
-      final salt = base64Decode(parts[2]);
-      final derived = base64Decode(parts[3]);
-      final dk = _pbkdf2(
-        utf8.encode(password),
-        salt,
-        iterations,
-        derived.length,
-      );
-      return _constantTimeEquals(dk, derived);
-    } catch (_) {
+  // ------------------------------------------------------- gestion du compte
+
+  Future<bool> verifyPassword(String accountId, String password) async {
+    final account = await findById(accountId);
+    if (account == null) return false;
+    return PasswordHasher.verify(password, account.passwordHash);
+  }
+
+  Future<bool> changePassword(String accountId, String current, String next) async {
+    final account = await findById(accountId);
+    if (account == null || !await PasswordHasher.verify(current, account.passwordHash)) {
       return false;
     }
-  }
-
-  List<int> _generateSalt(int length) {
-    final rnd = Random.secure();
-    return List<int>.generate(length, (_) => rnd.nextInt(256));
-  }
-
-  Uint8List _pbkdf2(
-    List<int> password,
-    List<int> salt,
-    int iterations,
-    int dkLen,
-  ) {
-    final hLen = 32; // SHA-256 output
-    final blocks = (dkLen + hLen - 1) ~/ hLen;
-    final out = <int>[];
-    for (var i = 1; i <= blocks; i++) {
-      final blockIndex = <int>[
-        (i >> 24) & 0xff,
-        (i >> 16) & 0xff,
-        (i >> 8) & 0xff,
-        i & 0xff,
-      ];
-      var u = Hmac(
-        sha256,
-        password,
-      ).convert(<int>[...salt, ...blockIndex]).bytes;
-      final t = List<int>.from(u);
-      for (var j = 1; j < iterations; j++) {
-        u = Hmac(sha256, password).convert(u).bytes;
-        for (var k = 0; k < t.length; k++) {
-          t[k] ^= u[k];
-        }
-      }
-      out.addAll(t);
-    }
-    return Uint8List.fromList(out.sublist(0, dkLen));
-  }
-
-  bool _constantTimeEquals(List<int> a, List<int> b) {
-    if (a.length != b.length) return false;
-    var diff = 0;
-    for (var i = 0; i < a.length; i++) {
-      diff |= a[i] ^ b[i];
-    }
-    return diff == 0;
-  }
-
-  /// Delete a user by identifier (email or phone).
-  Future<bool> deleteUserByIdentifier(String identifier) async {
-    await _load();
-    final user = getUserByIdentifier(identifier);
-    if (user == null) return false;
-    _users.removeWhere((u) => u.id == user.id);
+    _replace(account.copyWith(passwordHash: await PasswordHasher.hash(next)));
     await _save();
     return true;
+  }
+
+  /// Définit (ou change) la question de sécurité. [currentPassword] est exigé
+  /// sauf juste après une connexion réussie d'un ancien compte qui n'en avait
+  /// pas ([trustedSession] = true).
+  Future<bool> setSecurityQuestion(
+    String accountId,
+    String questionId,
+    String answer, {
+    String? currentPassword,
+    bool trustedSession = false,
+  }) async {
+    final account = await findById(accountId);
+    if (account == null || !SecurityQuestions.isValid(questionId)) return false;
+    if (!trustedSession) {
+      if (currentPassword == null ||
+          !await PasswordHasher.verify(currentPassword, account.passwordHash)) {
+        return false;
+      }
+    }
+    final answerHash = await PasswordHasher.hash(normalizeSecret(answer));
+    _replace(account.copyWith(securityQuestionId: questionId, securityAnswerHash: answerHash));
+    await _save();
+    await registry.update(
+      accountId,
+      (e) => RegistryEntry(
+        accountId: e.accountId,
+        fullName: e.fullName,
+        phone: e.phone,
+        email: e.email,
+        createdAt: e.createdAt,
+        securityQuestionId: questionId,
+        securityQuestion: SecurityQuestions.referenceText[questionId],
+        securityAnswerHash: answerHash,
+        status: e.status,
+        deletedAt: e.deletedAt,
+      ),
+    );
+    return true;
+  }
+
+  Future<AccountRecord?> setAvatarPath(String accountId, String? path) async {
+    final account = await findById(accountId);
+    if (account == null) return null;
+    final updated = path == null ? account.copyWith(clearAvatar: true) : account.copyWith(avatarPath: path);
+    _replace(updated);
+    await _save();
+    return updated;
+  }
+
+  /// Supprime le compte après vérification du mot de passe. La ligne du
+  /// registre est conservée mais anonymisée.
+  Future<bool> deleteAccount(String accountId, String password) async {
+    final account = await findById(accountId);
+    if (account == null || !await PasswordHasher.verify(password, account.passwordHash)) {
+      return false;
+    }
+    _accounts.removeWhere((a) => a.id == accountId);
+    await _save();
+    await registry.update(accountId, (e) => e.anonymized(_now()));
+    return true;
+  }
+
+  /// Pour les tests : oublie l'état chargé en mémoire.
+  void resetCache() {
+    _loaded = false;
+    _accounts = [];
+    _unknownFailures.clear();
   }
 }
 

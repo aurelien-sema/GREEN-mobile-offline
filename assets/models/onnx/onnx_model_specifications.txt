@@ -1,0 +1,145 @@
+Spécifications du modèle ONNX - Classification des maladies des plantes
+=========================================================================
+
+Fichiers à intégrer dans l'application mobile
+------------------------------------------------
+- Modèle    : efficientnet_11classes.onnx
+- Labels    : liste des 11 classes ci-dessous (à mettre dans un fichier
+              labels.txt, une classe par ligne, dans le MÊME ORDRE)
+
+Informations générales sur le modèle
+------------------------------------
+- Architecture   : EfficientNet-B0 (backbone timm, tête de classification
+                    personnalisée : Dropout + Linear)
+- Framework      : entraîné avec PyTorch, exporté au format ONNX
+- Opset ONNX     : 13
+- Runtime conseillé côté mobile : ONNX Runtime Mobile
+                    (onnxruntime-android / onnxruntime-objc / onnxruntime
+                    via plugin Flutter selon la techno de l'app)
+- Nombre de classes : 11
+- Le modèle NE contient PAS de couche softmax finale : la sortie est
+  constituée de logits bruts (voir section "Sortie du modèle")
+
+Nom des tenseurs d'entrée / sortie (IMPORTANT)
+-----------------------------------------------
+- Nom du tenseur d'entrée  : "input"
+- Nom du tenseur de sortie : "output"
+(Ces noms doivent être utilisés tels quels lors de l'appel à la session
+d'inférence ONNX Runtime : session.run([...output_name], {input_name: ...}))
+
+Dimension d'entrée attendue
+----------------------------
+- Taille d'image attendue par le modèle : 224 x 224 pixels
+- Format de canal : RGB (3 canaux)
+- Forme du tenseur d'entrée : [1, 3, 224, 224]  → ATTENTION, format NCHW
+  (batch, canaux, hauteur, largeur), et NON PAS NHWC comme en TFLite
+- Type de données du tenseur d'entrée : float32
+- Taille du buffer d'entrée : 1 * 3 * 224 * 224 = 150 528 éléments float32
+
+Prétraitement des images (à reproduire EXACTEMENT côté mobile)
+-----------------------------------------------------------------
+Le prétraitement utilisé pendant l'entraînement/validation (et donc
+attendu par le modèle) est le suivant, dans cet ordre précis :
+
+1. Charger l'image et la convertir en RGB (3 canaux, pas d'alpha)
+2. Redimensionner (Resize) l'image de sorte que son plus petit côté
+   fasse : round(224 * 1.14) = 255 pixels
+   (équivalent à torchvision.transforms.Resize(255))
+3. Recadrage central (CenterCrop) à 224 x 224 pixels
+   - left = (255 - 224) / 2
+   - top  = (255 - 224) / 2
+   - crop de (left, top) à (left + 224, top + 224)
+4. Convertir les valeurs de pixels en float32 et les ramener dans
+   l'intervalle [0, 1] (diviser par 255.0)
+5. Normaliser CHAQUE CANAL avec les statistiques ImageNet :
+   - mean = [0.485, 0.456, 0.406]   (R, G, B)
+   - std  = [0.229, 0.224, 0.225]   (R, G, B)
+   - formule par canal : valeur_normalisée = (valeur_pixel - mean) / std
+6. Réorganiser les données de HWC (hauteur, largeur, canal) vers CHW
+   (canal, hauteur, largeur) — c'est le format attendu par ONNX/PyTorch
+7. Ajouter la dimension de batch → forme finale [1, 3, 224, 224]
+
+Remarques importantes
+- PAS de normalisation simple [0,1] seule et PAS de normalisation
+  [-1, 1] : il faut appliquer la normalisation ImageNet (mean/std)
+  décrite ci-dessus, sinon les prédictions seront fausses/incohérentes.
+- Le code ne gère pas l'orientation EXIF automatiquement : si la
+  librairie image mobile ne corrige pas l'EXIF, il faut le faire
+  manuellement avant le resize.
+- Le redimensionnement doit être fait AVANT le crop central, pas un
+  simple resize direct en 224x224 (cela déformerait l'image et
+  dégraderait la précision).
+
+Traitement / inférence côté mobile
+--------------------------------------
+- Charger le modèle via ONNX Runtime (InferenceSession / OrtSession
+  selon la plateforme)
+- Récupérer le tenseur d'entrée nommé "input" et le tenseur de sortie
+  nommé "output"
+- Taille de batch : toujours 1 (le modèle a été exporté avec une forme
+  fixe [1, 3, 224, 224], sans axes dynamiques - ne pas envoyer plusieurs
+  images dans un même appel)
+- Lancer l'inférence : session.run(["output"], {"input": tenseur_pretraite})
+
+Sortie du modèle
+-----------------
+- Forme du tenseur de sortie : [1, 11]
+- Type de sortie : float32
+- Ce sont des LOGITS BRUTS (pas de softmax appliqué dans le graphe ONNX)
+- Il FAUT appliquer un softmax manuellement côté application pour obtenir
+  des probabilités exploitables :
+    softmax(x_i) = exp(x_i - max(x)) / somme(exp(x_j - max(x)) pour tout j)
+- La classe prédite = index du logit (ou de la probabilité) maximal
+- La confiance = valeur de la probabilité softmax de la classe prédite
+  (valeur entre 0 et 1, à multiplier par 100 pour un pourcentage)
+
+Liste des classes (ordre exact = ordre des labels attendu, index 0 à 10)
+----------------------------------------------------------------------------
+0.  Cassava Mosaic
+1.  Corn Brown Spots
+2.  Corn Healthy
+3.  Corn Mildew
+4.  Corn Streak
+5.  Corn Stripe
+6.  Corn Yellowing
+7.  Corn leaf blight
+8.  Tomato Brown Spots
+9.  Tomato blight leaf
+10. Tomato healthy
+
+(Cet ordre correspond à l'ordre alphabétique des dossiers de
+data/train, tel que produit automatiquement par torchvision
+ImageFolder / class_to_idx lors de l'entraînement.)
+
+Résultat à retourner par l'API de classification côté app
+--------------------------------------------------------------
+- label      : nom de la classe prédite (voir liste ci-dessus)
+- confidence : score de confiance (probabilité softmax) de la classe
+               dominante, entre 0 et 1
+- index      : indice de la classe prédite (0 à 10)
+(Optionnel mais recommandé : renvoyer aussi le top-3 des classes avec
+leur probabilité, comme fait côté notebook pour le débogage.)
+
+Hypothèses et limites explicites du modèle
+------------------------------------------------
+- Le modèle est un classificateur image simple, une seule entrée et une
+  seule sortie (pas de sorties multiples/têtes annexes)
+- La forme d'entrée est fixe [1, 3, 224, 224] : pas de redimensionnement
+  dynamique pris en charge par le graphe, le prétraitement doit produire
+  exactement cette forme
+- Aucune augmentation de données n'est appliquée en inférence (le
+  CenterCrop remplace le RandomResizedCrop utilisé à l'entraînement)
+- Le modèle suppose que labels.txt (ou la liste codée en dur) correspond
+  exactement à l'ordre des 11 classes listé ci-dessus
+- Testé et validé équivalent (mêmes prédictions) entre PyTorch, ONNX et
+  TFLite float32 avec ce prétraitement exact (voir cellules de test du
+  notebook efficientnetB0_classification.ipynb)
+
+Fichier de référence pour comparaison
+------------------------------------------
+Une version TFLite du même modèle existe également
+(voir tflite_model_specifications.txt) avec un pipeline de prétraitement
+différent (pas de normalisation ImageNet, entrée NHWC). NE PAS mélanger
+les deux pipelines de prétraitement : chaque modèle (.onnx vs .tflite)
+doit utiliser SON prétraitement propre, décrit dans son fichier de
+spécifications respectif.

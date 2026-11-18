@@ -1,204 +1,113 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../core/constants/app_colors.dart';
-import '../../providers/theme_provider.dart';
-import '../../providers/locale_provider.dart';
-import 'app_drawer.dart';
-import 'app_pop_scope.dart';
 
-/// Widget shell pour gérer la navigation principale avec BottomNavigationBar
+import '../../providers/locale_provider.dart';
+import '../../services/green_web/photo_sync_service.dart';
+
+/// Coque des quatre onglets principaux (Accueil, Scanner, GreenBot, Marché).
+///
+/// Corrections v2 :
+/// - barre de navigation Material 3 ancrée en bas (l'ancienne barre
+///   flottante, avec `extendBody`, recouvrait la fin des listes et le champ
+///   de saisie du chat) ;
+/// - retour système : depuis un onglet autre que l'Accueil, revient à
+///   l'Accueil ; depuis l'Accueil, demande confirmation puis quitte vraiment
+///   l'application (la v1 rouvrait la boîte de dialogue en boucle) ;
+/// - au retour dans l'application, les photos en attente sont envoyées.
 class MainNavigationShell extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
-
   const MainNavigationShell({super.key, required this.navigationShell});
 
   @override
   State<MainNavigationShell> createState() => _MainNavigationShellState();
 }
 
-class _MainNavigationShellState extends State<MainNavigationShell>
-    with SingleTickerProviderStateMixin {
-  late int _selectedIndex;
-  late AnimationController _animationController;
-  late Animation<Offset> _slideAnimation;
-
+class _MainNavigationShellState extends State<MainNavigationShell> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    _selectedIndex = widget.navigationShell.currentIndex;
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero).animate(
-          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-        );
-  }
-
-  @override
-  void didUpdateWidget(MainNavigationShell oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Update selected index when the navigation shell's current index changes
-    if (widget.navigationShell.currentIndex != _selectedIndex) {
-      setState(() {
-        _selectedIndex = widget.navigationShell.currentIndex;
-      });
-      _animationController.forward(from: 0.0);
-    }
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  void _onItemTapped(int index) {
-    if (_selectedIndex != index) {
-      setState(() {
-        _selectedIndex = index;
-      });
-      _animationController.forward(from: 0.0);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final lang = context.read<LocaleProvider>().locale;
+      context.read<PhotoSyncService>().syncPending(lang: lang);
     }
+  }
 
-    widget.navigationShell.goBranch(
-      index,
-      initialLocation: index == widget.navigationShell.currentIndex,
+  void _select(int index) {
+    widget.navigationShell.goBranch(index, initialLocation: index == widget.navigationShell.currentIndex);
+  }
+
+  Future<void> _onBack() async {
+    if (widget.navigationShell.currentIndex != 0) {
+      _select(0);
+      return;
+    }
+    final t = context.read<LocaleProvider>().t;
+    final quit = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(t('quit')),
+        content: Text(t('quitAppConfirm')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))),
+          FilledButton(
+            style: FilledButton.styleFrom(minimumSize: const Size(64, 44)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t('quit')),
+          ),
+        ],
+      ),
     );
+    if (quit == true) await SystemNavigator.pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
     final t = context.watch<LocaleProvider>().t;
-
-    return AppPopScope(
-      onWillPop: () async {
-        // If not on home tab, switch to home instead of exiting
-        final currentIndex = widget.navigationShell.currentIndex;
-        if (currentIndex != 0) {
-          widget.navigationShell.goBranch(0);
-          return false;
-        }
-
-        // If on home, ask for confirmation to exit
-        final shouldExit = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(t('quit')),
-            content: Text(t('quitAppConfirm')),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(t('cancel')),
-              ),
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(t('quit')),
-              ),
-            ],
-          ),
-        );
-
-        if (shouldExit == true) {
-          return true;
-        }
-        return false;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _onBack();
       },
       child: Scaffold(
-        drawer: const AppDrawer(),
         body: widget.navigationShell,
-        extendBody: true,
-        bottomNavigationBar: AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            return SlideTransition(
-              position: _slideAnimation,
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 20, left: 20, right: 20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color.fromRGBO(0, 0, 0, 0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(30),
-                  child: BottomNavigationBar(
-                    currentIndex: _selectedIndex,
-                    onTap: _onItemTapped,
-                    type: BottomNavigationBarType.fixed,
-                    backgroundColor: isDarkMode
-                        ? const Color.fromRGBO(30, 30, 30, 0.95)
-                        : const Color.fromRGBO(255, 255, 255, 0.95),
-                    selectedItemColor: isDarkMode
-                        ? AppColors.darkPrimary
-                        : AppColors.lightPrimary,
-                    unselectedItemColor: isDarkMode
-                        ? AppColors.darkHint
-                        : Color(0xFF999999),
-                    elevation: 0,
-                    items: [
-                      BottomNavigationBarItem(
-                        icon: ScaleTransition(
-                          scale: Tween<double>(begin: 1, end: 1.2).animate(
-                            CurvedAnimation(
-                              parent: _animationController,
-                              curve: Curves.elasticOut,
-                            ),
-                          ),
-                          child: const Icon(Icons.home),
-                        ),
-                        label: t('home'),
-                      ),
-                      BottomNavigationBarItem(
-                        icon: ScaleTransition(
-                          scale: Tween<double>(begin: 1, end: 1.2).animate(
-                            CurvedAnimation(
-                              parent: _animationController,
-                              curve: Curves.elasticOut,
-                            ),
-                          ),
-                          child: const Icon(Icons.camera_alt),
-                        ),
-                        label: t('scanner'),
-                      ),
-                      BottomNavigationBarItem(
-                        icon: ScaleTransition(
-                          scale: Tween<double>(begin: 1, end: 1.2).animate(
-                            CurvedAnimation(
-                              parent: _animationController,
-                              curve: Curves.elasticOut,
-                            ),
-                          ),
-                          child: const Icon(Icons.chat_bubble),
-                        ),
-                        label: t('greenBot'),
-                      ),
-                      BottomNavigationBarItem(
-                        icon: ScaleTransition(
-                          scale: Tween<double>(begin: 1, end: 1.2).animate(
-                            CurvedAnimation(
-                              parent: _animationController,
-                              curve: Curves.elasticOut,
-                            ),
-                          ),
-                          child: const Icon(Icons.shopping_bag),
-                        ),
-                        label: t('marketplaceTitle'),
-                      ),
-                    ],
-                  ), // BottomNavigationBar
-                ), // ClipRRect
-              ), // Container
-            ); // SlideTransition
-          },
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: widget.navigationShell.currentIndex,
+          onDestinationSelected: _select,
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home_rounded),
+              label: t('home'),
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.center_focus_weak_rounded),
+              selectedIcon: const Icon(Icons.center_focus_strong_rounded),
+              label: t('scanner'),
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.chat_bubble_outline_rounded),
+              selectedIcon: const Icon(Icons.chat_bubble_rounded),
+              label: t('greenBot'),
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.storefront_outlined),
+              selectedIcon: const Icon(Icons.storefront_rounded),
+              label: t('marketplaceTitle'),
+            ),
+          ],
         ),
       ),
     );

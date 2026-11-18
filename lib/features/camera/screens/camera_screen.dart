@@ -1,23 +1,20 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../providers/locale_provider.dart';
-import '../../../providers/scan_provider.dart';
-import '../../../services/history_service.dart';
-import 'package:green_app/models/scan_result_model.dart';
-import '../../../shared/widgets/custom_app_bar.dart';
-import '../../../shared/widgets/animation_effects.dart';
-import '../../../shared/widgets/gradient_background.dart';
-import '../../../shared/widgets/custom_scroll_physics.dart';
-import 'field_sheet_screen.dart';
-import '../../../core/extensions/context_extensions.dart';
 
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+
+import '../../../core/theme/spacing.dart';
+import '../../../providers/diseases_provider.dart';
+import '../../../providers/locale_provider.dart';
+import '../../../services/green_web/photo_sync_service.dart';
+import '../../../services/history_service.dart';
+import '../../../services/vision_service.dart';
+import '../../../shared/ui/ui.dart';
+import '../../../shared/widgets/custom_app_bar.dart';
+
+/// Scanner : photo (appareil ou galerie) → analyse hors ligne → fiche terrain.
 class CameraScreen extends StatefulWidget {
   const CameraScreen({super.key});
 
@@ -26,446 +23,209 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  final ImagePicker _imagePicker = ImagePicker();
-  XFile? _selectedImage;
-  bool _isLoading = false;
+  final _picker = ImagePicker();
+  File? _image;
+  bool _analysing = false;
 
-  Future<void> _pickImageFromCamera() async {
-    final XFile? image = await _imagePicker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 80,
-    );
+  Future<void> _pick(ImageSource source) async {
+    final t = context.read<LocaleProvider>().t;
+    XFile? picked;
+    try {
+      picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 92,
+        requestFullMetadata: false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('cameraUnavailable'))));
+      return;
+    }
+    if (picked == null || !mounted) return;
+    setState(() => _image = File(picked!.path));
+    await _analyse(source == ImageSource.camera ? 'camera' : 'gallery');
+  }
 
-    if (image != null) {
-      setState(() => _selectedImage = image);
-      _analyzeImage();
+  Future<void> _analyse(String source) async {
+    final image = _image;
+    if (image == null) return;
+    final t = context.read<LocaleProvider>().t;
+    final catalog = context.read<DiseasesProvider>();
+    final sync = context.read<PhotoSyncService>();
+    setState(() => _analysing = true);
+    try {
+      var result = await visionService.analyze(image, catalog: catalog, source: source);
+      await historyService.addScan(result);
+      result = await sync.enqueue(result);
+      if (!mounted) return;
+      setState(() {
+        _analysing = false;
+        _image = null;
+      });
+      if (result.isError) {
+        _showError();
+      } else {
+        context.push('/scan/${result.id}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _analysing = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('analysisError'))));
     }
   }
 
-  Future<void> _pickImageFromGallery() async {
-    final XFile? image = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-    );
-
-    if (image != null) {
-      setState(() => _selectedImage = image);
-      _analyzeImage();
-    }
-  }
-
-  void _analyzeImage() {
-    if (_selectedImage == null) return;
-    setState(() => _isLoading = true);
-
+  void _showError() {
     final t = context.read<LocaleProvider>().t;
-    final file = File(_selectedImage!.path);
-
-    // Use the ScanProvider which calls the VisionService (remote or mock)
-    final scanProvider = context.read<ScanProvider>();
-
-    scanProvider
-        .analyzePlantImage(file)
-        .then((success) async {
-          if (!mounted) return;
-          setState(() => _isLoading = false);
-          if (success) {
-            final ScanResultModel? result = scanProvider.currentScanResult;
-            if (result != null) {
-              if (result.diseaseId == 'unknown' || result.diseaseId == 'uncertain') {
-                _showUnknownImageDialog(message: result.treatment);
-              } else {
-                // Persist to local history for offline access
-                bool saved = true;
-                try {
-                  await historyService.addScan(result);
-                } catch (_) {
-                  saved = false;
-                }
-                if (!mounted) return;
-                if (!saved) {
-                  context.showSnackBarMessage(t('historySaveFailed'));
-                }
-                // Naviguer vers la fiche terrain (offline) au lieu d'une pop-up
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (ctx) => FieldSheetScreen(scanResult: result),
-                  ),
-                );
-              }
-            } else {
-              context.showSnackBarMessage(t('noResultAvailable'));
-            }
-          } else {
-            context.showSnackBarMessage(
-              '${t('analysisFailedPrefix')}: ${scanProvider.error ?? t('unknownError')}',
-            );
-          }
-        })
-        .catchError((e) {
-          if (!mounted) return;
-          setState(() => _isLoading = false);
-          context.showSnackBarMessage('${t('analysisErrorPrefix')}: $e');
-        });
-  }
-
-  // Résultats d'analyse: affichage remplacé par la Fiche terrain (FieldSheetScreen) pour être entièrement offline et plus conviviale.
-  void _showUnknownImageDialog({String? message}) {
-    final isDarkMode = context.read<ThemeProvider>().isDarkMode;
-    final t = context.read<LocaleProvider>().t;
-
-    showDialog(
+    showDialog<void>(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDarkMode ? AppColors.darkSurface : Colors.white,
-        title: Center(
-          child: Column(
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.image_not_supported_outlined),
+        title: Text(t('imageNotRecognized')),
+        content: Text(t('imageNotRecognizedExplanation')),
+        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(t('understood')))],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.watch<LocaleProvider>().t;
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: CustomAppBar(title: t('scanner'), showProfileIcon: true),
+      body: Stack(
+        children: [
+          ListView(
+            padding: const EdgeInsets.fromLTRB(Spacing.gutter, Spacing.md, Spacing.gutter, Spacing.xxxl),
             children: [
-              const Icon(Icons.help_outline, size: 48, color: Colors.orange),
+              Text(t('scanIntro'), style: theme.textTheme.bodyLarge),
               const SizedBox(height: 16),
-              Text(
-                t('imageNotRecognized'),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black87,
+              _BigAction(
+                icon: Icons.photo_camera_rounded,
+                title: t('takePicture'),
+                caption: t('takePictureCaption'),
+                filled: true,
+                onTap: _analysing ? null : () => _pick(ImageSource.camera),
+              ),
+              const SizedBox(height: 12),
+              _BigAction(
+                icon: Icons.photo_library_rounded,
+                title: t('selectPicture'),
+                caption: t('selectPictureCaption'),
+                onTap: _analysing ? null : () => _pick(ImageSource.gallery),
+              ),
+              const SizedBox(height: 20),
+              SectionCard(
+                title: t('goodPhotoTips'),
+                child: BulletList(
+                  icon: Icons.check_rounded,
+                  items: [t('instructionStep1'), t('instructionStep2'), t('instructionStep3')],
                 ),
+              ),
+              const SizedBox(height: 12),
+              SectionCard(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: theme.colorScheme.primary),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(t('supportedCropsNote'))),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => context.push('/diseases'),
+                icon: const Icon(Icons.menu_book_rounded),
+                label: Text(t('viewDiseases')),
               ),
             ],
           ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              message ?? t('imageNotRecognizedExplanation'),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isDarkMode ? Colors.white70 : Colors.black54,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              t('imageNotRecognizedHint'),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontStyle: FontStyle.italic,
-                fontSize: 12,
-                color: isDarkMode ? Colors.white38 : Colors.black38,
-              ),
-            ),
-          ],
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                setState(() => _selectedImage = null);
-              },
-              icon: const Icon(Icons.refresh),
-              label: Text(t('retry')),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(t('closeDialog')),
-            ),
-          ),
+          if (_analysing) _AnalysingOverlay(image: _image, label: t('analyzingShort')),
         ],
       ),
     );
   }
+}
 
-  // Ancienne méthode d'affichage des résultats supprimée — la Fiche terrain couvre ces informations maintenant.
+class _BigAction extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String caption;
+  final bool filled;
+  final VoidCallback? onTap;
+  const _BigAction({required this.icon, required this.title, required this.caption, this.filled = false, this.onTap});
+
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeProvider>().isDarkMode;
-    final t = context.watch<LocaleProvider>().t;
-
-    // Pas de PopScope local ici : le retour (geste système ou bouton) doit
-    // remonter jusqu'à AppPopScope dans MainNavigationShell, qui applique la
-    // même logique de navigation/sortie que pour les autres onglets (Chat,
-    // Marketplace) plutôt qu'un saut silencieux vers Home.
-    return Scaffold(
-        backgroundColor: isDarkMode
-            ? AppColors.darkBackground
-            : AppColors.lightBackground,
-        appBar: CustomAppBar(
-          title: t('scanner'),
-          isDarkMode: isDarkMode,
-          showProfileIcon: true,
-        ),
-      body: GradientBackground(
-        isDarkMode: isDarkMode,
-        opacity: 0.1,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            physics: const SmoothScrollPhysics(),
-            padding: const EdgeInsets.all(AppConstants.paddingMedium),
-            child: Column(
-              children: [
-                // Image Preview or Placeholder
-                _buildImagePreview(context, isDarkMode)
-                    .animate()
-                    .fadeIn(duration: AppConstants.animationNormal)
-                    .slideY(begin: 20, end: 0),
-                const SizedBox(height: AppConstants.paddingLarge),
-
-                // Instructions Section
-                GradientSection(
-                      title: t('instructions'),
-                      isDarkMode: isDarkMode,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildInstructionItem(
-                            '1',
-                            t('instructionStep1'),
-                            isDarkMode,
-                          ).slideUpIn(delayMs: 100),
-                          const SizedBox(height: 12),
-                          _buildInstructionItem(
-                            '2',
-                            t('instructionStep2'),
-                            isDarkMode,
-                          ).slideUpIn(delayMs: 150),
-                          const SizedBox(height: 12),
-                          _buildInstructionItem(
-                            '3',
-                            t('instructionStep3'),
-                            isDarkMode,
-                          ).slideUpIn(delayMs: 200),
-                        ],
-                      ),
-                    )
-                    .animate()
-                    .fadeIn(delay: const Duration(milliseconds: 200))
-                    .slideX(begin: -20, end: 0),
-                const SizedBox(height: AppConstants.paddingLarge),
-
-                // Action Buttons
-                Column(
-                  children: [
-                    _buildActionButton(
-                          context: context,
-                          icon: Icons.camera_alt,
-                          title: t('takePicture'),
-                          onTap: _pickImageFromCamera,
-                          isDarkMode: isDarkMode,
-                        )
-                        .animate(delay: const Duration(milliseconds: 300))
-                        .fadeIn()
-                        .slideY(begin: 20, end: 0),
-                    const SizedBox(height: AppConstants.paddingMedium),
-                    _buildActionButton(
-                          context: context,
-                          icon: Icons.photo_library,
-                          title: t('selectPicture'),
-                          onTap: _pickImageFromGallery,
-                          isDarkMode: isDarkMode,
-                        )
-                        .animate(delay: const Duration(milliseconds: 350))
-                        .fadeIn()
-                        .slideY(begin: 20, end: 0),
-                  ],
-                ),
-                const SizedBox(height: AppConstants.paddingLarge),
-                // Consulter les maladies button
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton.icon(
-                    onPressed: () => context.go('/diseases'),
-                    icon: Icon(
-                      Icons.local_hospital,
-                      size: 18,
-                      color: isDarkMode
-                          ? AppColors.darkSecondary
-                          : AppColors.lightPrimary,
-                    ),
-                    label: Text(
-                      t('viewDiseases'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isDarkMode
-                            ? AppColors.darkSecondary
-                            : AppColors.lightPrimary,
-                      ),
-                    ),
-                    style: TextButton.styleFrom(
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                )
-                    .animate(delay: const Duration(milliseconds: 400))
-                    .fadeIn()
-                    .slideY(begin: 20, end: 0),
-              ],
-            ),
-          ),
-        ),
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final bg = filled ? scheme.primary : scheme.surface;
+    final fg = filled ? scheme.onPrimary : scheme.onSurface;
+    return Material(
+      color: bg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: filled ? BorderSide.none : BorderSide(color: scheme.outlineVariant),
       ),
-    );
-  }
-
-  Widget _buildImagePreview(BuildContext context, bool isDarkMode) {
-    final t = context.watch<LocaleProvider>().t;
-    return GradientCard(
-      isDarkMode: isDarkMode,
-      opacity: 0.1,
-      borderRadius: AppConstants.radiusXLarge,
-      child: Container(
-        width: double.infinity,
-        height: 300,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppConstants.radiusXLarge),
-        ),
-        child: _selectedImage != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(AppConstants.radiusXLarge),
-                child: Image.file(
-                  File(_selectedImage!.path),
-                  fit: BoxFit.cover,
-                ),
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
-                      borderRadius: BorderRadius.circular(AppConstants.radiusLarge),
-                    ),
-                    child: Icon(
-                      Icons.image_search,
-                      size: 32,
-                      color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    t('selectAnImage'),
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    t('takeOrChoosePhoto'),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: isDarkMode
-                          ? AppColors.darkHint
-                          : AppColors.lightHint,
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-
-  Widget _buildInstructionItem(String number, String text, bool isDarkMode) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              number,
-              style: TextStyle(
-                color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(text, style: const TextStyle(fontSize: 14)),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    required bool isDarkMode,
-  }) {
-    final t = context.watch<LocaleProvider>().t;
-    return GestureDetector(
-      onTap: _isLoading ? null : onTap,
-      child: BounceAnimation(
-        child: GradientCard(
-          isDarkMode: isDarkMode,
-          opacity: 0.15,
-          borderRadius: AppConstants.radiusMedium,
-          onTap: _isLoading ? null : onTap,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
           child: Row(
             children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: isDarkMode ? AppColors.darkTertiary : AppColors.lightTertiary,
-                  borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                ),
-                child: Icon(
-                  icon,
-                  color: isDarkMode ? AppColors.darkPrimary : AppColors.lightPrimary,
-                  size: 24,
-                ),
-              ),
+              Icon(icon, size: 36, color: filled ? fg : scheme.primary),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 4),
-                    Text(
-                      _isLoading ? t('analyzingShort') : t('tapToSelect'),
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: isDarkMode
-                            ? AppColors.darkHint
-                            : AppColors.lightHint,
-                      ),
-                    ),
+                    Text(title, style: theme.textTheme.titleMedium?.copyWith(color: fg)),
+                    const SizedBox(height: 2),
+                    Text(caption, style: theme.textTheme.bodyMedium?.copyWith(color: fg.withValues(alpha: 0.8))),
                   ],
                 ),
               ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: isDarkMode ? AppColors.darkHint : AppColors.lightHint,
-              ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnalysingOverlay extends StatelessWidget {
+  final File? image;
+  final String label;
+  const _AnalysingOverlay({required this.image, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Positioned.fill(
+      child: ColoredBox(
+        color: theme.colorScheme.surface.withValues(alpha: 0.94),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (image != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.file(image!, width: 220, height: 220, fit: BoxFit.cover, cacheWidth: 600),
+                  ),
+                const SizedBox(height: 24),
+                const SizedBox(width: 220, child: LinearProgressIndicator()),
+                const SizedBox(height: 12),
+                Semantics(liveRegion: true, child: Text(label, style: theme.textTheme.titleMedium)),
+              ],
+            ),
           ),
         ),
       ),
