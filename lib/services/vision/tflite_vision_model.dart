@@ -5,18 +5,24 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 import 'classification.dart';
+import 'decision_rule.dart';
 import 'model_spec.dart';
 import 'vision_model.dart';
 
-/// Moteur TensorFlow Lite (LiteRT) — modèle actif de la v2.1 :
+/// Moteur TensorFlow Lite (LiteRT) — classifier_v1 :
 /// plant_classifier_float16.tflite, 9 classes, entrée [1, 224, 224, 3]
-/// float32 en pixels bruts 0–255, sortie en probabilités.
+/// float32 en pixels bruts 0–255, sortie [1, 9] en probabilités.
 ///
-/// - Le modèle est chargé depuis les assets en mémoire (fromBuffer), sans
-///   copie sur le disque.
-/// - L'inférence tourne dans un isolate dédié (IsolateInterpreter) ; les
-///   appels sont mis en file car cet isolate ignore un appel reçu pendant
-///   qu'il en traite un autre.
+/// - Interpréteur créé **une seule fois** (au premier scan), puis réutilisé.
+/// - Le modèle est lu depuis les assets en mémoire (fromBuffer). Il est
+///   stocké non compressé dans l'APK (noCompress "tflite", 2.2.0) ;
+///   tflite_flutter n'expose pas le mappage mémoire d'un asset Android, la
+///   lecture reste donc une copie unique de ~8 Mo au chargement.
+/// - L'inférence tourne **hors du fil de l'interface**, dans un isolate
+///   dédié (IsolateInterpreter), seul à exécuter l'interpréteur ; les appels
+///   sont mis en file (jamais deux inférences simultanées sur le même
+///   interpréteur). Modifié en 2.2.0 : si cet isolate ne peut pas être
+///   créé, le chargement échoue au lieu de basculer sur le fil principal.
 /// - Formes et types des tenseurs vérifiés au chargement : un modèle qui ne
 ///   correspond pas à active_model.json est refusé avec un message clair au
 ///   lieu de donner des prédictions fausses.
@@ -58,17 +64,24 @@ class TfliteVisionModel implements VisionModel {
       throw StateError('Seuls les modèles à entrée et sortie float32 sont pris en charge '
           '(entrée ${input.type}, sortie ${output.type}).');
     }
-    final classes = output.shape.isEmpty ? 0 : output.shape.last;
-    if (classes != _labels.length) {
+    if (!listEquals(output.shape, [1, _labels.length])) {
       interpreter.close();
-      throw StateError('Le modèle a $classes sorties, ${spec.labelsAsset} liste ${_labels.length} classes.');
+      throw StateError('Sortie du modèle ${output.shape}, ${spec.labelsAsset} liste ${_labels.length} classes '
+          '(attendu [1, ${_labels.length}]).');
     }
-    _interpreter = interpreter;
+    // Chaque classe doit commencer par une culture connue (règle wrong_crop).
+    final orphans = _labels.where((l) => DecisionRule.cropOf(l) == null).toList();
+    if (orphans.isNotEmpty) {
+      interpreter.close();
+      throw StateError('Classes sans culture reconnue (Cassava, Corn, Tomato) : $orphans');
+    }
     try {
       _isolate = await IsolateInterpreter.create(address: interpreter.address);
     } catch (e) {
-      debugPrint('Isolate TFLite indisponible, inférence sur le fil principal : $e');
+      interpreter.close();
+      throw StateError('Impossible de lancer l\'inférence hors du fil principal : $e');
     }
+    _interpreter = interpreter;
   }
 
   @override
@@ -81,25 +94,17 @@ class TfliteVisionModel implements VisionModel {
   }
 
   Future<ClassificationResult> _infer(Float32List input) async {
-    final interpreter = _interpreter;
-    if (interpreter == null) throw StateError('Modèle TFLite fermé.');
+    final isolate = _isolate;
+    if (isolate == null || _interpreter == null) throw StateError('Modèle TFLite fermé.');
     final out = Float32List(_labels.length);
     final watch = Stopwatch()..start();
     final inBytes = input.buffer.asUint8List();
     final outBytes = out.buffer.asUint8List();
-    final isolate = _isolate;
-    if (isolate != null) {
-      await isolate.run(inBytes, outBytes);
-    } else {
-      interpreter.run(inBytes, outBytes);
-    }
+    await isolate.run(inBytes, outBytes);
     watch.stop();
-    return ClassificationResult.fromScores(
-      out.toList(),
-      _labels,
-      kind: spec.output,
-      inferenceTime: watch.elapsed,
-    );
+    // Probabilités utilisées telles quelles (pas de softmax ni de
+    // renormalisation).
+    return ClassificationResult.fromProbabilities(out.toList(), _labels, inferenceTime: watch.elapsed);
   }
 
   @override

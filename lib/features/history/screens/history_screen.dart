@@ -70,7 +70,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _Filter.all => true,
         _Filter.diseased => s.isDiseased,
         _Filter.healthy => s.isHealthy,
-        _Filter.uncertain => s.isUncertain || s.isError,
+        _Filter.uncertain => s.isUncertain || s.isWrongCrop || s.isError, // wrongCrop : 2.2.0
       };
       if (!okFilter) return false;
       if (_crop != null) {
@@ -218,7 +218,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _Filter.all: _all.length,
       _Filter.diseased: _all.where((s) => s.isDiseased).length,
       _Filter.healthy: _all.where((s) => s.isHealthy).length,
-      _Filter.uncertain: _all.where((s) => s.isUncertain || s.isError).length,
+      _Filter.uncertain: _all.where((s) => s.isUncertain || s.isWrongCrop || s.isError).length,
     };
     final labels = {
       _Filter.all: t('filterAll'),

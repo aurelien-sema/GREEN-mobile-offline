@@ -8,7 +8,7 @@ import 'support/catalog.dart';
 void main() {
   final catalog = loadCatalog();
 
-  test('chaque classe des modèles (TFLite et ONNX) mène à exactement une fiche', () {
+  test('chaque classe de classifier_v1 (et de l\'historique ancien) mène à exactement une fiche', () {
     for (final label in modelLabels().toSet()) {
       final hits = catalog.diseases.where((d) => d.modelLabels.contains(label)).toList();
       expect(hits, hasLength(1), reason: label);

@@ -8,7 +8,7 @@ class ScanLabels {
   ScanLabels._();
 
   static DiseaseCatalogModel? entry(ScanResultModel s, DiseasesProvider c) =>
-      c.findById(s.diseaseId) ?? (s.isUncertain || s.isError ? null : c.findByModelLabel(s.label));
+      c.findById(s.diseaseId) ?? (s.isUncertain || s.isWrongCrop || s.isError ? null : c.findByModelLabel(s.label));
 
   static String plant(ScanResultModel s, DiseasesProvider c, String locale, String Function(String) t) {
     final cropId = s.cropId ?? entry(s, c)?.crops.firstOrNull ??
@@ -22,6 +22,7 @@ class ScanLabels {
       ScanStatus.healthy => t('healthyPlant'),
       ScanStatus.diseased => entry(s, c)?.name.of(locale) ?? s.diseaseName,
       ScanStatus.uncertain => t('uncertainResult'),
+      ScanStatus.wrongCrop => t('wrongCropResult'), // 2.2.0
       ScanStatus.error => t('analysisError'),
     };
   }
@@ -30,6 +31,7 @@ class ScanLabels {
         ScanStatus.healthy => t('statusHealthy'),
         ScanStatus.diseased => t('statusDiseased'),
         ScanStatus.uncertain => t('statusUncertain'),
+        ScanStatus.wrongCrop => t('statusWrongCrop'), // 2.2.0
         ScanStatus.error => t('statusError'),
       };
 

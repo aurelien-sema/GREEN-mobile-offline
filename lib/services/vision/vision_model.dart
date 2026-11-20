@@ -6,10 +6,15 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'classification.dart';
 import 'image_preprocessor.dart';
 import 'model_spec.dart';
-import 'onnx_vision_model.dart';
-import 'tflite_vision_model.dart';
+// Sur le web (aperçu de l'interface), tflite_flutter ne compile pas : un
+// remplaçant sans inférence est utilisé à sa place.
+import 'tflite_vision_model.dart' if (dart.library.js_interop) 'tflite_vision_model_web.dart';
 
-/// Classifieur d'images hors ligne, quel que soit son format.
+/// Classifieur d'images hors ligne (interface : implémentation TFLite dans
+/// l'app, modèles factices dans les tests).
+///
+/// Modifié en 2.2.0 : le moteur ONNX de l'ancien modèle à 11 classes
+/// (onnx_vision_model.dart) est supprimé ; seul TFLite reste.
 abstract class VisionModel {
   ModelSpec get spec;
   List<String> get labels;
@@ -21,11 +26,8 @@ abstract class VisionModel {
 
   Future<void> dispose();
 
-  /// Choisit l'implémentation d'après le format déclaré.
-  static VisionModel fromSpec(ModelSpec spec) => switch (spec.format) {
-        ModelFormat.tflite => TfliteVisionModel(spec),
-        ModelFormat.onnx => OnnxVisionModel(spec),
-      };
+  /// Implémentation de l'application (ModelSpec n'accepte que « tflite »).
+  static VisionModel fromSpec(ModelSpec spec) => TfliteVisionModel(spec);
 
   /// Prétraitement dans un isolate : l'interface ne se fige pas pendant le
   /// décodage d'une photo de 12 Mpx.
@@ -66,7 +68,7 @@ class VisionEngine {
     final spec = ModelSpec.parse(await _readConfig());
     final model = (modelFactory ?? VisionModel.fromSpec)(spec);
     await model.load();
-    debugPrint('Modèle de vision prêt : ${spec.id} (${spec.format.name}, ${model.labels.length} classes)');
+    debugPrint('Modèle de vision prêt : ${spec.id} (${model.labels.length} classes)');
     return model;
   }
 

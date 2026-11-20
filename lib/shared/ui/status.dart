@@ -9,6 +9,8 @@ import '../../models/scan_result_model.dart';
       ScanStatus.healthy => (color: AppColors.success, icon: Icons.check_circle_rounded),
       ScanStatus.diseased => (color: AppColors.danger, icon: Icons.coronavirus_rounded),
       ScanStatus.uncertain => (color: AppColors.warning, icon: Icons.help_rounded),
+      // 2.2.0 : feuille d'une autre culture que celle choisie.
+      ScanStatus.wrongCrop => (color: AppColors.warning, icon: Icons.swap_horiz_rounded),
       ScanStatus.error => (color: Colors.grey, icon: Icons.error_outline_rounded),
     };
 

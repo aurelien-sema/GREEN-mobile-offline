@@ -24,8 +24,8 @@ subprojects {
 
 // Chaque plugin compile son Kotlin pour la même JVM que sa partie Java
 // (sinon Gradle refuse : "Inconsistent JVM-target compatibility"). Les
-// plugins ne sont pas homogènes : tflite_flutter et flutter_onnxruntime
-// ciblent Java 11, les autres Java 17. La cible est lue dans la
+// plugins ne sont pas homogènes : tflite_flutter cible Java 11, les autres
+// Java 17 (flutter_onnxruntime, aussi en Java 11, a été retiré en 2.2.0). La cible est lue dans la
 // configuration Android de chaque module au lieu d'une liste codée en dur.
 subprojects {
     tasks.withType<KotlinCompile>().configureEach {

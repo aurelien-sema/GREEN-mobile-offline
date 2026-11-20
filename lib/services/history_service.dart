@@ -202,7 +202,8 @@ class HistoryService {
       total: analysed.length,
       healthy: analysed.where((s) => s.isHealthy).length,
       diseased: diseased.length,
-      uncertain: analysed.where((s) => s.isUncertain).length,
+      // 2.2.0 : « sans diagnostic » compte aussi les cultures non cohérentes.
+      uncertain: analysed.where((s) => s.isUncertain || s.isWrongCrop).length,
       mostFrequentDiseaseId: top,
     );
   }
