@@ -6,9 +6,6 @@
 -keep class io.flutter.** { *; }
 -dontwarn io.flutter.embedding.**
 
-# ONNX Runtime : classes appelées depuis le code natif (JNI)
--keep class ai.onnxruntime.** { *; }
-
 # TensorFlow Lite / LiteRT (tflite_flutter) : bibliothèque C chargée par
 # FFI et classes du délégué GPU référencées sans être toujours présentes
 # (erreur R8 connue « Missing class …GpuDelegateFactory$Options »).

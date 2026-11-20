@@ -75,6 +75,7 @@ class GreenWebClient {
     required Uint8List bytes,
     required bool fromCamera,
     required DateTime capturedAt,
+    String? crop,
     String lang = 'fr',
   }) async {
     final path = fromCamera ? '/api/camera/analyze-frame' : '/api/camera/upload';
@@ -82,6 +83,9 @@ class GreenWebClient {
       ..headers.addAll({..._auth(token), 'Accept-Language': lang})
       ..fields['captured_at'] = capturedAt.toUtc().toIso8601String();
     if (fromCamera) req.fields['source'] = 'camera';
+    // 2.2.0 : culture choisie avant la photo (Cassava, Corn ou Tomato) ; le
+    // serveur applique alors la même règle (wrong_crop) que le téléphone.
+    if (crop != null) req.fields['crop'] = crop;
     req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: 'green_mobile.jpg'));
     final streamed = await _http.send(req).timeout(_uploadTimeout);
     final res = await http.Response.fromStream(streamed).timeout(_uploadTimeout);
@@ -172,18 +176,39 @@ class UploadReceipt {
   final String? diseaseName;
   final double? confidence;
 
-  const UploadReceipt({this.analysisId, this.imagePath, this.duplicate = false, this.diseaseName, this.confidence});
+  /// Statut de la règle côté serveur (ok, unknown, wrong_crop), null pour
+  /// un ancien serveur (2.2.0).
+  final String? status;
 
+  const UploadReceipt({
+    this.analysisId,
+    this.imagePath,
+    this.duplicate = false,
+    this.status,
+    this.diseaseName,
+    this.confidence,
+  });
+
+  /// Deux formats de réponse :
+  /// - serveur classifier_v1 (2.2.0) : `status` (ok / unknown / wrong_crop),
+  ///   `disease` = nom de la classe ou null si le statut n'est pas « ok »,
+  ///   `confidence` (0–1) au premier niveau ; sans réponse, pas
+  ///   d'`analysis_id` ;
+  /// - ancien serveur : bloc `disease` { disease_name, confidence }.
   factory UploadReceipt.fromJson(Map<String, dynamic> j) {
-    final disease = j['disease'] is Map<String, dynamic> ? j['disease'] as Map<String, dynamic> : const <String, dynamic>{};
-    final conf = (disease['confidence'] as num?)?.toDouble();
+    final raw = j['disease'];
+    final block = raw is Map<String, dynamic> ? raw : const <String, dynamic>{};
+    final name = raw is String ? raw : (block['disease_name'] ?? block['detected_disease']) as String?;
+    final conf = ((raw is Map ? block['confidence'] : j['confidence']) as num?)?.toDouble();
     return UploadReceipt(
       analysisId: (j['analysis_id'] as num?)?.toInt(),
       imagePath: j['image_path'] as String?,
       duplicate: (j['duplicate'] as bool?) ?? false,
-      diseaseName: (disease['disease_name'] ?? disease['detected_disease']) as String?,
-      // Le serveur exprime la confiance en 0–1 ou en pourcentage selon les versions.
-      confidence: conf == null ? null : (conf > 1 ? conf / 100 : conf),
+      status: j['status'] as String?,
+      diseaseName: name,
+      // Confiance gardée seulement avec un diagnostic. Le serveur l'exprime en
+      // 0–1 ou en pourcentage selon les versions.
+      confidence: name == null || conf == null ? null : (conf > 1 ? conf / 100 : conf),
     );
   }
 }

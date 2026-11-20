@@ -56,6 +56,12 @@ android {
         versionName = flutter.versionName
     }
 
+    // 2.2.0 (classifier_v1) : le modèle .tflite est stocké non compressé
+    // dans l'APK, pour pouvoir être mappé en mémoire.
+    androidResources {
+        noCompress += "tflite"
+    }
+
     buildTypes {
         release {
             // Sans key.properties, la configuration reste valide (flutter run,

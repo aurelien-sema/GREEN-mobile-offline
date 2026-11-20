@@ -1,7 +1,7 @@
 {
  "version": 3,
  "updated": "2026-11-09",
- "note": "Base de maladies hors ligne de GREEN. modelLabels relie chaque classe d'un modèle de vision (TFLite actif et ONNX conservé) à sa fiche.",
+ "note": "Base de maladies hors ligne de GREEN. modelLabels relie chaque classe du modèle classifier_v1 (2.2.0) à sa fiche ; les classes de l'ancien modèle à 11 classes (Corn Brown Spots, Corn Mildew, Corn Streak, Corn Stripe) restent listées uniquement pour afficher les anciennes analyses de l'historique.",
  "crops": {
   "maize": {
    "fr": "Maïs",

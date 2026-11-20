@@ -6,7 +6,7 @@ publish_to: 'none'
 # Le code (+2) doit augmenter à chaque APK publié, sinon Android refuse la
 # mise à jour par-dessus l'ancienne version. Garder lib/core/app_info.dart
 # aligné (vérifié par test/app_info_test.dart).
-version: 2.1.0+3
+version: 2.2.0+4
 
 environment:
   # Versions vérifiées le 7 novembre 2026 : Flutter 3.47.8 (stable), Dart 3.13.7.
@@ -36,11 +36,9 @@ dependencies:
   # Reste en 8.x : version déjà validée en build release sur ce projet (AGP 8).
   image_cropper: ^8.1.0
   image: ^4.12.0
-  # Deux moteurs d'inférence hors ligne, choisis par assets/models/active_model.json :
-  # TensorFlow Lite (modèle actif de la v2.1) et ONNX Runtime (conservé pour
-  # pouvoir rebrancher un modèle .onnx sans changer le code).
+  # Moteur d'inférence hors ligne de classifier_v1 (2.2.0) : TensorFlow Lite.
   tflite_flutter: ^0.12.1
-  flutter_onnxruntime: ^1.9.0
+  # 2.2.0 : flutter_onnxruntime retiré (ancien modèle ONNX à 11 classes supprimé).
 
   # Audio (messages vocaux GreenBot). Reste en 6.x : record 7 / record_android 2
   # exigent AGP 9 et le Kotlin intégré, que ce projet n'utilise pas encore.
@@ -64,6 +62,11 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # 2.2.0 : test d'acceptation de classifier_v1 sur téléphone (fourni avec le
+  # SDK Flutter, rien à télécharger) :
+  # flutter test integration_test/classifier_v1_acceptance_test.dart -d <appareil>
+  integration_test:
+    sdk: flutter
   flutter_lints: ^6.0.0
 
 flutter:
@@ -71,9 +74,9 @@ flutter:
 
   assets:
     - assets/images/
-    # Seul le modèle actif est embarqué. Le modèle ONNX (assets/models/onnx/)
-    # reste dans le dépôt mais n'est pas inclus dans l'APK : voir README,
-    # « Changer de modèle ».
+    # Modèle de vision classifier_v1 (2.2.0) : configuration + .tflite et
+    # labels.txt. Le .tflite n'est pas compressé dans l'APK (noCompress dans
+    # android/app/build.gradle.kts). Voir README, « Modèle de vision ».
     - assets/models/active_model.json
     - assets/models/tflite/
     - assets/rag/chunks.json

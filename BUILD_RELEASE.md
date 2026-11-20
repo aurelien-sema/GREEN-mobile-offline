@@ -76,6 +76,6 @@ possible qu'avec la même clé et un code de version supérieur (`+2` dans `pubs
 |---|---|---|
 | `android/key.properties introuvable` | fichier absent | le créer depuis `key.properties.example` |
 | `Unable to load asset: assets/.env` | fichier absent | `cp .env.example assets/.env` |
-| `Inconsistent JVM-target compatibility` | plugin compilé en Java 11 | déjà corrigé pour `flutter_onnxruntime` dans `android/build.gradle.kts` |
+| `Inconsistent JVM-target compatibility` | plugin compilé en Java 11 | déjà corrigé pour `tflite_flutter` dans `android/build.gradle.kts` |
 | Gradle manque de mémoire | ordinateur chargé | fermer le navigateur ; `org.gradle.jvmargs` est réglé à 4 Go |
 | `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | APK signé avec une autre clé | vérifier l'empreinte ci-dessus |

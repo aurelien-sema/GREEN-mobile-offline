@@ -95,7 +95,7 @@ void main() {
     );
   }
 
-  Future<ScanResultModel> addScan(String id, {String user = 'u1', String bytes = 'jpeg-bytes'}) async {
+  Future<ScanResultModel> addScan(String id, {String user = 'u1', String bytes = 'jpeg-bytes', String? chosenCrop}) async {
     final img = File('${dir.path}/scans/$user/$id.jpg')..createSync(recursive: true);
     img.writeAsStringSync('$bytes-$id');
     final scan = ScanResultModel(
@@ -106,6 +106,7 @@ void main() {
       diseaseName: 'Mosaïque',
       confidence: 0.91,
       status: ScanStatus.diseased,
+      chosenCropId: chosenCrop,
       imagePath: img.path,
       thumbPath: img.path,
       scannedAt: now,
@@ -156,6 +157,22 @@ void main() {
     expect(saved.sync.serverConfidence, closeTo(0.93, 1e-9));
     expect(await outbox.count(), 0);
     expect(sync.pendingCount, 0);
+  });
+
+  test('2.2.0 : la culture choisie est envoyée (champ crop = Cassava / Corn / Tomato)', () async {
+    await sync.start();
+    await sync.enqueue(await addScan('s1', chosenCrop: 'maize'));
+    await sync.syncNow();
+    final body = utf8.decode(server.uploads.single.bodyBytes);
+    expect(body, contains('name="crop"'));
+    expect(body, contains('Corn'));
+  });
+
+  test('2.2.0 : réponse du serveur classifier_v1 (disease = nom ou null, confidence au premier niveau)', () {
+    final ok = UploadReceipt.fromJson({'status': 'ok', 'disease': 'Cassava Mosaic', 'confidence': 0.97, 'analysis_id': 7});
+    expect((ok.status, ok.diseaseName, ok.confidence, ok.analysisId), ('ok', 'Cassava Mosaic', 0.97, 7));
+    final wrong = UploadReceipt.fromJson({'status': 'wrong_crop', 'disease': null, 'confidence': 0.974, 'analysis_id': null});
+    expect((wrong.status, wrong.diseaseName, wrong.confidence, wrong.analysisId), ('wrong_crop', null, null, null));
   });
 
   test('hors ligne : rien n\'est perdu, envoi automatique au retour du réseau', () async {

@@ -2,6 +2,52 @@
 
 Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/). Versions : `MAJEUR.MINEUR.CORRECTIF+code Android`.
 
+## [2.2.0+4] — 2026-11-20 — classifier_v1
+
+Intégration du classifieur **classifier_v1** (projet FieldPlant_9classes) selon les directives de l'équipe, avec la même règle de décision et le même seuil que le backend GREEN Web (`backend/inference.py`, `CONFIDENCE_THRESHOLD = 0.70`). Le fichier `plant_classifier_float16.tflite` livré est identique (SHA-256 `ed1199a9…cdbde`) à celui déjà embarqué en 2.1 ; ce sont le prétraitement, la règle et le scanner qui changent.
+
+### Prétraitement (identique à l'entraînement)
+
+- Redimensionnement à 224×224 **bilinéaire avec anti-crénelage**, image étirée sans recadrage : `ImagePreprocessor.resizeAntialiased` reproduit `tf.image.resize(..., method="bilinear", antialias=True)` (noyau triangle élargi selon la réduction). Remplace la moyenne à 2× suivie d'un bilinéaire simple. Écart avec Pillow `BILINEAR` < 0,6/255 en moyenne (test).
+- Pixels RGB explicites (alpha retiré), float32 bruts 0–255, NHWC `[1, 224, 224, 3]`.
+- Le scanner ne fait plus réduire la photo par image_picker (`maxWidth` 2048 : réduction Android en une étape, sans anti-crénelage) ; toute la réduction est faite par le prétraitement.
+
+### Sortie et règle de décision
+
+- Probabilités `[1, 9]` utilisées telles quelles : suppression du softmax et de la renormalisation.
+- Nouvelle règle `DecisionRule` (`lib/services/vision/decision_rule.dart`), statuts `ok` / `unknown` / `wrong_crop` comme le backend : `best` = argmax sur les 9 classes ; culture de `best` ≠ culture choisie → `wrong_crop` ; confiance < seuil → `unknown` ; sinon `ok`. Pas de renormalisation ni de maximum limité à la culture choisie.
+- Seuil unique `AppConstants.visionConfidenceThreshold = 0.70`, provisoire. L'ancien critère d'écart avec la 2e classe (0,15) est supprimé.
+- Historique : chaque analyse enregistre `decision` et `chosen_crop` ; nouveau statut affiché « Autre culture » (`ScanStatus.wrongCrop`), compté avec les analyses sans diagnostic. Les anciennes analyses restent lisibles.
+
+### Scanner
+
+- Choix de la culture (manioc, maïs, tomate) **avant** la photo ; boutons inactifs tant qu'aucune culture n'est choisie.
+- Cadre carré après la prise de vue (recadreur natif déjà présent) : une seule feuille qui remplit le cadre ; seule la zone cadrée est analysée.
+- Fiche terrain : section « Culture non cohérente » pour `wrong_crop` ; message `unknown` : « Image non reconnue : prenez une photo plus rapprochée d'une seule feuille. » (FR, EN, Pidgin).
+
+### Envoi à GREEN Web
+
+- La culture choisie est envoyée avec chaque photo (champ `crop` = `Cassava`, `Corn` ou `Tomato`, accepté par `/api/camera/analyze-frame` et `/api/camera/upload`) : le serveur applique la même règle `wrong_crop`. Elle est conservée dans la file d'envoi (`chosen_crop`).
+- Lecture de la réponse du serveur classifier_v1 (`status`, `disease` = nom ou null, `confidence` au premier niveau) ; l'ancien format reste lu. Sans réponse (`unknown`, `wrong_crop`), le serveur ne crée pas d'analyse : aucun diagnostic serveur n'est affiché.
+- Inchangé : l'envoi automatique des photos (décision de la 2.1). Pas de journal local des prédictions (optionnel, soumis à consentement).
+
+### Moteur et Android
+
+- Interpréteur chargé une fois ; inférence uniquement dans l'isolate dédié (plus de repli sur le fil principal) ; sortie vérifiée `[1, 9]` et chaque classe rattachée à une culture.
+- `noCompress += "tflite"` dans `android/app/build.gradle.kts`.
+- Id du modèle enregistré avec les analyses : `classifier_v1` (au lieu de `plant-classifier-9c-fp16`).
+
+### Supprimé
+
+- Ancien modèle ONNX à 11 classes (`assets/models/onnx/`), moteur `OnnxVisionModel`, options NCHW / ImageNet / recadrage central / logits de `ModelSpec`, dépendance `flutter_onnxruntime` et sa règle R8 (`ai.onnxruntime.**`).
+- Fixture `leaf_synthetic_224_bilinear.rgb` (référence de l'ancien redimensionnement), remplacée par `leaf_synthetic_224_pil_bilinear.rgb`.
+
+### Tests
+
+- `vision_pipeline_test.dart` et `vision_interpret_test.dart` réécrits (règle, anti-crénelage, conformité à Pillow, refus de l'ancienne configuration) .
+- Test d'acceptation sur téléphone `integration_test/classifier_v1_acceptance_test.dart` : 12 cas fournis avec le modèle (statut et classe exacts, confiance ±0,03). Fixtures générées par `tools/vision/make_classifier_v1_fixtures.py`. `integration_test` (SDK Flutter) ajouté en dépendance de développement.
+- `photo_sync_test.dart` : envoi du champ `crop`, lecture de la nouvelle réponse serveur ; 118 tests hors ligne.
+
 ## [2.1.0+3] — 2026-11-09
 
 Nouveau modèle de vision (TFLite), envoi automatique de toutes les analyses vers GREEN Web avec file hors ligne, nouvelle clé Gemini et fiabilisation de GreenBot, interfaces plus aérées. L'application web n'a pas été modifiée. La clé de signature Android est inchangée.

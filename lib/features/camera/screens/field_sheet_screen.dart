@@ -218,6 +218,7 @@ class _FieldSheetScreenState extends State<FieldSheetScreen> {
                 ],
                 Spacing.gapBlock,
                 if (scan.isUncertain) ..._uncertain(context, scan, catalog, l),
+                if (scan.isWrongCrop) ..._wrongCrop(scan, catalog, l),
                 if (scan.isDiseased && entry != null) ..._disease(entry, loc, t),
                 if (scan.isDiseased && entry == null)
                   SectionCard(child: Text(t('noLocalRecommendation'))),
@@ -225,7 +226,9 @@ class _FieldSheetScreenState extends State<FieldSheetScreen> {
                 const SizedBox(height: 4),
                 _Disclaimer(text: t('diagnosisDisclaimer')),
                 const SizedBox(height: 20),
-                if (!scan.isHealthy)
+                // Pas de GreenBot pour wrong_crop : il faut d'abord reprendre la
+                // photo ou corriger la culture choisie (2.2.0).
+                if (!scan.isHealthy && !scan.isWrongCrop)
                   FilledButton.icon(
                     onPressed: () => _askBot(scan, plant, title),
                     icon: const Icon(Icons.chat_bubble_rounded),
@@ -263,6 +266,28 @@ class _FieldSheetScreenState extends State<FieldSheetScreen> {
             Text(t('uncertainAdvice')),
           ],
         ),
+      ),
+      Spacing.gapBlock,
+      SectionCard(
+        title: t('goodPhotoTips'),
+        child: BulletList(
+          icon: Icons.check_rounded,
+          items: [t('instructionStep1'), t('instructionStep2'), t('instructionStep3')],
+        ),
+      ),
+      Spacing.gapBlock,
+    ];
+  }
+
+  /// 2.2.0 — statut wrong_crop : la classe la plus probable appartient à
+  /// une autre culture que celle choisie avant la photo.
+  List<Widget> _wrongCrop(ScanResultModel scan, DiseasesProvider catalog, LocaleProvider l) {
+    final t = l.t;
+    final chosen = scan.chosenCropId == null ? t('unknownPlant') : catalog.cropName(scan.chosenCropId!, l.locale);
+    return [
+      SectionCard(
+        title: t('wrongCropResult'),
+        child: Text(l.tf('wrongCropAdvice', {'crop': chosen})),
       ),
       Spacing.gapBlock,
       SectionCard(

@@ -16,6 +16,11 @@ class OutboxItem {
   final String sha256;
   final DateTime capturedAt;
   final String source;
+
+  /// Culture choisie avant la photo (cassava, maize, tomato), envoyée au
+  /// serveur pour qu'il applique la même règle wrong_crop (2.2.0). null
+  /// pour les analyses plus anciennes.
+  final String? chosenCrop;
   final DateTime queuedAt;
   final int attempts;
   final DateTime? nextAttemptAt;
@@ -28,6 +33,7 @@ class OutboxItem {
     required this.sha256,
     required this.capturedAt,
     required this.source,
+    this.chosenCrop,
     required this.queuedAt,
     this.attempts = 0,
     this.nextAttemptAt,
@@ -54,6 +60,7 @@ class OutboxItem {
         sha256: sha256,
         capturedAt: capturedAt,
         source: source,
+        chosenCrop: chosenCrop,
         queuedAt: queuedAt,
         attempts: attempts ?? this.attempts,
         nextAttemptAt: nextAttemptAt ?? this.nextAttemptAt,
@@ -67,6 +74,7 @@ class OutboxItem {
         sha256: j['sha256'] as String,
         capturedAt: DateTime.parse(j['captured_at'] as String),
         source: (j['source'] as String?) ?? 'camera',
+        chosenCrop: j['chosen_crop'] as String?,
         queuedAt: DateTime.parse(j['queued_at'] as String),
         attempts: (j['attempts'] as num?)?.toInt() ?? 0,
         nextAttemptAt: DateTime.tryParse((j['next_attempt_at'] as String?) ?? ''),
@@ -80,6 +88,7 @@ class OutboxItem {
         'sha256': sha256,
         'captured_at': capturedAt.toIso8601String(),
         'source': source,
+        'chosen_crop': chosenCrop,
         'queued_at': queuedAt.toIso8601String(),
         'attempts': attempts,
         'next_attempt_at': nextAttemptAt?.toIso8601String(),

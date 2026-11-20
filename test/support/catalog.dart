@@ -9,8 +9,13 @@ DiseasesProvider loadCatalog() {
   return p;
 }
 
-/// Classes du modèle actif (TFLite) puis du modèle ONNX conservé.
-List<String> modelLabels() => [..._labels('assets/models/tflite/labels.txt'), ..._labels('assets/models/onnx/labels.txt')];
+/// Classes du modèle actif (classifier_v1), puis celles de l'ancien modèle
+/// à 11 classes (supprimé en 2.2.0) qui restent dans diseases.json
+/// (modelLabels) uniquement pour afficher les anciennes analyses de
+/// l'historique.
+List<String> modelLabels() => [..._labels('assets/models/tflite/labels.txt'), ...legacyHistoryLabels];
+
+const legacyHistoryLabels = ['Corn Brown Spots', 'Corn Mildew', 'Corn Streak', 'Corn Stripe'];
 
 List<String> _labels(String path) => File(path)
     .readAsLinesSync()

@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/scan_result_model.dart';
 import '../history_service.dart';
 import '../user_scope.dart';
+import '../vision/decision_rule.dart';
 import 'green_web_client.dart';
 import 'shared_web_account.dart';
 import 'upload_outbox.dart';
@@ -150,6 +151,7 @@ class PhotoSyncService extends ChangeNotifier {
         sha256: sha256.convert(bytes).toString(),
         capturedAt: s.scannedAt,
         source: s.source,
+        chosenCrop: s.chosenCropId,
         queuedAt: _now(),
       );
 
@@ -244,6 +246,7 @@ class PhotoSyncService extends ChangeNotifier {
             bytes: bytes,
             fromCamera: item.source == 'camera',
             capturedAt: item.capturedAt,
+            crop: DecisionRule.modelCropOf(item.chosenCrop),
             lang: lang,
           );
           await _outbox.remove(item.scanId);

@@ -1,6 +1,6 @@
 {
-  "_comment": "Modèle de vision utilisé par l'application. Pour passer au modèle ONNX : copier le contenu de assets/models/onnx/onnx_model.json ici et déclarer assets/models/onnx/ dans pubspec.yaml (voir README, « Changer de modèle »).",
-  "id": "plant-classifier-9c-fp16",
+  "_comment": "Modèle de vision embarqué : classifier_v1 (projet FieldPlant_9classes), depuis la 2.2.0. Contrat fixé dans le code (lib/services/vision/model_spec.dart) : TFLite, entrée NHWC [1, 224, 224, 3] float32 RGB 0-255 non normalisée, redimensionnement bilinéaire avec anti-crénelage sans recadrage, sortie [1, 9] en probabilités. L'id est enregistré avec chaque analyse. L'ancien modèle ONNX à 11 classes a été supprimé.",
+  "id": "classifier_v1",
   "format": "tflite",
   "model": "assets/models/tflite/plant_classifier_float16.tflite",
   "labels": "assets/models/tflite/labels.txt",
@@ -8,8 +8,7 @@
     "layout": "nhwc",
     "width": 224,
     "height": 224,
-    "pixels": "raw_0_255",
-    "resize": "stretch_bilinear"
+    "pixels": "raw_0_255"
   },
   "output": { "kind": "probabilities" },
   "threads": 4

@@ -31,14 +31,16 @@ class AppConstants {
   static const int minPasswordLength = 8;
   static const int maxPasswordLength = 128;
 
-  // Vision (détection de maladies)
-  // En dessous de ce seuil (probabilité softmax de la 1re classe), le
-  // résultat est présenté comme incertain et non comme un diagnostic.
+  // Vision (détection de maladies) — classifier_v1, depuis la 2.2.0.
+  // Seuil UNIQUE et global (pas de seuil par classe) appliqué à la
+  // probabilité de la classe la plus probable parmi les 9 : en dessous, le
+  // statut est « unknown » (voir lib/services/vision/decision_rule.dart).
+  // PROVISOIRE : même valeur que le backend GREEN Web, à garder identique ;
+  // sera réajusté quand des photos hors sujet auront été collectées.
+  // Mesuré avec plant_classifier_float16.tflite : 91–92 % de réponses,
+  // 96–97 % de réponses justes (contre 93–95 % sans seuil).
+  // L'ancien critère d'écart avec la 2e classe (0,15) a été supprimé.
   static const double visionConfidenceThreshold = 0.70;
-
-  // Écart minimal entre la 1re et la 2e classe : en dessous, le modèle hésite
-  // entre deux réponses et le résultat est présenté comme incertain.
-  static const double visionMarginThreshold = 0.15;
 
   // Comptes : au plus 4 comptes peuvent être créés depuis un même téléphone
   // (le 5e est refusé) ; la question de sécurité est demandée après 3 échecs.

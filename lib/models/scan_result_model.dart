@@ -10,7 +10,40 @@ class Prediction {
   Map<String, dynamic> toJson() => {'label': label, 'confidence': confidence};
 }
 
-enum ScanStatus { healthy, diseased, uncertain, error }
+/// État affiché d'une analyse.
+///
+/// 2.2.0 : [wrongCrop] ajouté (la feuille ne correspond pas à la culture
+/// choisie). Correspondance avec [VisionDecision] : ok → [healthy] ou
+/// [diseased] selon la fiche ; unknown → [uncertain] ; wrong_crop →
+/// [wrongCrop]. [error] = analyse impossible (image illisible, modèle).
+enum ScanStatus { healthy, diseased, uncertain, wrongCrop, error }
+
+/// Statut d'une analyse, avec **les mêmes noms que le backend GREEN Web**.
+///
+/// Ajouté en 2.2.0 (classifier_v1).
+enum VisionDecision {
+  /// Culture cohérente et confiance ≥ seuil : diagnostic donné.
+  ok('ok'),
+
+  /// Culture cohérente mais confiance < seuil : image non reconnue.
+  unknown('unknown'),
+
+  /// La classe la plus probable appartient à une autre culture que celle
+  /// choisie par l'utilisateur.
+  wrongCrop('wrong_crop');
+
+  /// Valeur échangée avec le backend et stockée dans l'historique.
+  final String wire;
+  const VisionDecision(this.wire);
+
+  static VisionDecision? fromWire(String? value) {
+    for (final d in values) {
+      if (d.wire == value) return d;
+    }
+    return null;
+  }
+}
+
 
 /// État de l'envoi de la photo vers GREEN Web (serveur o2switch).
 enum SyncStatus { local, pending, sent, failed }
@@ -76,7 +109,9 @@ class SyncState {
 class ScanResultModel {
   final String id;
 
-  /// Classe brute du modèle (ex. « Corn Streak »), ou 'uncertain' / 'error'.
+  /// Classe la plus probable du modèle (ex. « Corn leaf blight »), même
+  /// quand la décision n'est pas « ok » (depuis la 2.2.0). Les analyses plus
+  /// anciennes peuvent contenir 'uncertain' ou 'error'.
   final String label;
 
   /// Identifiant de la fiche dans assets/data/diseases.json.
@@ -87,6 +122,15 @@ class ScanResultModel {
   final double confidence;
   final List<Prediction> topPredictions;
   final ScanStatus status;
+
+  /// Statut de la règle de décision, mêmes noms que le backend (ok,
+  /// unknown, wrong_crop). null pour une erreur ou une analyse antérieure
+  /// à la 2.2.0.
+  final VisionDecision? decision;
+
+  /// Culture choisie par l'utilisateur avant la photo (cassava, maize,
+  /// tomato). null pour les analyses antérieures à la 2.2.0.
+  final String? chosenCropId;
 
   /// Copie permanente de la photo dans le dossier de l'application.
   final String imagePath;
@@ -108,6 +152,8 @@ class ScanResultModel {
     required this.confidence,
     this.topPredictions = const [],
     required this.status,
+    this.decision,
+    this.chosenCropId,
     required this.imagePath,
     this.thumbPath,
     required this.scannedAt,
@@ -119,6 +165,7 @@ class ScanResultModel {
   bool get isHealthy => status == ScanStatus.healthy;
   bool get isDiseased => status == ScanStatus.diseased;
   bool get isUncertain => status == ScanStatus.uncertain;
+  bool get isWrongCrop => status == ScanStatus.wrongCrop;
   bool get isError => status == ScanStatus.error;
 
   ScanResultModel copyWith({
@@ -136,6 +183,8 @@ class ScanResultModel {
       confidence: confidence,
       topPredictions: topPredictions,
       status: status,
+      decision: decision,
+      chosenCropId: chosenCropId,
       imagePath: imagePath ?? this.imagePath,
       thumbPath: thumbPath ?? this.thumbPath,
       scannedAt: scannedAt,
@@ -163,6 +212,8 @@ class ScanResultModel {
           (s) => s.name == json['status'],
           orElse: () => ScanStatus.uncertain,
         ),
+        decision: VisionDecision.fromWire(json['decision'] as String?),
+        chosenCropId: json['chosen_crop'] as String?,
         imagePath: (json['image_path'] as String?) ?? '',
         thumbPath: json['thumb_path'] as String?,
         scannedAt: DateTime.parse(json['scanned_at'] as String),
@@ -211,6 +262,8 @@ class ScanResultModel {
         'confidence': confidence,
         'top': topPredictions.map((p) => p.toJson()).toList(),
         'status': status.name,
+        'decision': decision?.wire,
+        'chosen_crop': chosenCropId,
         'image_path': imagePath,
         'thumb_path': thumbPath,
         'scanned_at': scannedAt.toIso8601String(),
